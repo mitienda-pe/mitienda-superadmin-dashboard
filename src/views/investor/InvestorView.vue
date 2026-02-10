@@ -90,8 +90,17 @@ const kpis = computed(() => store.investorKpis!)
 
 const mrrChartOption = computed(() => {
   const data = store.investorKpis?.mrr_evolution || []
+  // Calculate MoM change (Net New MRR)
+  const momChanges = data.map((d, i) => i === 0 ? 0 : round2(d.mrr - data[i - 1].mrr))
   return {
-    grid: { top: 20, right: 20, bottom: 30, left: 70 },
+    grid: { top: 40, right: 70, bottom: 30, left: 70 },
+    legend: {
+      top: 0,
+      right: 0,
+      textStyle: { color: '#6b7280', fontSize: 11 },
+      itemWidth: 14,
+      itemHeight: 10,
+    },
     tooltip: {
       trigger: 'axis',
       backgroundColor: '#fff',
@@ -99,9 +108,16 @@ const mrrChartOption = computed(() => {
       borderWidth: 1,
       textStyle: { color: '#374151', fontSize: 13 },
       formatter: (params: any) => {
-        const p = params[0]
-        return `<div class="font-medium">${p.axisValue}</div>
-          <div class="text-sm">${p.marker} MRR: ${formatCurrency(p.value)}</div>`
+        const mrrParam = params.find((p: any) => p.seriesName === 'MRR')
+        const changeParam = params.find((p: any) => p.seriesName === 'Net New MRR')
+        let html = `<div class="font-medium">${params[0].axisValue}</div>`
+        if (mrrParam) html += `<div class="text-sm">${mrrParam.marker} MRR: ${formatCurrency(mrrParam.value)}</div>`
+        if (changeParam) {
+          const sign = changeParam.value >= 0 ? '+' : ''
+          const color = changeParam.value >= 0 ? '#10b981' : '#ef4444'
+          html += `<div class="text-sm" style="color:${color}">${changeParam.marker} Net New: ${sign}${formatCurrency(changeParam.value)}</div>`
+        }
+        return html
       }
     },
     xAxis: {
@@ -110,36 +126,65 @@ const mrrChartOption = computed(() => {
       axisLine: { lineStyle: { color: '#e5e7eb' } },
       axisLabel: { color: '#6b7280', fontSize: 10, rotate: 45 }
     },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        color: '#6b7280',
-        fontSize: 11,
-        formatter: (v: number) => formatCompactNumber(v)
+    yAxis: [
+      {
+        type: 'value',
+        axisLabel: {
+          color: '#6b7280',
+          fontSize: 11,
+          formatter: (v: number) => formatCompactNumber(v)
+        },
+        splitLine: { lineStyle: { color: '#f3f4f6' } }
       },
-      splitLine: { lineStyle: { color: '#f3f4f6' } }
-    },
-    series: [{
-      type: 'line',
-      data: data.map(d => d.mrr),
-      color: colors.primary,
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 4,
-      lineStyle: { width: 2.5 },
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(0, 178, 166, 0.15)' },
-            { offset: 1, color: 'rgba(0, 178, 166, 0.02)' }
-          ]
-        }
+      {
+        type: 'value',
+        axisLabel: {
+          color: '#9ca3af',
+          fontSize: 10,
+          formatter: (v: number) => formatCompactNumber(v)
+        },
+        splitLine: { show: false }
       }
-    }]
+    ],
+    series: [
+      {
+        name: 'MRR',
+        type: 'line',
+        yAxisIndex: 0,
+        data: data.map(d => d.mrr),
+        color: colors.primary,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 4,
+        lineStyle: { width: 2.5 },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(0, 178, 166, 0.15)' },
+              { offset: 1, color: 'rgba(0, 178, 166, 0.02)' }
+            ]
+          }
+        }
+      },
+      {
+        name: 'Net New MRR',
+        type: 'bar',
+        yAxisIndex: 1,
+        data: momChanges.map(v => ({
+          value: v,
+          itemStyle: { color: v >= 0 ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.6)' }
+        })),
+        barMaxWidth: 12,
+      }
+    ]
   }
 })
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
+}
 
 const storesChartOption = computed(() => {
   const data = store.investorKpis?.stores_trend || []
