@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <PipelineSubNav />
+
     <!-- Summary cards -->
     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
       <div
@@ -281,6 +283,7 @@ import { usePipelineStore } from '@/stores/pipeline.store'
 import { useFormatters } from '@/composables/useFormatters'
 import type { PipelineStage } from '@/types/pipeline.types'
 import { PIPELINE_STAGES } from '@/types/pipeline.types'
+import PipelineSubNav from '@/components/pipeline/PipelineSubNav.vue'
 import ReadinessScoreBadge from '@/components/pipeline/ReadinessScoreBadge.vue'
 import PipelineStageBadge from '@/components/pipeline/PipelineStageBadge.vue'
 import InputText from 'primevue/inputtext'

@@ -97,13 +97,18 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        name: 'Pipeline',
+        name: 'PipelineDashboard',
+        component: () => import('@/views/pipeline/PipelineDashboardView.vue')
+      },
+      {
+        path: 'leads',
+        name: 'PipelineLeads',
         component: () => import('@/views/pipeline/PipelineLeadsView.vue')
       },
       {
         path: ':id',
         name: 'PipelineDetail',
-        component: () => import('@/views/pipeline/PipelineLeadsView.vue')
+        component: () => import('@/views/pipeline/PipelineDetailView.vue')
       }
     ]
   },

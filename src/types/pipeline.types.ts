@@ -94,6 +94,75 @@ export interface PipelineLeadFilters {
   per_page: number
 }
 
+// Dashboard types
+export interface PipelineKpis {
+  total_trials: number
+  active_trials: number
+  conversion_rate: number
+  avg_conversion_days: number
+  avg_score: number
+  trials_this_month: number
+}
+
+export interface FunnelStage {
+  stage: PipelineStage
+  count: number
+  label: string
+}
+
+export interface MonthlyTrialData {
+  month: string
+  new_trials: number
+  conversions: number
+}
+
+export interface ScoreBucket {
+  range: string
+  count: number
+}
+
+export interface UpcomingFollowUp {
+  id: number
+  tienda_id: number
+  store_name: string
+  due_date: string
+  description: string
+  user_name: string
+}
+
+export interface PipelineDashboard {
+  kpis: PipelineKpis
+  funnel: FunnelStage[]
+  monthly_trials: MonthlyTrialData[]
+  score_distribution: ScoreBucket[]
+  upcoming_follow_ups: UpcomingFollowUp[]
+}
+
+// CRM request types
+export interface AddNoteRequest {
+  content: string
+  note_type: string
+}
+
+export interface ChangeStageRequest {
+  stage: PipelineStage
+  reason?: string
+}
+
+export interface AddFollowUpRequest {
+  due_date: string
+  description: string
+}
+
+export interface UpdateTagsRequest {
+  tags: string[]
+}
+
+export interface SuperAdminUser {
+  id: number
+  name: string
+}
+
 export const PIPELINE_STAGES: { value: PipelineStage; label: string; color: string; icon: string }[] = [
   { value: 'new_signup', label: 'Nuevo', color: '#6366f1', icon: 'pi pi-star' },
   { value: 'exploring', label: 'Explorando', color: '#8b5cf6', icon: 'pi pi-search' },
