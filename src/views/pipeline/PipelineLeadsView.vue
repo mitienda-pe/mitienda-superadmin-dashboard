@@ -137,6 +137,7 @@
               Revenue <i v-if="store.filters.sort === 'total_revenue'" :class="sortIcon" class="text-xs ml-0.5"></i>
             </th>
             <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Setup</th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 w-12"></th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -223,9 +224,23 @@
                 ></i>
               </div>
             </td>
+
+            <!-- Actions -->
+            <td class="px-4 py-3 text-center" @click.stop>
+              <Button
+                icon="pi pi-ellipsis-v"
+                severity="secondary"
+                text
+                size="small"
+                rounded
+                @click="openFlagMenu($event, lead)"
+              />
+            </td>
           </tr>
         </tbody>
       </table>
+
+      <Menu ref="flagMenuRef" :model="flagMenuItems" :popup="true" />
 
       <!-- Pagination -->
       <div v-if="store.meta.total_pages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
@@ -272,6 +287,11 @@ import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import ProgressSpinner from 'primevue/progressspinner'
+import Menu from 'primevue/menu'
+import { useToast } from 'primevue/usetoast'
+import { updateStoreFlag } from '@/api/stores.api'
+import type { PipelineLead } from '@/types/pipeline.types'
+import type { StoreFlag } from '@/types/store.types'
 
 const router = useRouter()
 const store = usePipelineStore()
@@ -366,6 +386,48 @@ function sortBy(field: string) {
   }
   store.filters.page = 1
   store.fetchLeads()
+}
+
+// Flag menu
+const toast = useToast()
+const flagMenuRef = ref()
+let selectedLead: PipelineLead | null = null
+
+const flagMenuItems = computed(() => [
+  {
+    label: 'Marcar Interna',
+    icon: 'pi pi-home',
+    command: () => applyFlag('internal')
+  },
+  {
+    label: 'Marcar Corporativa',
+    icon: 'pi pi-building',
+    command: () => applyFlag('corporate')
+  },
+  {
+    label: 'Quitar flag',
+    icon: 'pi pi-circle',
+    command: () => applyFlag(null)
+  }
+])
+
+function openFlagMenu(event: Event, lead: PipelineLead) {
+  selectedLead = lead
+  flagMenuRef.value.toggle(event)
+}
+
+async function applyFlag(flag: StoreFlag) {
+  if (!selectedLead) return
+  try {
+    await updateStoreFlag(selectedLead.id, flag)
+    toast.add({ severity: 'success', summary: 'Flag actualizado', detail: `${selectedLead.name} → ${flag || 'orgánica'}`, life: 3000 })
+    // If marked internal, remove from list since backend now filters them out
+    if (flag === 'internal') {
+      store.leads = store.leads.filter(l => l.id !== selectedLead!.id)
+    }
+  } catch {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el flag', life: 5000 })
+  }
 }
 
 function goToDetail(id: number) {
