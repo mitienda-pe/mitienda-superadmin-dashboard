@@ -41,72 +41,14 @@
     <template v-else-if="store.investorKpis">
       <!-- KPI Cards - 2 rows of 4 -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <!-- MRR -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">MRR</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.investorKpis.mrr) }}</p>
-          <p class="text-xs text-gray-400 mt-1">Monthly Recurring Revenue</p>
-        </div>
-
-        <!-- ARR -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">ARR</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.investorKpis.arr) }}</p>
-          <p class="text-xs text-gray-400 mt-1">Annual Run Rate</p>
-        </div>
-
-        <!-- Active Paid Stores -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">Tiendas Activas</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatNumber(store.investorKpis.active_paid_stores) }}</p>
-          <p class="text-xs text-gray-400 mt-1">Suscripciones pagas</p>
-        </div>
-
-        <!-- ARPU -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">ARPU</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.investorKpis.arpu) }}</p>
-          <p class="text-xs text-gray-400 mt-1">Avg Revenue Per User</p>
-        </div>
-
-        <!-- NRR -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">NRR</p>
-          <p class="text-2xl font-bold" :class="store.investorKpis.nrr >= 100 ? 'text-green-600' : 'text-yellow-600'">
-            {{ formatPercent(store.investorKpis.nrr) }}
-          </p>
-          <p class="text-xs text-gray-400 mt-1">Net Revenue Retention</p>
-        </div>
-
-        <!-- Gross Churn -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">Churn Bruto</p>
-          <p class="text-2xl font-bold" :class="store.investorKpis.gross_churn <= 3 ? 'text-green-600' : store.investorKpis.gross_churn <= 5 ? 'text-yellow-600' : 'text-red-600'">
-            {{ formatPercent(store.investorKpis.gross_churn) }}
-          </p>
-          <p class="text-xs text-gray-400 mt-1">Mensual promedio 3m</p>
-        </div>
-
-        <!-- LTV -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">LTV</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.investorKpis.ltv) }}</p>
-          <p class="text-xs text-gray-400 mt-1">Lifetime Value promedio</p>
-        </div>
-
-        <!-- GMV Annual -->
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-          <p class="text-xs text-gray-400 uppercase tracking-wider">GMV Anual</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCompactNumber(store.investorKpis.gmv_annual) }}</p>
-          <p class="text-xs text-gray-400 mt-1">
-            <span v-if="store.investorKpis.gmv_growth_yoy >= 0" class="text-green-600">
-              +{{ formatPercent(store.investorKpis.gmv_growth_yoy) }} YoY
-            </span>
-            <span v-else class="text-red-600">
-              {{ formatPercent(store.investorKpis.gmv_growth_yoy) }} YoY
-            </span>
-          </p>
-        </div>
+        <KpiCard title="MRR" :value="kpis.mrr" format="currency" :change="kpis.mrr_change" subtitle="Monthly Recurring Revenue" />
+        <KpiCard title="ARR" :value="kpis.arr" format="currency" :change="kpis.arr_change" subtitle="Annual Run Rate" />
+        <KpiCard title="Tiendas Activas" :value="kpis.active_paid_stores" format="number" :change="kpis.active_paid_stores_change" subtitle="Suscripciones pagas" />
+        <KpiCard title="ARPU" :value="kpis.arpu" format="currency" :change="kpis.arpu_change" subtitle="Avg Revenue Per User" />
+        <KpiCard title="NRR" :value="kpis.nrr" format="percent" :change="kpis.nrr_change" subtitle="Net Revenue Retention" />
+        <KpiCard title="Churn Bruto" :value="kpis.gross_churn" format="percent" :change="kpis.gross_churn_change" :invertChange="true" subtitle="Mensual" />
+        <KpiCard title="LTV" :value="kpis.ltv" format="currency" :change="kpis.ltv_change" subtitle="Lifetime Value promedio" />
+        <KpiCard title="GMV Mensual" :value="kpis.gmv_monthly_current" format="currency" :change="kpis.gmv_monthly_change" subtitle="Gross Merchandise Value" />
       </div>
 
       <!-- MRR Evolution Chart (24 months) -->
@@ -132,6 +74,7 @@ import { use } from 'echarts/core'
 import { BarChart, LineChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import KpiCard from '@/components/ui/KpiCard.vue'
 import { useRevenueStore } from '@/stores/revenue.store'
 import { useFormatters } from '@/composables/useFormatters'
 import { useChartTheme } from '@/composables/useChartTheme'
@@ -140,8 +83,10 @@ import { getExportUrl } from '@/api/revenue.api'
 use([BarChart, LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const store = useRevenueStore()
-const { formatCurrency, formatPercent, formatNumber, formatCompactNumber, formatMonthYear } = useFormatters()
+const { formatCurrency, formatCompactNumber, formatMonthYear } = useFormatters()
 const { colors } = useChartTheme()
+
+const kpis = computed(() => store.investorKpis!)
 
 const mrrChartOption = computed(() => {
   const data = store.investorKpis?.mrr_evolution || []

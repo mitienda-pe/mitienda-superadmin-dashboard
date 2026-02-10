@@ -109,4 +109,14 @@ export interface InvestorKpis {
   gmv_growth_yoy: number
   mrr_evolution: InvestorMrrPoint[]
   stores_trend: InvestorStoresPoint[]
+  // Period comparison (vs previous month)
+  mrr_change: number
+  arr_change: number
+  active_paid_stores_change: number
+  arpu_change: number
+  nrr_change: number
+  gross_churn_change: number
+  ltv_change: number
+  gmv_monthly_current: number
+  gmv_monthly_change: number
 }
