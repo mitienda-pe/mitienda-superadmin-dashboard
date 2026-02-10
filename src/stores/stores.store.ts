@@ -1,0 +1,104 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type {
+  StoreListItem, StoreListMeta, StoreListFilters,
+  StoreDetail, DailySales, StoreOrder,
+  SubscriptionHistory, TopProduct
+} from '@/types/store.types'
+import {
+  getStoresList, getStoreDetail, getStoreSales,
+  getStoreOrders, getSubscriptionHistory, getTopProducts
+} from '@/api/stores.api'
+
+export const useStoresStore = defineStore('stores', () => {
+  // List state
+  const stores = ref<StoreListItem[]>([])
+  const meta = ref<StoreListMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
+  const filters = ref<StoreListFilters>({
+    search: '',
+    plan: '',
+    classification: '',
+    sort: 'current_month_sales',
+    order: 'DESC',
+    page: 1,
+    per_page: 20
+  })
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+
+  // Detail state
+  const currentStore = ref<StoreDetail | null>(null)
+  const dailySales = ref<DailySales[]>([])
+  const orders = ref<StoreOrder[]>([])
+  const subscriptionHistory = ref<SubscriptionHistory[]>([])
+  const topProducts = ref<TopProduct[]>([])
+  const isDetailLoading = ref(false)
+  const detailError = ref<string | null>(null)
+
+  async function fetchStores() {
+    isLoading.value = true
+    error.value = null
+    try {
+      const res = await getStoresList(filters.value)
+      stores.value = res.data
+      if (res.meta) {
+        meta.value = res.meta
+      }
+    } catch (e: any) {
+      error.value = e.message || 'Error loading stores'
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  function updateFilters(newFilters: Partial<StoreListFilters>) {
+    Object.assign(filters.value, newFilters)
+    if (newFilters.search !== undefined || newFilters.plan !== undefined || newFilters.classification !== undefined) {
+      filters.value.page = 1 // Reset page on filter change
+    }
+    fetchStores()
+  }
+
+  function goToPage(page: number) {
+    filters.value.page = page
+    fetchStores()
+  }
+
+  async function fetchStoreDetail(storeId: number) {
+    isDetailLoading.value = true
+    detailError.value = null
+    currentStore.value = null
+    dailySales.value = []
+    orders.value = []
+    subscriptionHistory.value = []
+    topProducts.value = []
+
+    try {
+      // Fetch detail + all tabs in parallel
+      const [detailRes, salesRes, ordersRes, subsRes, productsRes] = await Promise.all([
+        getStoreDetail(storeId),
+        getStoreSales(storeId),
+        getStoreOrders(storeId),
+        getSubscriptionHistory(storeId),
+        getTopProducts(storeId)
+      ])
+
+      currentStore.value = detailRes.data
+      dailySales.value = salesRes.data
+      orders.value = ordersRes.data
+      subscriptionHistory.value = subsRes.data
+      topProducts.value = productsRes.data
+    } catch (e: any) {
+      detailError.value = e.message || 'Error loading store detail'
+    } finally {
+      isDetailLoading.value = false
+    }
+  }
+
+  return {
+    stores, meta, filters, isLoading, error,
+    currentStore, dailySales, orders, subscriptionHistory, topProducts,
+    isDetailLoading, detailError,
+    fetchStores, updateFilters, goToPage, fetchStoreDetail
+  }
+})
