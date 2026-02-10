@@ -53,6 +53,14 @@
         <TabPanel header="Productos">
           <TopProductsPanel :products="storesStore.topProducts" />
         </TabPanel>
+        <TabPanel header="Configuración">
+          <StoreConfigPanel
+            v-if="storesStore.currentStore?.config"
+            :config="storesStore.currentStore.config"
+            :plan="storesStore.currentStore.plan"
+            :store-id="storesStore.currentStore.id"
+          />
+        </TabPanel>
       </TabView>
     </template>
   </div>
@@ -68,6 +76,7 @@ import StoreHeader from '@/components/stores/StoreHeader.vue'
 import SalesPanel from '@/components/stores/SalesPanel.vue'
 import SubscriptionPanel from '@/components/stores/SubscriptionPanel.vue'
 import TopProductsPanel from '@/components/stores/TopProductsPanel.vue'
+import StoreConfigPanel from '@/components/stores/StoreConfigPanel.vue'
 import { useStoresStore } from '@/stores/stores.store'
 
 const route = useRoute()

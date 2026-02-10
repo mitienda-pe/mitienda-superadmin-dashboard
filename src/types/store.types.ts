@@ -1,11 +1,17 @@
 // Phase 2: Store listing + detail types
 
+export type StoreFlag = 'internal' | 'corporate' | null
+export type StoreStatus = 'vigente' | 'vencido'
+
 export interface StoreListItem {
   id: number
   name: string
   slug: string
   logo: string | null
   created_at: string
+  flag: StoreFlag
+  status: StoreStatus
+  seniority_months: number
   owner_name: string | null
   owner_email: string | null
   plan: string
@@ -35,6 +41,8 @@ export interface StoreListFilters {
   search: string
   plan: string
   classification: string
+  status: string
+  flag: string
   sort: string
   order: 'ASC' | 'DESC'
   page: number
@@ -49,6 +57,34 @@ export interface StorePlan {
   started_at: string
   expires_at: string
   days_remaining: number
+  plan_id: number
+  max_items: number
+  max_pages: number
+  payment_note: string
+}
+
+export interface StoreConfig {
+  flag: StoreFlag
+  blocked: boolean
+  is_test: boolean
+  ssl_enabled: boolean
+  domain: string | null
+  domain_verified: boolean
+  marketplace: boolean
+  directory: boolean
+  group_id: number
+  fb_integration: boolean
+  payment_alert: boolean
+}
+
+export type StoreConfigUpdate = Partial<StoreConfig>
+
+export interface StorePlanConfigUpdate {
+  expires_at?: string
+  price?: number
+  max_items?: number
+  max_pages?: number
+  payment_note?: string
 }
 
 export interface StoreSales {
@@ -75,6 +111,7 @@ export interface StoreDetail {
   created_at: string
   owner_name: string | null
   owner_email: string | null
+  config: StoreConfig
   plan: StorePlan | null
   sales: StoreSales
   product_count: number
