@@ -118,14 +118,24 @@
       <table v-else class="w-full">
         <thead>
           <tr class="border-b border-gray-200 bg-gray-50">
-            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Score</th>
+            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('readiness_score')">
+              Score <i v-if="store.filters.sort === 'readiness_score'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
             <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Tienda</th>
             <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Etapa</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Días rest.</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Productos</th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('days_remaining')">
+              Días rest. <i v-if="store.filters.sort === 'days_remaining'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('published_product_count')">
+              Productos <i v-if="store.filters.sort === 'published_product_count'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
             <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Pasarela</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Ventas</th>
-            <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Revenue</th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('paid_orders')">
+              Ventas <i v-if="store.filters.sort === 'paid_orders'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
+            <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('total_revenue')">
+              Revenue <i v-if="store.filters.sort === 'total_revenue'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
             <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Setup</th>
           </tr>
         </thead>
@@ -340,6 +350,21 @@ function applyScoreRange() {
 
 function toggleOrder() {
   store.filters.order = store.filters.order === 'DESC' ? 'ASC' : 'DESC'
+  store.fetchLeads()
+}
+
+const sortIcon = computed(() =>
+  store.filters.order === 'DESC' ? 'pi pi-sort-amount-down' : 'pi pi-sort-amount-up'
+)
+
+function sortBy(field: string) {
+  if (store.filters.sort === field) {
+    store.filters.order = store.filters.order === 'DESC' ? 'ASC' : 'DESC'
+  } else {
+    store.filters.sort = field
+    store.filters.order = 'DESC'
+  }
+  store.filters.page = 1
   store.fetchLeads()
 }
 
