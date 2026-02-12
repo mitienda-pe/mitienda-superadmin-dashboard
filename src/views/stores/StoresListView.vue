@@ -150,7 +150,7 @@
           <template #body="{ data: row }">
             <div>
               <span class="text-sm text-gray-700">{{ row.plan }}</span>
-              <div class="text-xs text-gray-400">{{ planCategoryLabel(row.plan_category) }}</div>
+              <div class="text-xs text-gray-400">{{ planPeriodLabel(row.plan_period, row.plan_period_qty) }}</div>
             </div>
           </template>
         </Column>
@@ -400,11 +400,16 @@ function onSort(event: any) {
   storesStore.updateFilters({ sort: field, order })
 }
 
-function planCategoryLabel(cat: string): string {
-  const labels: Record<string, string> = {
-    large: 'Large', medium: 'Medium', small: 'Small', micro: 'Micro'
+function planPeriodLabel(period: string, qty: number): string {
+  if (period === 'years') return qty > 1 ? `${qty} años` : 'Anual'
+  if (period === 'months') {
+    if (qty === 1) return 'Mensual'
+    if (qty === 3) return 'Trimestral'
+    if (qty === 6) return 'Semestral'
+    return `${qty} meses`
   }
-  return labels[cat] || cat
+  if (period === 'days') return 'Trial'
+  return period
 }
 
 function classificationLabel(classification: string): string {

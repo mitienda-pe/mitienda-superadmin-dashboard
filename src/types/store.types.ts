@@ -19,6 +19,7 @@ export interface StoreListItem {
   plan_category: 'large' | 'medium' | 'small' | 'micro'
   plan_price: number
   plan_period: string
+  plan_period_qty: number
   plan_expires_at: string | null
   current_month_sales: number
   prev_month_sales: number
