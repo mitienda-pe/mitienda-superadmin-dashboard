@@ -7,6 +7,7 @@ export interface StoreListItem {
   id: number
   name: string
   slug: string
+  domain: string | null
   logo: string | null
   created_at: string
   flag: StoreFlag

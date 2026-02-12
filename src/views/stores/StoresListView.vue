@@ -111,11 +111,11 @@
                 </div>
                 <div class="min-w-0">
                   <span class="font-medium text-gray-800 truncate block">{{ row.name }}</span>
-                  <div class="text-xs text-gray-400 truncate">{{ row.slug }}.mitienda.pe</div>
+                  <div class="text-xs text-gray-400 truncate">{{ row.domain || `${row.slug}.mitienda.pe` }}</div>
                 </div>
               </router-link>
               <a
-                :href="`https://${row.slug}.mitienda.pe`"
+                :href="row.domain ? `https://${row.domain}` : `https://${row.slug}.mitienda.pe`"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="flex-shrink-0 text-gray-400 hover:text-primary-600 transition-colors"
