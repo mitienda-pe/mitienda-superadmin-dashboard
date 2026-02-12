@@ -38,6 +38,7 @@ export interface StoreListMeta {
   per_page: number
   total: number
   total_pages: number
+  plan_names?: string[]
 }
 
 export interface StoreListFilters {

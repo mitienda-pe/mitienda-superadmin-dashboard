@@ -291,13 +291,13 @@ const classificationFilter = ref('')
 const statusFilter = ref('')
 const flagFilter = ref('')
 
-const planOptions = [
-  { label: 'Todos los planes', value: '' },
-  { label: 'Large (S/1000+)', value: 'large' },
-  { label: 'Medium (S/500-999)', value: 'medium' },
-  { label: 'Small (S/200-499)', value: 'small' },
-  { label: 'Micro (<S/200)', value: 'micro' }
-]
+const planOptions = computed(() => {
+  const names = storesStore.meta.plan_names || []
+  return [
+    { label: 'Todos los planes', value: '' },
+    ...names.map(n => ({ label: n, value: n }))
+  ]
+})
 
 const classificationOptions = [
   { label: 'Todas', value: '' },
