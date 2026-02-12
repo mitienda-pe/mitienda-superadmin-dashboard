@@ -16,6 +16,7 @@ export interface StoreListItem {
   owner_name: string | null
   owner_email: string | null
   plan: string
+  plan_detail: string
   plan_category: 'large' | 'medium' | 'small' | 'micro'
   plan_price: number
   plan_period: string

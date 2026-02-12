@@ -149,8 +149,7 @@
         <Column field="plan" header="Plan" :sortable="false" style="min-width: 120px">
           <template #body="{ data: row }">
             <div>
-              <span class="text-sm text-gray-700">{{ row.plan }}</span>
-              <div class="text-xs text-gray-400">{{ planPeriodLabel(row.plan_period, row.plan_period_qty) }}</div>
+              <span class="text-sm text-gray-700">{{ row.plan_detail }}</span>
             </div>
           </template>
         </Column>
@@ -398,18 +397,6 @@ function onSort(event: any) {
   const field = event.sortField
   const order = event.sortOrder === 1 ? 'ASC' : 'DESC'
   storesStore.updateFilters({ sort: field, order })
-}
-
-function planPeriodLabel(period: string, qty: number): string {
-  if (period === 'years') return qty > 1 ? `${qty} años` : 'Anual'
-  if (period === 'months') {
-    if (qty === 1) return 'Mensual'
-    if (qty === 3) return 'Trimestral'
-    if (qty === 6) return 'Semestral'
-    return `${qty} meses`
-  }
-  if (period === 'days') return 'Trial'
-  return period
 }
 
 function classificationLabel(classification: string): string {
