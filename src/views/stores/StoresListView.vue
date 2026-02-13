@@ -291,13 +291,19 @@ const classificationFilter = ref('')
 const statusFilter = ref('vigente')
 const flagFilter = ref('')
 
-const planOptions = computed(() => {
-  const names = storesStore.meta.plan_names || []
-  return [
-    { label: 'Todos los planes', value: '' },
-    ...names.map(n => ({ label: n, value: n }))
-  ]
-})
+const planCategoryLabels: Record<string, string> = {
+  trial: 'Prueba gratis',
+  micro: 'Micro',
+  small: 'Small',
+  medium: 'Medium',
+  large: 'Large',
+  otros: 'Otros'
+}
+
+const planOptions = [
+  { label: 'Todos los planes', value: '' },
+  ...Object.entries(planCategoryLabels).map(([value, label]) => ({ label, value }))
+]
 
 const classificationOptions = [
   { label: 'Todas', value: '' },
