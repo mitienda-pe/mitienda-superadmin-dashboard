@@ -288,7 +288,7 @@ const { formatCurrency, formatNumber } = useFormatters()
 const searchQuery = ref('')
 const planFilter = ref('')
 const classificationFilter = ref('')
-const statusFilter = ref('')
+const statusFilter = ref('vigente')
 const flagFilter = ref('')
 
 const planOptions = computed(() => {

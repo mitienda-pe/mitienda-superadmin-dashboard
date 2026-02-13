@@ -22,7 +22,7 @@ export const useStoresStore = defineStore('stores', () => {
     search: '',
     plan: '',
     classification: '',
-    status: '',
+    status: 'vigente',
     flag: '',
     sort: 'current_month_sales',
     order: 'DESC',
