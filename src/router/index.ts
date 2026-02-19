@@ -113,6 +113,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/mcp-tokens',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'McpTokens',
+        component: () => import('@/views/mcp-tokens/McpTokensView.vue')
+      }
+    ]
+  },
+  {
     path: '/access-denied',
     name: 'AccessDenied',
     component: () => import('@/views/AccessDeniedView.vue'),
