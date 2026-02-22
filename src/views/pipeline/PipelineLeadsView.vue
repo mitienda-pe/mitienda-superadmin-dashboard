@@ -125,6 +125,12 @@
             </th>
             <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Tienda</th>
             <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Etapa</th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_start')">
+              Inicio <i v-if="store.filters.sort === 'trial_start'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
+            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_end')">
+              Fin <i v-if="store.filters.sort === 'trial_end'" :class="sortIcon" class="text-xs ml-0.5"></i>
+            </th>
             <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('days_remaining')">
               Días rest. <i v-if="store.filters.sort === 'days_remaining'" :class="sortIcon" class="text-xs ml-0.5"></i>
             </th>
@@ -167,13 +173,23 @@
               <PipelineStageBadge :stage="lead.pipeline_stage" />
             </td>
 
-            <!-- Days remaining -->
+            <!-- Trial start -->
+            <td class="px-4 py-3 text-center">
+              <span class="text-xs text-gray-500">{{ formatDate(lead.trial_start) }}</span>
+            </td>
+
+            <!-- Trial end -->
+            <td class="px-4 py-3 text-center">
+              <span class="text-xs text-gray-500">{{ formatDate(lead.trial_end) }}</span>
+            </td>
+
+            <!-- Days remaining (real-time) -->
             <td class="px-4 py-3 text-center">
               <span
                 class="text-sm font-medium"
-                :class="lead.days_remaining < 0 ? 'text-gray-400' : lead.days_remaining <= 3 ? 'text-red-600' : lead.days_remaining <= 7 ? 'text-orange-500' : 'text-gray-700'"
+                :class="calcDaysRemaining(lead.trial_end) < 0 ? 'text-gray-400' : calcDaysRemaining(lead.trial_end) <= 3 ? 'text-red-600' : calcDaysRemaining(lead.trial_end) <= 7 ? 'text-orange-500' : 'text-gray-700'"
               >
-                {{ lead.days_remaining < 0 ? 'Expirado' : lead.days_remaining + 'd' }}
+                {{ calcDaysRemaining(lead.trial_end) < 0 ? 'Expirado' : calcDaysRemaining(lead.trial_end) + 'd' }}
               </span>
             </td>
 
@@ -298,7 +314,13 @@ import type { StoreFlag } from '@/types/store.types'
 
 const router = useRouter()
 const store = usePipelineStore()
-const { formatCurrency } = useFormatters()
+const { formatCurrency, formatDate } = useFormatters()
+
+function calcDaysRemaining(trialEnd: string): number {
+  const end = new Date(trialEnd + 'T23:59:59')
+  const now = new Date()
+  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
 
 const searchQuery = ref(store.filters.search)
 const scoreRange = ref<string | null>(null)
@@ -321,6 +343,7 @@ const sortOptions = [
   { label: 'Ventas', value: 'paid_orders' },
   { label: 'Revenue', value: 'total_revenue' },
   { label: 'Inicio trial', value: 'trial_start' },
+  { label: 'Fin trial', value: 'trial_end' },
 ]
 
 // Stage summary computed from loaded leads (full dataset count would need backend)
