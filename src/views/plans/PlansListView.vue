@@ -14,6 +14,12 @@
 
     <!-- Plans Table -->
     <div v-else>
+      <div class="flex items-center justify-between mb-4">
+        <router-link to="/plans" class="text-sm text-primary-600 hover:underline">
+          <i class="pi pi-table text-xs mr-1"></i>
+          Vista Matriz
+        </router-link>
+      </div>
       <DataTable
         :value="plansStore.plans"
         class="p-datatable-sm"

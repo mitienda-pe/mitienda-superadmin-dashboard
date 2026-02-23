@@ -1,15 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { plansApi } from '@/api/plans.api'
-import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData } from '@/types/plans.types'
+import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData, MatrixData, MatrixPlanUpdate } from '@/types/plans.types'
 
 export const usePlansStore = defineStore('plans', () => {
   const plans = ref<PlanListItem[]>([])
   const currentPlan = ref<PlanDetail | null>(null)
   const allModules = ref<ModuleDefinition[]>([])
   const storeModulesData = ref<StoreModulesData | null>(null)
+  const matrixData = ref<MatrixData | null>(null)
   const isLoading = ref(false)
+  const isMatrixLoading = ref(false)
+  const isSavingMatrix = ref(false)
   const error = ref<string | null>(null)
+  const matrixError = ref<string | null>(null)
 
   async function fetchPlans() {
     isLoading.value = true
@@ -87,6 +91,34 @@ export const usePlansStore = defineStore('plans', () => {
     return response
   }
 
+  async function fetchMatrix() {
+    isMatrixLoading.value = true
+    matrixError.value = null
+    try {
+      const response = await plansApi.getMatrix()
+      if (response.success && response.data) {
+        matrixData.value = response.data
+      }
+    } catch (e: any) {
+      matrixError.value = e.message || 'Error al cargar la matriz de planes'
+    } finally {
+      isMatrixLoading.value = false
+    }
+  }
+
+  async function saveMatrix(plans: MatrixPlanUpdate[]) {
+    isSavingMatrix.value = true
+    try {
+      const response = await plansApi.updateMatrix(plans)
+      if (response.success) {
+        await fetchMatrix()
+      }
+      return response
+    } finally {
+      isSavingMatrix.value = false
+    }
+  }
+
   return {
     plans,
     currentPlan,
@@ -100,6 +132,12 @@ export const usePlansStore = defineStore('plans', () => {
     savePlanModules,
     fetchModules,
     fetchStoreModules,
-    saveStoreModules
+    saveStoreModules,
+    matrixData,
+    isMatrixLoading,
+    isSavingMatrix,
+    matrixError,
+    fetchMatrix,
+    saveMatrix
   }
 })

@@ -30,6 +30,30 @@ export interface ModuleDefinition {
   order: number
 }
 
+// Pricing Matrix types
+export interface MatrixPlan {
+  id: number
+  name: string
+  max_items: number
+  max_pages: number
+  active: boolean
+  active_stores: number
+  module_ids: number[]
+}
+
+export interface MatrixData {
+  plans: MatrixPlan[]
+  modules: ModuleDefinition[]
+}
+
+export interface MatrixPlanUpdate {
+  id: number
+  name: string
+  max_items: number
+  max_pages: number
+  module_ids: number[]
+}
+
 export interface StoreModulesData {
   plan_id: number | null
   tiendaplan_id: number | null

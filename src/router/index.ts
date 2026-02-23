@@ -119,7 +119,12 @@ const routes: RouteRecordRaw[] = [
     children: [
       {
         path: '',
-        name: 'Plans',
+        name: 'PlansMatrix',
+        component: () => import('@/views/plans/PlansMatrixView.vue')
+      },
+      {
+        path: 'list',
+        name: 'PlansList',
         component: () => import('@/views/plans/PlansListView.vue')
       },
       {
