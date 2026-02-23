@@ -138,11 +138,62 @@
       <i class="pi pi-info-circle text-xl mb-2"></i>
       <p class="text-sm">Esta tienda no tiene un plan activo.</p>
     </div>
+
+    <!-- Section 4: Store Modules -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
+        Modulos de la Tienda
+        <span v-if="storeModulesLoaded" class="text-xs font-normal text-gray-400 ml-2">
+          {{ selectedStoreModuleIds.size }} habilitados
+        </span>
+      </h3>
+
+      <div v-if="loadingModules" class="flex justify-center py-6">
+        <i class="pi pi-spin pi-spinner text-2xl text-primary-600"></i>
+      </div>
+
+      <div v-else-if="storeModulesLoaded">
+        <div class="space-y-3">
+          <div v-for="(groupModules, groupName) in storeModulesByGroup" :key="groupName">
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+              {{ groupName }}
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+              <label
+                v-for="mod in groupModules"
+                :key="mod.id"
+                class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 text-sm"
+              >
+                <Checkbox
+                  :modelValue="selectedStoreModuleIds.has(mod.id)"
+                  :binary="true"
+                  @update:modelValue="toggleStoreModule(mod.id)"
+                />
+                <span class="text-gray-700">{{ mod.name }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end mt-4">
+          <Button
+            label="Guardar Modulos"
+            icon="pi pi-save"
+            size="small"
+            :loading="savingSection === 'modules'"
+            @click="saveStoreModules"
+          />
+        </div>
+      </div>
+
+      <div v-else class="text-center text-gray-400 py-4">
+        <p class="text-sm">No se pudo cargar los modulos.</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
 import InputSwitch from 'primevue/inputswitch'
@@ -150,9 +201,11 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Calendar from 'primevue/calendar'
 import Textarea from 'primevue/textarea'
+import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
 import type { StoreConfig, StorePlan } from '@/types/store.types'
 import { useStoresStore } from '@/stores/stores.store'
+import { usePlansStore } from '@/stores/plans.store'
 
 const props = defineProps<{
   config: StoreConfig
@@ -162,7 +215,63 @@ const props = defineProps<{
 
 const toast = useToast()
 const storesStore = useStoresStore()
-const savingSection = ref<'status' | 'config' | 'plan' | null>(null)
+const plansStore = usePlansStore()
+const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | null>(null)
+const loadingModules = ref(false)
+const storeModulesLoaded = ref(false)
+const selectedStoreModuleIds = ref(new Set<number>())
+
+const storeModulesByGroup = computed(() => {
+  const data = plansStore.storeModulesData
+  if (!data) return {}
+  const groups: Record<string, typeof data.modules> = {}
+  for (const mod of data.modules) {
+    const group = mod.group || 'otros'
+    if (!groups[group]) groups[group] = []
+    groups[group].push(mod)
+  }
+  return groups
+})
+
+function toggleStoreModule(id: number) {
+  const s = new Set(selectedStoreModuleIds.value)
+  if (s.has(id)) s.delete(id)
+  else s.add(id)
+  selectedStoreModuleIds.value = s
+}
+
+async function loadStoreModules() {
+  loadingModules.value = true
+  try {
+    await plansStore.fetchStoreModules(props.storeId)
+    if (plansStore.storeModulesData) {
+      selectedStoreModuleIds.value = new Set(
+        plansStore.storeModulesData.modules.filter(m => m.enabled).map(m => m.id)
+      )
+      storeModulesLoaded.value = true
+    }
+  } catch {
+    storeModulesLoaded.value = false
+  } finally {
+    loadingModules.value = false
+  }
+}
+
+async function saveStoreModules() {
+  savingSection.value = 'modules'
+  try {
+    await plansStore.saveStoreModules(props.storeId, Array.from(selectedStoreModuleIds.value))
+    toast.add({ severity: 'success', summary: 'Guardado', detail: 'Modulos actualizados', life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al guardar modulos', life: 5000 })
+  } finally {
+    savingSection.value = null
+  }
+}
+
+onMounted(() => {
+  loadStoreModules()
+})
 
 const flagOptions = [
   { label: 'Orgánica', value: null },

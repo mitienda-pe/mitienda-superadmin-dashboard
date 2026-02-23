@@ -78,6 +78,8 @@ const pageTitle = computed(() => {
     PipelineDetail: 'Detalle de Lead',
     Revenue: 'Revenue Intelligence',
     Alerts: 'Alertas',
+    Plans: 'Gestion de Planes',
+    PlanDetail: 'Detalle de Plan',
     Investor: 'Vista Inversionistas'
   }
   return titles[route.name as string] || 'Dashboard'

@@ -32,6 +32,7 @@ const navItems = [
   { path: '/pipeline', label: 'Pipeline', icon: 'pi pi-filter' },
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
   { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell', badge: '' },
+  { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },
   { path: '/investor', label: 'Inversionistas', icon: 'pi pi-briefcase' },
   { path: '/mcp-tokens', label: 'MCP Tokens', icon: 'pi pi-key' }
 ]

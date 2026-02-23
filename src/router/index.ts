@@ -113,6 +113,23 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/plans',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'Plans',
+        component: () => import('@/views/plans/PlansListView.vue')
+      },
+      {
+        path: ':id',
+        name: 'PlanDetail',
+        component: () => import('@/views/plans/PlanDetailView.vue')
+      }
+    ]
+  },
+  {
     path: '/mcp-tokens',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },
