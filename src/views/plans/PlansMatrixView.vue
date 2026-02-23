@@ -234,7 +234,10 @@ interface PlanFormState {
 const form = ref<Record<number, PlanFormState>>({})
 const originalSnapshot = ref('')
 
-const matrixPlans = computed(() => plansStore.matrixData?.plans ?? [])
+const MAIN_PLAN_IDS = [1, 2, 3, 4, 8] // Micro, Small, Medium, Large, Prueba Gratis
+const matrixPlans = computed(() =>
+  (plansStore.matrixData?.plans ?? []).filter(p => MAIN_PLAN_IDS.includes(p.id))
+)
 const allModules = computed(() => plansStore.matrixData?.modules ?? [])
 const totalModules = computed(() => allModules.value.length)
 
