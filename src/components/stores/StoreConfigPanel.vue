@@ -141,40 +141,93 @@
 
     <!-- Section 4: Store Modules -->
     <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">
-        Modulos de la Tienda
-        <span v-if="storeModulesLoaded" class="text-xs font-normal text-gray-400 ml-2">
-          {{ selectedStoreModuleIds.size }} habilitados
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
+            Modulos de la Tienda
+          </h3>
+          <span v-if="storeModulesLoaded" class="text-xs text-gray-400">
+            {{ selectedStoreModuleIds.size }} habilitados
+          </span>
+          <span
+            v-if="storeModulesLoaded && plansStore.storeModulesData?.has_overrides"
+            class="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"
+          >
+            Personalizado
+          </span>
+          <span
+            v-else-if="storeModulesLoaded && plansStore.storeModulesData"
+            class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
+          >
+            Heredado del plan {{ plansStore.storeModulesData.plan_name }}
+          </span>
+        </div>
+        <div v-if="storeModulesLoaded" class="flex items-center gap-2">
+          <Button label="Todos" text size="small" @click="selectAllModules" />
+          <Button label="Ninguno" text size="small" severity="secondary" @click="deselectAllModules" />
+          <Button
+            v-if="plansStore.storeModulesData?.has_overrides"
+            label="Restaurar del Plan"
+            text
+            size="small"
+            severity="warning"
+            icon="pi pi-replay"
+            :loading="savingSection === 'reset'"
+            @click="resetToDefaults"
+          />
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div v-if="storeModulesLoaded" class="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+        <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
+          <Checkbox v-model="showOnlyMigrated" :binary="true" />
+          Solo modulos migrados
+        </label>
+        <span class="text-xs text-gray-400">
+          ({{ filteredModuleCount }}/{{ totalModuleCount }})
         </span>
-      </h3>
+      </div>
 
       <div v-if="loadingModules" class="flex justify-center py-6">
         <i class="pi pi-spin pi-spinner text-2xl text-primary-600"></i>
       </div>
 
       <div v-else-if="storeModulesLoaded">
-        <div class="space-y-3">
+        <div class="space-y-4">
           <div v-for="(groupModules, groupName) in storeModulesByGroup" :key="groupName">
-            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-              {{ groupName }}
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              {{ groupLabel(groupName as string) }}
             </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               <label
                 v-for="mod in groupModules"
                 :key="mod.id"
-                class="flex items-center gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 text-sm"
+                class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors"
+                :class="selectedStoreModuleIds.has(mod.id)
+                  ? 'border-primary-200 bg-primary-50'
+                  : 'border-gray-200 hover:bg-gray-50'"
               >
                 <Checkbox
                   :modelValue="selectedStoreModuleIds.has(mod.id)"
                   :binary="true"
                   @update:modelValue="toggleStoreModule(mod.id)"
                 />
-                <span class="text-gray-700">{{ mod.name }}</span>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium text-gray-700 truncate">{{ mod.name }}</p>
+                  <p class="text-xs text-gray-400 truncate">{{ mod.code }}</p>
+                </div>
+                <span
+                  v-if="isModuleOverridden(mod)"
+                  class="text-xs px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 whitespace-nowrap"
+                >
+                  custom
+                </span>
               </label>
             </div>
           </div>
         </div>
-        <div class="flex justify-end mt-4">
+        <div class="flex justify-end mt-6">
           <Button
             label="Guardar Modulos"
             icon="pi pi-save"
@@ -204,8 +257,10 @@ import Textarea from 'primevue/textarea'
 import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
 import type { StoreConfig, StorePlan } from '@/types/store.types'
+import type { StoreModule } from '@/types/plans.types'
 import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
+import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 
 const props = defineProps<{
   config: StoreConfig
@@ -216,16 +271,25 @@ const props = defineProps<{
 const toast = useToast()
 const storesStore = useStoresStore()
 const plansStore = usePlansStore()
-const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | null>(null)
+const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | 'reset' | null>(null)
 const loadingModules = ref(false)
 const storeModulesLoaded = ref(false)
 const selectedStoreModuleIds = ref(new Set<number>())
+const showOnlyMigrated = ref(true)
+
+const filteredModules = computed(() => {
+  const data = plansStore.storeModulesData
+  if (!data) return []
+  if (!showOnlyMigrated.value) return data.modules
+  return data.modules.filter(m => MIGRATED_MODULE_CODES.has(m.code))
+})
+
+const filteredModuleCount = computed(() => filteredModules.value.length)
+const totalModuleCount = computed(() => plansStore.storeModulesData?.modules.length ?? 0)
 
 const storeModulesByGroup = computed(() => {
-  const data = plansStore.storeModulesData
-  if (!data) return {}
-  const groups: Record<string, typeof data.modules> = {}
-  for (const mod of data.modules) {
+  const groups: Record<string, StoreModule[]> = {}
+  for (const mod of filteredModules.value) {
     const group = mod.group || 'otros'
     if (!groups[group]) groups[group] = []
     groups[group].push(mod)
@@ -233,11 +297,48 @@ const storeModulesByGroup = computed(() => {
   return groups
 })
 
+const GROUP_LABELS: Record<string, string> = {
+  ventas: 'Ventas',
+  catalogo: 'Catalogo',
+  marketing: 'Marketing',
+  contenido: 'Contenido',
+  apariencia: 'Apariencia',
+  configuracion: 'Configuracion',
+  facturacion: 'Facturacion',
+  envios: 'Envios',
+  integraciones: 'Integraciones',
+  reportes: 'Reportes',
+  otros: 'Otros'
+}
+
+function groupLabel(group: string): string {
+  return GROUP_LABELS[group] || group.charAt(0).toUpperCase() + group.slice(1)
+}
+
 function toggleStoreModule(id: number) {
   const s = new Set(selectedStoreModuleIds.value)
   if (s.has(id)) s.delete(id)
   else s.add(id)
   selectedStoreModuleIds.value = s
+}
+
+function selectAllModules() {
+  const ids = filteredModules.value.map(m => m.id)
+  const s = new Set(selectedStoreModuleIds.value)
+  ids.forEach(id => s.add(id))
+  selectedStoreModuleIds.value = s
+}
+
+function deselectAllModules() {
+  const ids = new Set(filteredModules.value.map(m => m.id))
+  const s = new Set(selectedStoreModuleIds.value)
+  ids.forEach(id => s.delete(id))
+  selectedStoreModuleIds.value = s
+}
+
+function isModuleOverridden(mod: StoreModule): boolean {
+  const isEnabled = selectedStoreModuleIds.value.has(mod.id)
+  return isEnabled !== mod.plan_enabled
 }
 
 async function loadStoreModules() {
@@ -264,6 +365,23 @@ async function saveStoreModules() {
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Modulos actualizados', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Error al guardar modulos', life: 5000 })
+  } finally {
+    savingSection.value = null
+  }
+}
+
+async function resetToDefaults() {
+  savingSection.value = 'reset'
+  try {
+    await plansStore.resetStoreModules(props.storeId)
+    if (plansStore.storeModulesData) {
+      selectedStoreModuleIds.value = new Set(
+        plansStore.storeModulesData.modules.filter(m => m.enabled).map(m => m.id)
+      )
+    }
+    toast.add({ severity: 'success', summary: 'Restaurado', detail: 'Modulos restaurados a los defaults del plan', life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: 'Error', detail: 'Error al restaurar modulos', life: 5000 })
   } finally {
     savingSection.value = null
   }

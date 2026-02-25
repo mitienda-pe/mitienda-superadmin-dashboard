@@ -38,6 +38,11 @@ export const plansApi = {
     return response.data
   },
 
+  async resetStoreModules(storeId: number): Promise<ApiResponse> {
+    const response = await apiClient.delete(`/superadmin/dashboard/stores/${storeId}/modules`)
+    return response.data
+  },
+
   async getMatrix(): Promise<ApiResponse<MatrixData>> {
     const response = await apiClient.get('/superadmin/dashboard/plans/matrix')
     return response.data

@@ -91,6 +91,14 @@ export const usePlansStore = defineStore('plans', () => {
     return response
   }
 
+  async function resetStoreModules(storeId: number) {
+    const response = await plansApi.resetStoreModules(storeId)
+    if (response.success) {
+      await fetchStoreModules(storeId)
+    }
+    return response
+  }
+
   async function fetchMatrix() {
     isMatrixLoading.value = true
     matrixError.value = null
@@ -133,6 +141,7 @@ export const usePlansStore = defineStore('plans', () => {
     fetchModules,
     fetchStoreModules,
     saveStoreModules,
+    resetStoreModules,
     matrixData,
     isMatrixLoading,
     isSavingMatrix,

@@ -54,14 +54,20 @@ export interface MatrixPlanUpdate {
   module_ids: number[]
 }
 
+export interface StoreModule {
+  id: number
+  code: string
+  name: string
+  group: string
+  enabled: boolean
+  is_override: boolean
+  plan_enabled: boolean
+}
+
 export interface StoreModulesData {
   plan_id: number | null
+  plan_name: string
   tiendaplan_id: number | null
-  modules: Array<{
-    id: number
-    code: string
-    name: string
-    group: string
-    enabled: boolean
-  }>
+  has_overrides: boolean
+  modules: StoreModule[]
 }
