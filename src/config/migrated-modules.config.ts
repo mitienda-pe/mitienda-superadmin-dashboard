@@ -52,6 +52,7 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_tarifas_envio',
 
   // Store settings
+  'mod_varios_usuarios',
   'mod_informacion',
   'mod_preferencias',
   'mod_seo',

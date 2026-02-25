@@ -99,7 +99,7 @@
             </tr>
 
             <!-- Max Pages row -->
-            <tr class="border-b border-gray-200">
+            <tr class="border-b border-gray-100">
               <td class="px-4 py-3 text-sm font-medium text-gray-700 bg-white sticky left-0 z-[5]">
                 <i class="pi pi-file text-xs text-gray-400 mr-2"></i>
                 Max Paginas
@@ -112,6 +112,28 @@
               >
                 <InputNumber
                   v-model="form[plan.id].max_pages"
+                  :min="0"
+                  class="w-24 mx-auto"
+                  inputClass="text-center text-sm"
+                />
+                <p class="text-xs text-gray-400 mt-0.5">0 = ilimitado</p>
+              </td>
+            </tr>
+
+            <!-- Max Users row -->
+            <tr class="border-b border-gray-200">
+              <td class="px-4 py-3 text-sm font-medium text-gray-700 bg-white sticky left-0 z-[5]">
+                <i class="pi pi-users text-xs text-gray-400 mr-2"></i>
+                Max Usuarios
+              </td>
+              <td
+                v-for="plan in matrixPlans"
+                :key="'users-' + plan.id"
+                class="px-4 py-3 text-center"
+                :class="{ 'bg-amber-50': isQuotaChanged(plan.id, 'max_users') }"
+              >
+                <InputNumber
+                  v-model="form[plan.id].max_users"
                   :min="0"
                   class="w-24 mx-auto"
                   inputClass="text-center text-sm"
@@ -235,6 +257,7 @@ interface PlanFormState {
   name: string
   max_items: number
   max_pages: number
+  max_users: number
   module_ids: Set<number>
 }
 
@@ -264,12 +287,13 @@ const modulesByGroup = computed(() => {
 })
 
 function serializeForm(): string {
-  const data: Record<number, { name: string; max_items: number; max_pages: number; modules: number[] }> = {}
+  const data: Record<number, { name: string; max_items: number; max_pages: number; max_users: number; modules: number[] }> = {}
   for (const [planId, state] of Object.entries(form.value)) {
     data[Number(planId)] = {
       name: state.name,
       max_items: state.max_items,
       max_pages: state.max_pages,
+      max_users: state.max_users,
       modules: Array.from(state.module_ids).sort((a, b) => a - b)
     }
   }
@@ -285,6 +309,7 @@ function initForm() {
       name: plan.name,
       max_items: plan.max_items,
       max_pages: plan.max_pages,
+      max_users: plan.max_users,
       module_ids: new Set(plan.module_ids)
     }
   }
@@ -355,7 +380,7 @@ function isModuleChanged(planId: number, moduleId: number): boolean {
   return wasEnabled !== isNowEnabled
 }
 
-function isQuotaChanged(planId: number, field: 'max_items' | 'max_pages'): boolean {
+function isQuotaChanged(planId: number, field: 'max_items' | 'max_pages' | 'max_users'): boolean {
   const original = plansStore.matrixData?.plans.find(p => p.id === planId)
   if (!original || !form.value[planId]) return false
   return original[field] !== form.value[planId][field]
@@ -367,6 +392,7 @@ async function saveAll() {
     name: form.value[plan.id].name,
     max_items: form.value[plan.id].max_items,
     max_pages: form.value[plan.id].max_pages,
+    max_users: form.value[plan.id].max_users,
     module_ids: Array.from(form.value[plan.id].module_ids)
   }))
 

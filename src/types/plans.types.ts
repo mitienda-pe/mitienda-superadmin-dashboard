@@ -3,6 +3,7 @@ export interface PlanListItem {
   name: string
   max_items: number
   max_pages: number
+  max_users: number
   active: boolean
   module_count: number
   active_stores: number
@@ -36,6 +37,7 @@ export interface MatrixPlan {
   name: string
   max_items: number
   max_pages: number
+  max_users: number
   active: boolean
   active_stores: number
   module_ids: number[]
@@ -51,6 +53,7 @@ export interface MatrixPlanUpdate {
   name: string
   max_items: number
   max_pages: number
+  max_users: number
   module_ids: number[]
 }
 
