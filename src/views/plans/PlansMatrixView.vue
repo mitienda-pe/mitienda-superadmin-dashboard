@@ -21,6 +21,12 @@
             <i class="pi pi-list text-xs mr-1"></i>
             Vista lista
           </router-link>
+          <span class="text-gray-300">|</span>
+          <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <Checkbox v-model="showOnlyMigrated" :binary="true" />
+            <span>Solo modulos migrados</span>
+            <span class="text-xs text-gray-400">({{ allModules.length }}/{{ rawModules.length }})</span>
+          </label>
         </div>
         <div class="flex items-center gap-3">
           <span v-if="isDirty" class="text-sm text-orange-600 flex items-center gap-1">
@@ -217,6 +223,7 @@ import { onBeforeRouteLeave } from 'vue-router'
 import { usePlansStore } from '@/stores/plans.store'
 import { useToast } from 'primevue/usetoast'
 import type { ModuleDefinition, MatrixPlanUpdate } from '@/types/plans.types'
+import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 import Button from 'primevue/button'
 import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
@@ -238,7 +245,12 @@ const MAIN_PLAN_IDS = [1, 2, 3, 4, 8] // Micro, Small, Medium, Large, Prueba Gra
 const matrixPlans = computed(() =>
   (plansStore.matrixData?.plans ?? []).filter(p => MAIN_PLAN_IDS.includes(p.id))
 )
-const allModules = computed(() => plansStore.matrixData?.modules ?? [])
+const showOnlyMigrated = ref(true)
+const rawModules = computed(() => plansStore.matrixData?.modules ?? [])
+const allModules = computed(() => {
+  if (!showOnlyMigrated.value) return rawModules.value
+  return rawModules.value.filter(mod => MIGRATED_MODULE_CODES.has(mod.code))
+})
 const totalModules = computed(() => allModules.value.length)
 
 const modulesByGroup = computed(() => {
