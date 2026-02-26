@@ -65,16 +65,24 @@
         />
       </div>
 
-      <!-- Charts Grid 2x2 -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Charts Row 1: 3 columns -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <MrrEvolutionChart
           v-if="dashboardStore.mrrEvolution.length"
           :data="dashboardStore.mrrEvolution"
+        />
+        <ActiveStoresChart
+          v-if="dashboardStore.activeStoresMonthly.length"
+          :data="dashboardStore.activeStoresMonthly"
         />
         <ChurnVsNewChart
           v-if="dashboardStore.churnVsNew.length"
           :data="dashboardStore.churnVsNew"
         />
+      </div>
+
+      <!-- Charts Row 2: 2 columns -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <GmvMonthlyChart
           v-if="dashboardStore.gmvMonthly.length"
           :data="dashboardStore.gmvMonthly"
@@ -101,6 +109,7 @@ import { useDashboardStore } from '@/stores/dashboard.store'
 import KpiCard from '@/components/ui/KpiCard.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
 import MrrEvolutionChart from '@/components/charts/MrrEvolutionChart.vue'
+import ActiveStoresChart from '@/components/charts/ActiveStoresChart.vue'
 import ChurnVsNewChart from '@/components/charts/ChurnVsNewChart.vue'
 import GmvMonthlyChart from '@/components/charts/GmvMonthlyChart.vue'
 import PlanDistributionChart from '@/components/charts/PlanDistributionChart.vue'

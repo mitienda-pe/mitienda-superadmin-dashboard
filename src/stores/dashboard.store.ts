@@ -6,6 +6,7 @@ import type {
   MrrEvolutionMonth,
   ChurnVsNewMonth,
   GmvMonth,
+  ActiveStoresMonth,
   PlanSegment,
   StoreActivity
 } from '@/types/dashboard.types'
@@ -15,6 +16,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const mrrEvolution = ref<MrrEvolutionMonth[]>([])
   const churnVsNew = ref<ChurnVsNewMonth[]>([])
   const gmvMonthly = ref<GmvMonth[]>([])
+  const activeStoresMonthly = ref<ActiveStoresMonth[]>([])
   const planDistribution = ref<PlanSegment[]>([])
   const activityTable = ref<StoreActivity[]>([])
   const isLoading = ref(false)
@@ -30,6 +32,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         mrrRes,
         churnRes,
         gmvRes,
+        activeStoresRes,
         planRes,
         activityRes
       ] = await Promise.all([
@@ -37,6 +40,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         dashboardApi.getMrrEvolution(),
         dashboardApi.getChurnVsNew(),
         dashboardApi.getGmvMonthly(),
+        dashboardApi.getActiveStoresMonthly(),
         dashboardApi.getPlanDistribution(),
         dashboardApi.getActivityTable()
       ])
@@ -52,6 +56,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
       }
       if (gmvRes.success && gmvRes.data) {
         gmvMonthly.value = gmvRes.data as GmvMonth[]
+      }
+      if (activeStoresRes.success && activeStoresRes.data) {
+        activeStoresMonthly.value = activeStoresRes.data as ActiveStoresMonth[]
       }
       if (planRes.success && planRes.data) {
         const d = planRes.data as { current: PlanSegment[] }
@@ -73,6 +80,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     mrrEvolution,
     churnVsNew,
     gmvMonthly,
+    activeStoresMonthly,
     planDistribution,
     activityTable,
     isLoading,

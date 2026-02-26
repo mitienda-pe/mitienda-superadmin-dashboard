@@ -33,11 +33,19 @@ export interface ChurnVsNewMonth {
   net: number
 }
 
-// GMV Monthly
+// GMV Monthly (with year-over-year comparison)
 export interface GmvMonth {
   month: string
   gmv: number
   orders: number
+  gmv_prev_year?: number
+  orders_prev_year?: number
+}
+
+// Active Stores Monthly
+export interface ActiveStoresMonth {
+  month: string
+  count: number
 }
 
 // Plan Distribution — backend returns { current: [...] }

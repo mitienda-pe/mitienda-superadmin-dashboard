@@ -5,6 +5,7 @@ import type {
   MrrEvolutionMonth,
   ChurnVsNewMonth,
   GmvMonth,
+  ActiveStoresMonth,
   PlanSegment,
   StoreActivity
 } from '@/types/dashboard.types'
@@ -27,6 +28,11 @@ export const dashboardApi = {
 
   async getGmvMonthly(): Promise<ApiResponse<GmvMonth[]>> {
     const response = await apiClient.get('/superadmin/dashboard/gmv-monthly')
+    return response.data
+  },
+
+  async getActiveStoresMonthly(): Promise<ApiResponse<ActiveStoresMonth[]>> {
+    const response = await apiClient.get('/superadmin/dashboard/active-stores-monthly')
     return response.data
   },
 
