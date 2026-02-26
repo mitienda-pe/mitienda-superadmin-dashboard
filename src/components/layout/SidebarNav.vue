@@ -32,6 +32,7 @@ const navItems = [
   { path: '/pipeline', label: 'Pipeline', icon: 'pi pi-filter' },
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
   { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
+  { path: '/billing/plan-sales', label: 'Ventas Planes', icon: 'pi pi-receipt' },
   { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit' },
   { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell', badge: '' },
   { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },

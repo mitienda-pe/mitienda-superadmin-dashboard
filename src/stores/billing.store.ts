@@ -3,9 +3,10 @@ import { ref } from 'vue'
 import type {
   CommissionItem, CommissionSummary,
   InvoiceItem, InvoiceSummary,
+  PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta
 } from '@/types/billing.types'
-import { getCommissions, getInvoices } from '@/api/billing.api'
+import { getCommissions, getInvoices, getPlanSales } from '@/api/billing.api'
 
 export const useBillingStore = defineStore('billing', () => {
   // Commissions state
@@ -92,13 +93,58 @@ export const useBillingStore = defineStore('billing', () => {
     fetchInvoices()
   }
 
+  // Plan Sales state
+  const planSales = ref<PlanSaleItem[]>([])
+  const planSalesSummary = ref<PlanSaleSummary>({ total_ventas: 0, total_facturado: 0, total_pendiente: 0, count: 0 })
+  const planSalesMeta = ref<BillingMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
+  const planSalesFilters = ref<PlanSaleFilters>({
+    invoiced: 'all',
+    period: '',
+    plan: '',
+    search: '',
+    page: 1,
+    per_page: 20
+  })
+  const planSalesLoading = ref(false)
+  const planSalesError = ref<string | null>(null)
+
+  async function fetchPlanSales() {
+    planSalesLoading.value = true
+    planSalesError.value = null
+    try {
+      const res = await getPlanSales(planSalesFilters.value)
+      planSales.value = res.data || []
+      if (res.summary) planSalesSummary.value = res.summary
+      if (res.meta) planSalesMeta.value = res.meta
+    } catch (e: any) {
+      planSalesError.value = e.message || 'Error al cargar ventas de planes'
+    } finally {
+      planSalesLoading.value = false
+    }
+  }
+
+  function updatePlanSalesFilters(newFilters: Partial<PlanSaleFilters>) {
+    Object.assign(planSalesFilters.value, newFilters)
+    if (newFilters.invoiced !== undefined || newFilters.period !== undefined || newFilters.plan !== undefined || newFilters.search !== undefined) {
+      planSalesFilters.value.page = 1
+    }
+    fetchPlanSales()
+  }
+
+  function planSalesGoToPage(page: number) {
+    planSalesFilters.value.page = page
+    fetchPlanSales()
+  }
+
   return {
     commissions, commissionsSummary, commissionsMeta, commissionsFilters,
     commissionsLoading, commissionsError,
     invoices, invoicesSummary, invoicesMeta, invoicesFilters,
     invoicesLoading, invoicesError,
-    fetchCommissions, fetchInvoices,
-    updateCommissionsFilters, updateInvoicesFilters,
-    commissionsGoToPage, invoicesGoToPage
+    planSales, planSalesSummary, planSalesMeta, planSalesFilters,
+    planSalesLoading, planSalesError,
+    fetchCommissions, fetchInvoices, fetchPlanSales,
+    updateCommissionsFilters, updateInvoicesFilters, updatePlanSalesFilters,
+    commissionsGoToPage, invoicesGoToPage, planSalesGoToPage
   }
 })

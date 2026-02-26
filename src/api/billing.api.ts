@@ -2,6 +2,7 @@ import api from './axios'
 import type {
   CommissionItem, CommissionSummary,
   InvoiceItem, InvoiceSummary,
+  PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta
 } from '@/types/billing.types'
 
@@ -16,6 +17,13 @@ interface InvoicesResponse {
   success: boolean
   data: InvoiceItem[]
   summary: InvoiceSummary
+  meta: BillingMeta
+}
+
+interface PlanSalesResponse {
+  success: boolean
+  data: PlanSaleItem[]
+  summary: PlanSaleSummary
   meta: BillingMeta
 }
 
@@ -43,6 +51,22 @@ export async function getInvoices(filters: Partial<BillingFilters> = {}) {
 
   const res = await api.get<InvoicesResponse>(
     '/superadmin/dashboard/invoices',
+    { params }
+  )
+  return res.data
+}
+
+export async function getPlanSales(filters: Partial<PlanSaleFilters> = {}) {
+  const params: Record<string, string | number> = {}
+  if (filters.invoiced && filters.invoiced !== 'all') params.invoiced = filters.invoiced
+  if (filters.period) params.period = filters.period
+  if (filters.plan) params.plan = filters.plan
+  if (filters.search) params.search = filters.search
+  if (filters.page) params.page = filters.page
+  if (filters.per_page) params.per_page = filters.per_page
+
+  const res = await api.get<PlanSalesResponse>(
+    '/superadmin/dashboard/plan-sales',
     { params }
   )
   return res.data
