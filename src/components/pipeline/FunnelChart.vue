@@ -8,8 +8,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import VChart from 'vue-echarts'
+import { use } from 'echarts/core'
+import { BarChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { useChartTheme } from '@/composables/useChartTheme'
 import type { FunnelStage } from '@/types/pipeline.types'
+
+use([BarChart, GridComponent, TooltipComponent, CanvasRenderer])
 
 const props = defineProps<{
   data: FunnelStage[]
