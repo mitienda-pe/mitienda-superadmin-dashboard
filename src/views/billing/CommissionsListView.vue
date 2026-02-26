@@ -232,8 +232,16 @@ import { useFormatters } from '@/composables/useFormatters'
 const store = useBillingStore()
 const { formatCurrency, formatDate } = useFormatters()
 
+function getPreviousMonth(): string {
+  const now = new Date()
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const y = prev.getFullYear()
+  const m = String(prev.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
+
 const searchQuery = ref('')
-const periodFilter = ref('')
+const periodFilter = ref(getPreviousMonth())
 const statusFilter = ref('all')
 
 const statusOptions = [
@@ -276,6 +284,6 @@ function clearFilters() {
 }
 
 onMounted(() => {
-  store.fetchCommissions()
+  store.updateCommissionsFilters({ period: periodFilter.value })
 })
 </script>
