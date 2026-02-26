@@ -93,6 +93,22 @@
         />
       </div>
 
+      <!-- Charts Row 3: Commissions -->
+      <div v-if="dashboardStore.commissionsOverview" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <RevenueBreakdownChart
+          v-if="dashboardStore.commissionsOverview.monthly?.length"
+          :data="dashboardStore.commissionsOverview.monthly"
+        />
+        <CommissionsByPlanChart
+          v-if="dashboardStore.commissionsOverview.by_plan?.length"
+          :data="dashboardStore.commissionsOverview.by_plan"
+        />
+        <CommissionsMonthlyChart
+          v-if="dashboardStore.commissionsOverview.monthly?.length"
+          :data="dashboardStore.commissionsOverview.monthly"
+        />
+      </div>
+
       <!-- Activity Table -->
       <ActivityTable
         v-if="dashboardStore.activityTable.length"
@@ -113,6 +129,9 @@ import ActiveStoresChart from '@/components/charts/ActiveStoresChart.vue'
 import ChurnVsNewChart from '@/components/charts/ChurnVsNewChart.vue'
 import GmvMonthlyChart from '@/components/charts/GmvMonthlyChart.vue'
 import PlanDistributionChart from '@/components/charts/PlanDistributionChart.vue'
+import RevenueBreakdownChart from '@/components/charts/RevenueBreakdownChart.vue'
+import CommissionsByPlanChart from '@/components/charts/CommissionsByPlanChart.vue'
+import CommissionsMonthlyChart from '@/components/charts/CommissionsMonthlyChart.vue'
 import ActivityTable from '@/components/dashboard/ActivityTable.vue'
 
 const dashboardStore = useDashboardStore()

@@ -8,7 +8,8 @@ import type {
   GmvMonth,
   ActiveStoresMonth,
   PlanSegment,
-  StoreActivity
+  StoreActivity,
+  CommissionsOverview
 } from '@/types/dashboard.types'
 
 export const useDashboardStore = defineStore('dashboard', () => {
@@ -19,6 +20,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const activeStoresMonthly = ref<ActiveStoresMonth[]>([])
   const planDistribution = ref<PlanSegment[]>([])
   const activityTable = ref<StoreActivity[]>([])
+  const commissionsOverview = ref<CommissionsOverview | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -34,7 +36,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
         gmvRes,
         activeStoresRes,
         planRes,
-        activityRes
+        activityRes,
+        commissionsRes
       ] = await Promise.all([
         dashboardApi.getOverview(),
         dashboardApi.getMrrEvolution(),
@@ -42,7 +45,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
         dashboardApi.getGmvMonthly(),
         dashboardApi.getActiveStoresMonthly(),
         dashboardApi.getPlanDistribution(),
-        dashboardApi.getActivityTable()
+        dashboardApi.getActivityTable(),
+        dashboardApi.getCommissionsOverview()
       ])
 
       if (overviewRes.success && overviewRes.data) {
@@ -67,6 +71,9 @@ export const useDashboardStore = defineStore('dashboard', () => {
       if (activityRes.success && activityRes.data) {
         activityTable.value = activityRes.data as StoreActivity[]
       }
+      if (commissionsRes.success && commissionsRes.data) {
+        commissionsOverview.value = commissionsRes.data as CommissionsOverview
+      }
     } catch (err: any) {
       error.value = err.message || 'Error al cargar datos del dashboard'
       console.error('Dashboard fetch error:', err)
@@ -83,6 +90,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     activeStoresMonthly,
     planDistribution,
     activityTable,
+    commissionsOverview,
     isLoading,
     error,
     fetchAll

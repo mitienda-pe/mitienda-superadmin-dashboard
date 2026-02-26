@@ -55,6 +55,24 @@ export interface PlanSegment {
   mrr: number
 }
 
+// Commissions Overview — revenue breakdown charts
+export interface CommissionsMonthly {
+  month: string
+  subscriptions: number
+  commissions: number
+}
+
+export interface CommissionsByPlan {
+  plan: string
+  total: number
+  count: number
+}
+
+export interface CommissionsOverview {
+  monthly: CommissionsMonthly[]
+  by_plan: CommissionsByPlan[]
+}
+
 // Activity Table — matches backend response
 export interface StoreActivity {
   id: number

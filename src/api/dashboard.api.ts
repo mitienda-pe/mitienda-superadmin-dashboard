@@ -7,7 +7,8 @@ import type {
   GmvMonth,
   ActiveStoresMonth,
   PlanSegment,
-  StoreActivity
+  StoreActivity,
+  CommissionsOverview
 } from '@/types/dashboard.types'
 
 export const dashboardApi = {
@@ -43,6 +44,11 @@ export const dashboardApi = {
 
   async getActivityTable(): Promise<ApiResponse<StoreActivity[]>> {
     const response = await apiClient.get('/superadmin/dashboard/activity-table')
+    return response.data
+  },
+
+  async getCommissionsOverview(): Promise<ApiResponse<CommissionsOverview>> {
+    const response = await apiClient.get('/superadmin/dashboard/commissions-overview')
     return response.data
   }
 }
