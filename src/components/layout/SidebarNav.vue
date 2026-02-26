@@ -31,6 +31,8 @@ const navItems = [
   { path: '/stores', label: 'Tiendas', icon: 'pi pi-shop' },
   { path: '/pipeline', label: 'Pipeline', icon: 'pi pi-filter' },
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
+  { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
+  { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit' },
   { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell', badge: '' },
   { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },
   { path: '/investor', label: 'Inversionistas', icon: 'pi pi-briefcase' },

@@ -1,0 +1,104 @@
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import type {
+  CommissionItem, CommissionSummary,
+  InvoiceItem, InvoiceSummary,
+  BillingFilters, BillingMeta
+} from '@/types/billing.types'
+import { getCommissions, getInvoices } from '@/api/billing.api'
+
+export const useBillingStore = defineStore('billing', () => {
+  // Commissions state
+  const commissions = ref<CommissionItem[]>([])
+  const commissionsSummary = ref<CommissionSummary>({ total_comisiones: 0, total_pagado: 0, total_pendiente: 0, count: 0 })
+  const commissionsMeta = ref<BillingMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
+  const commissionsFilters = ref<BillingFilters>({
+    status: 'all',
+    period: '',
+    search: '',
+    page: 1,
+    per_page: 20
+  })
+  const commissionsLoading = ref(false)
+  const commissionsError = ref<string | null>(null)
+
+  // Invoices state
+  const invoices = ref<InvoiceItem[]>([])
+  const invoicesSummary = ref<InvoiceSummary>({ total_facturado: 0, total_pagado: 0, total_pendiente: 0, count: 0 })
+  const invoicesMeta = ref<BillingMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
+  const invoicesFilters = ref<BillingFilters>({
+    status: 'all',
+    period: '',
+    search: '',
+    page: 1,
+    per_page: 20
+  })
+  const invoicesLoading = ref(false)
+  const invoicesError = ref<string | null>(null)
+
+  async function fetchCommissions() {
+    commissionsLoading.value = true
+    commissionsError.value = null
+    try {
+      const res = await getCommissions(commissionsFilters.value)
+      commissions.value = res.data || []
+      if (res.summary) commissionsSummary.value = res.summary
+      if (res.meta) commissionsMeta.value = res.meta
+    } catch (e: any) {
+      commissionsError.value = e.message || 'Error al cargar comisiones'
+    } finally {
+      commissionsLoading.value = false
+    }
+  }
+
+  async function fetchInvoices() {
+    invoicesLoading.value = true
+    invoicesError.value = null
+    try {
+      const res = await getInvoices(invoicesFilters.value)
+      invoices.value = res.data || []
+      if (res.summary) invoicesSummary.value = res.summary
+      if (res.meta) invoicesMeta.value = res.meta
+    } catch (e: any) {
+      invoicesError.value = e.message || 'Error al cargar facturas'
+    } finally {
+      invoicesLoading.value = false
+    }
+  }
+
+  function updateCommissionsFilters(newFilters: Partial<BillingFilters>) {
+    Object.assign(commissionsFilters.value, newFilters)
+    if (newFilters.status !== undefined || newFilters.period !== undefined || newFilters.search !== undefined) {
+      commissionsFilters.value.page = 1
+    }
+    fetchCommissions()
+  }
+
+  function updateInvoicesFilters(newFilters: Partial<BillingFilters>) {
+    Object.assign(invoicesFilters.value, newFilters)
+    if (newFilters.status !== undefined || newFilters.search !== undefined) {
+      invoicesFilters.value.page = 1
+    }
+    fetchInvoices()
+  }
+
+  function commissionsGoToPage(page: number) {
+    commissionsFilters.value.page = page
+    fetchCommissions()
+  }
+
+  function invoicesGoToPage(page: number) {
+    invoicesFilters.value.page = page
+    fetchInvoices()
+  }
+
+  return {
+    commissions, commissionsSummary, commissionsMeta, commissionsFilters,
+    commissionsLoading, commissionsError,
+    invoices, invoicesSummary, invoicesMeta, invoicesFilters,
+    invoicesLoading, invoicesError,
+    fetchCommissions, fetchInvoices,
+    updateCommissionsFilters, updateInvoicesFilters,
+    commissionsGoToPage, invoicesGoToPage
+  }
+})

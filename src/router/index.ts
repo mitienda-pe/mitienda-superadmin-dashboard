@@ -113,6 +113,27 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/billing',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        redirect: '/billing/commissions'
+      },
+      {
+        path: 'commissions',
+        name: 'BillingCommissions',
+        component: () => import('@/views/billing/CommissionsListView.vue')
+      },
+      {
+        path: 'invoices',
+        name: 'BillingInvoices',
+        component: () => import('@/views/billing/InvoicesListView.vue')
+      }
+    ]
+  },
+  {
     path: '/plans',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },
