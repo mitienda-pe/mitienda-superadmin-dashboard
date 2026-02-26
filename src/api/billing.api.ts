@@ -1,7 +1,7 @@
 import api from './axios'
 import type {
   CommissionItem, CommissionSummary,
-  InvoiceItem, InvoiceSummary,
+  InvoiceItem, InvoiceSummary, InvoiceFilters,
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta
 } from '@/types/billing.types'
@@ -42,9 +42,10 @@ export async function getCommissions(filters: Partial<BillingFilters> = {}) {
   return res.data
 }
 
-export async function getInvoices(filters: Partial<BillingFilters> = {}) {
+export async function getInvoices(filters: Partial<InvoiceFilters> = {}) {
   const params: Record<string, string | number> = {}
-  if (filters.status && filters.status !== 'all') params.status = filters.status
+  if (filters.origen && filters.origen !== 'all') params.origen = filters.origen
+  if (filters.period) params.period = filters.period
   if (filters.search) params.search = filters.search
   if (filters.page) params.page = filters.page
   if (filters.per_page) params.per_page = filters.per_page

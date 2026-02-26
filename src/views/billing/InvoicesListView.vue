@@ -3,23 +3,18 @@
     <!-- Header -->
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Comprobantes</h1>
-      <p class="text-sm text-gray-500 mt-1">Comprobantes de pago emitidos por MiTienda</p>
+      <p class="text-sm text-gray-500 mt-1">Comprobantes de pago emitidos por MiTienda (suscripciones, comisiones y otros)</p>
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="bg-white rounded-xl border border-gray-200 p-5">
         <div class="text-sm text-gray-500">Total Facturado</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.invoicesSummary.total_facturado) }}</div>
-        <div class="text-xs text-gray-400 mt-1">{{ store.invoicesSummary.count }} comprobantes</div>
+        <div class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(store.invoicesSummary.total_monto) }}</div>
       </div>
       <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="text-sm text-gray-500">Pagado</div>
-        <div class="text-2xl font-bold text-green-600 mt-1">{{ formatCurrency(store.invoicesSummary.total_pagado) }}</div>
-      </div>
-      <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <div class="text-sm text-gray-500">Pendiente</div>
-        <div class="text-2xl font-bold text-orange-500 mt-1">{{ formatCurrency(store.invoicesSummary.total_pendiente) }}</div>
+        <div class="text-sm text-gray-500">Comprobantes</div>
+        <div class="text-2xl font-bold text-gray-900 mt-1">{{ formatNumber(store.invoicesSummary.count) }}</div>
       </div>
     </div>
 
@@ -31,19 +26,25 @@
             <i class="pi pi-search" />
             <InputText
               v-model="searchQuery"
-              placeholder="Buscar comprobante, RUC..."
+              placeholder="Buscar comprobante, RUC, razon social..."
               class="w-full"
               @keyup.enter="applySearch"
             />
           </span>
         </div>
+        <InputText
+          v-model="periodFilter"
+          type="month"
+          class="w-44"
+          @change="applyFilters"
+        />
         <Dropdown
-          v-model="statusFilter"
-          :options="statusOptions"
+          v-model="origenFilter"
+          :options="origenOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Estado"
-          class="w-40"
+          placeholder="Origen"
+          class="w-44"
           @change="applyFilters"
         />
         <Button
@@ -87,7 +88,7 @@
         stripedRows
         class="p-datatable-sm"
       >
-        <Column field="comprobante" header="Comprobante" style="min-width: 150px">
+        <Column field="comprobante" header="Comprobante" style="min-width: 160px">
           <template #body="{ data: row }">
             <a
               v-if="row.pdf_url"
@@ -103,7 +104,7 @@
           </template>
         </Column>
 
-        <Column field="tipo" header="Tipo" style="width: 100px">
+        <Column field="tipo" header="Tipo" style="width: 90px">
           <template #body="{ data: row }">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
@@ -114,52 +115,46 @@
           </template>
         </Column>
 
-        <Column field="documento" header="Documento" style="min-width: 120px">
+        <Column field="origen" header="Origen" style="width: 110px">
           <template #body="{ data: row }">
-            <span class="text-sm text-gray-600 font-mono">{{ row.documento }}</span>
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+              :class="origenBadgeClass(row.origen)"
+            >
+              {{ row.origen }}
+            </span>
           </template>
         </Column>
 
-        <Column field="razon_social" header="Razon Social" style="min-width: 200px">
+        <Column field="documento" header="Documento" style="min-width: 120px">
+          <template #body="{ data: row }">
+            <span v-if="row.documento" class="text-sm text-gray-600 font-mono">{{ row.documento }}</span>
+            <span v-else class="text-sm text-gray-300">-</span>
+          </template>
+        </Column>
+
+        <Column field="razon_social" header="Razon Social" style="min-width: 180px">
           <template #body="{ data: row }">
             <span class="text-sm text-gray-700">{{ row.razon_social }}</span>
           </template>
         </Column>
 
-        <Column field="fecha_emision" header="Fecha Emision" style="width: 120px">
+        <Column field="concepto" header="Concepto" style="min-width: 140px">
           <template #body="{ data: row }">
-            <span class="text-sm text-gray-600">{{ formatDate(row.fecha_emision) }}</span>
+            <span class="text-sm text-gray-600">{{ row.concepto }}</span>
           </template>
         </Column>
 
-        <Column field="monto" header="Monto" style="min-width: 110px">
+        <Column field="fecha_emision" header="Fecha" style="width: 110px">
+          <template #body="{ data: row }">
+            <span v-if="row.fecha_emision" class="text-sm text-gray-600">{{ formatDate(row.fecha_emision) }}</span>
+            <span v-else class="text-sm text-gray-300">-</span>
+          </template>
+        </Column>
+
+        <Column field="monto" header="Monto" style="min-width: 100px">
           <template #body="{ data: row }">
             <span class="text-sm font-semibold text-gray-800 text-right block">{{ formatCurrency(row.monto) }}</span>
-          </template>
-        </Column>
-
-        <Column field="sw_pago" header="Estado" style="width: 100px">
-          <template #body="{ data: row }">
-            <span
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-              :class="row.sw_pago === 1 ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'"
-            >
-              {{ row.sw_pago === 1 ? 'Pagado' : 'Pendiente' }}
-            </span>
-          </template>
-        </Column>
-
-        <Column field="fechapago" header="Fecha Pago" style="width: 110px">
-          <template #body="{ data: row }">
-            <span v-if="row.fechapago" class="text-sm text-gray-600">{{ formatDate(row.fechapago) }}</span>
-            <span v-else class="text-sm text-gray-300">-</span>
-          </template>
-        </Column>
-
-        <Column field="banco" header="Banco" style="width: 100px">
-          <template #body="{ data: row }">
-            <span v-if="row.banco" class="text-sm text-gray-600">{{ row.banco }}</span>
-            <span v-else class="text-sm text-gray-300">-</span>
           </template>
         </Column>
       </DataTable>
@@ -214,19 +209,29 @@ import { useBillingStore } from '@/stores/billing.store'
 import { useFormatters } from '@/composables/useFormatters'
 
 const store = useBillingStore()
-const { formatCurrency, formatDate } = useFormatters()
+const { formatCurrency, formatDate, formatNumber } = useFormatters()
+
+function getPreviousMonth(): string {
+  const now = new Date()
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const y = prev.getFullYear()
+  const m = String(prev.getMonth() + 1).padStart(2, '0')
+  return `${y}-${m}`
+}
 
 const searchQuery = ref('')
-const statusFilter = ref('all')
+const periodFilter = ref(getPreviousMonth())
+const origenFilter = ref('all')
 
-const statusOptions = [
+const origenOptions = [
   { label: 'Todos', value: 'all' },
-  { label: 'Pagado', value: 'paid' },
-  { label: 'Pendiente', value: 'pending' }
+  { label: 'Suscripciones', value: 'suscripciones' },
+  { label: 'Comisiones', value: 'comisiones' },
+  { label: 'Otros', value: 'otros' }
 ]
 
 const hasActiveFilters = computed(() =>
-  searchQuery.value || statusFilter.value !== 'all'
+  searchQuery.value || periodFilter.value || origenFilter.value !== 'all'
 )
 
 const visiblePages = computed(() => {
@@ -239,6 +244,15 @@ const visiblePages = computed(() => {
   return pages
 })
 
+function origenBadgeClass(origen: string): string {
+  const classes: Record<string, string> = {
+    Suscripcion: 'bg-purple-50 text-purple-700',
+    Comision: 'bg-amber-50 text-amber-700',
+    Facturacion: 'bg-gray-100 text-gray-600'
+  }
+  return classes[origen] || 'bg-gray-100 text-gray-600'
+}
+
 function applySearch() {
   store.updateInvoicesFilters({ search: searchQuery.value })
 }
@@ -246,17 +260,19 @@ function applySearch() {
 function applyFilters() {
   store.updateInvoicesFilters({
     search: searchQuery.value,
-    status: statusFilter.value
+    period: periodFilter.value,
+    origen: origenFilter.value
   })
 }
 
 function clearFilters() {
   searchQuery.value = ''
-  statusFilter.value = 'all'
-  store.updateInvoicesFilters({ search: '', status: 'all', page: 1 })
+  periodFilter.value = ''
+  origenFilter.value = 'all'
+  store.updateInvoicesFilters({ search: '', period: '', origen: 'all', page: 1 })
 }
 
 onMounted(() => {
-  store.fetchInvoices()
+  store.updateInvoicesFilters({ period: periodFilter.value })
 })
 </script>

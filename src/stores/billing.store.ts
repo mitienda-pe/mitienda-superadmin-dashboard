@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   CommissionItem, CommissionSummary,
-  InvoiceItem, InvoiceSummary,
+  InvoiceItem, InvoiceSummary, InvoiceFilters,
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta
 } from '@/types/billing.types'
@@ -25,10 +25,10 @@ export const useBillingStore = defineStore('billing', () => {
 
   // Invoices state
   const invoices = ref<InvoiceItem[]>([])
-  const invoicesSummary = ref<InvoiceSummary>({ total_facturado: 0, total_pagado: 0, total_pendiente: 0, count: 0 })
+  const invoicesSummary = ref<InvoiceSummary>({ total_monto: 0, count: 0 })
   const invoicesMeta = ref<BillingMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
-  const invoicesFilters = ref<BillingFilters>({
-    status: 'all',
+  const invoicesFilters = ref<InvoiceFilters>({
+    origen: 'all',
     period: '',
     search: '',
     page: 1,
@@ -75,9 +75,9 @@ export const useBillingStore = defineStore('billing', () => {
     fetchCommissions()
   }
 
-  function updateInvoicesFilters(newFilters: Partial<BillingFilters>) {
+  function updateInvoicesFilters(newFilters: Partial<InvoiceFilters>) {
     Object.assign(invoicesFilters.value, newFilters)
-    if (newFilters.status !== undefined || newFilters.search !== undefined) {
+    if (newFilters.origen !== undefined || newFilters.period !== undefined || newFilters.search !== undefined) {
       invoicesFilters.value.page = 1
     }
     fetchInvoices()

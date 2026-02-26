@@ -24,24 +24,30 @@ export interface CommissionSummary {
 }
 
 export interface InvoiceItem {
-  id: number
+  uid: string
+  origen: string
+  serie: string
   comprobante: string
   tipo: string
   documento: string
   razon_social: string
   fecha_emision: string
   monto: number
-  sw_pago: number
-  fechapago: string | null
-  banco: string | null
+  concepto: string
   pdf_url: string | null
 }
 
 export interface InvoiceSummary {
-  total_facturado: number
-  total_pagado: number
-  total_pendiente: number
+  total_monto: number
   count: number
+}
+
+export interface InvoiceFilters {
+  origen: string
+  period: string
+  search: string
+  page: number
+  per_page: number
 }
 
 export interface PlanSaleItem {
