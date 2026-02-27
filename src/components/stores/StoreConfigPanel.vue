@@ -238,8 +238,10 @@
         </div>
       </div>
 
-      <div v-else class="text-center text-gray-400 py-4">
-        <p class="text-sm">No se pudo cargar los modulos.</p>
+      <div v-else class="text-center py-4">
+        <p class="text-sm text-red-500">No se pudo cargar los modulos.</p>
+        <p v-if="modulesError" class="text-xs text-red-400 mt-1">{{ modulesError }}</p>
+        <Button label="Reintentar" text size="small" icon="pi pi-refresh" class="mt-2" @click="loadStoreModules" />
       </div>
     </div>
   </div>
@@ -274,6 +276,7 @@ const plansStore = usePlansStore()
 const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | 'reset' | null>(null)
 const loadingModules = ref(false)
 const storeModulesLoaded = ref(false)
+const modulesError = ref<string | null>(null)
 const selectedStoreModuleIds = ref(new Set<number>())
 const showOnlyMigrated = ref(true)
 
@@ -343,6 +346,7 @@ function isModuleOverridden(mod: StoreModule): boolean {
 
 async function loadStoreModules() {
   loadingModules.value = true
+  modulesError.value = null
   try {
     await plansStore.fetchStoreModules(props.storeId)
     if (plansStore.storeModulesData) {
@@ -351,8 +355,9 @@ async function loadStoreModules() {
       )
       storeModulesLoaded.value = true
     }
-  } catch {
+  } catch (e: any) {
     storeModulesLoaded.value = false
+    modulesError.value = e?.response?.data?.message || e?.message || 'Error desconocido'
   } finally {
     loadingModules.value = false
   }

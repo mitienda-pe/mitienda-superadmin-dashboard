@@ -10,9 +10,10 @@ import router from './router'
 
 // PrimeVue styles
 import 'primevue/resources/themes/lara-light-blue/theme.css'
+import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 
-// Custom styles
+// Custom styles (Tailwind + overrides, loaded after PrimeVue so utilities take priority)
 import './assets/styles/main.css'
 
 const app = createApp(App)

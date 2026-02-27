@@ -77,9 +77,12 @@ export const usePlansStore = defineStore('plans', () => {
       const response = await plansApi.getStoreModules(storeId)
       if (response.success && response.data) {
         storeModulesData.value = response.data
+      } else {
+        throw new Error(response.message || 'Error fetching store modules')
       }
     } catch (e: any) {
       console.error('Error fetching store modules:', e)
+      throw e
     }
   }
 
