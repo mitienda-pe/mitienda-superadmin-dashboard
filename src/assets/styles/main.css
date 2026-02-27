@@ -150,16 +150,16 @@ body {
   background: #ffffff;
 }
 
-.p-checkbox .p-checkbox-box:hover {
+.p-checkbox:not(.p-disabled):has(.p-checkbox-input:hover) .p-checkbox-box {
   border-color: var(--primary-400);
 }
 
-.p-checkbox .p-checkbox-box.p-highlight {
+.p-checkbox.p-highlight .p-checkbox-box {
   border-color: var(--primary-500);
   background: var(--primary-500);
 }
 
-.p-checkbox .p-checkbox-box.p-highlight:hover {
+.p-checkbox:not(.p-disabled):has(.p-checkbox-input:hover).p-highlight .p-checkbox-box {
   border-color: var(--primary-600);
   background: var(--primary-600);
 }
