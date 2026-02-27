@@ -40,6 +40,8 @@ export interface MatrixPlan {
   max_users: number
   active: boolean
   active_stores: number
+  monthly_price: number | null
+  yearly_price: number | null
   module_ids: number[]
 }
 

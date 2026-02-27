@@ -68,6 +68,12 @@
                 class="text-center px-4 py-3 min-w-[160px] bg-gray-50"
               >
                 <div class="text-sm font-semibold text-gray-800">{{ plan.name }}</div>
+                <div v-if="plan.monthly_price != null" class="text-xs text-primary-600 font-medium mt-0.5">
+                  S/ {{ plan.monthly_price }}/mes
+                  <span v-if="plan.yearly_price != null" class="text-gray-400 font-normal">
+                    · S/ {{ plan.yearly_price }}/año
+                  </span>
+                </div>
                 <div class="text-xs text-gray-400 mt-0.5">
                   {{ plan.active_stores }} tiendas activas
                 </div>
