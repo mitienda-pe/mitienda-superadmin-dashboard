@@ -91,8 +91,8 @@
                 <InputNumber
                   v-model="form[plan.id].max_items"
                   :min="0"
-                  class="w-24 mx-auto"
-                  inputClass="text-center text-sm"
+                  class="matrix-input"
+                  inputClass="text-center text-sm !p-1.5 !w-20"
                 />
                 <p class="text-xs text-gray-400 mt-0.5">0 = ilimitado</p>
               </td>
@@ -113,15 +113,15 @@
                 <InputNumber
                   v-model="form[plan.id].max_pages"
                   :min="0"
-                  class="w-24 mx-auto"
-                  inputClass="text-center text-sm"
+                  class="matrix-input"
+                  inputClass="text-center text-sm !p-1.5 !w-20"
                 />
                 <p class="text-xs text-gray-400 mt-0.5">0 = ilimitado</p>
               </td>
             </tr>
 
             <!-- Max Users row -->
-            <tr class="border-b border-gray-200">
+            <tr class="border-b border-gray-100">
               <td class="px-4 py-3 text-sm font-medium text-gray-700 bg-white sticky left-0 z-[5]">
                 <i class="pi pi-users text-xs text-gray-400 mr-2"></i>
                 Max Usuarios
@@ -135,10 +135,45 @@
                 <InputNumber
                   v-model="form[plan.id].max_users"
                   :min="0"
-                  class="w-24 mx-auto"
-                  inputClass="text-center text-sm"
+                  class="matrix-input"
+                  inputClass="text-center text-sm !p-1.5 !w-20"
                 />
                 <p class="text-xs text-gray-400 mt-0.5">0 = ilimitado</p>
+              </td>
+            </tr>
+
+            <!-- Commission rate row (read-only) -->
+            <tr class="border-b border-gray-100">
+              <td class="px-4 py-3 text-sm font-medium text-gray-700 bg-white sticky left-0 z-[5]">
+                <i class="pi pi-percentage text-xs text-gray-400 mr-2"></i>
+                Comision
+              </td>
+              <td
+                v-for="plan in matrixPlans"
+                :key="'comm-' + plan.id"
+                class="px-4 py-3 text-center"
+              >
+                <span class="text-sm font-semibold" :class="commissionRules[plan.name]?.rate ? 'text-gray-800' : 'text-gray-300'">
+                  {{ commissionRules[plan.name]?.rate || '—' }}
+                </span>
+              </td>
+            </tr>
+
+            <!-- Commission minimum sales row (read-only) -->
+            <tr class="border-b border-gray-200">
+              <td class="px-4 py-3 text-sm font-medium text-gray-700 bg-white sticky left-0 z-[5]">
+                <i class="pi pi-chart-line text-xs text-gray-400 mr-2"></i>
+                Ventas minimas
+                <p class="text-xs text-gray-400 font-normal">para cobro de comision</p>
+              </td>
+              <td
+                v-for="plan in matrixPlans"
+                :key="'minsales-' + plan.id"
+                class="px-4 py-3 text-center"
+              >
+                <span class="text-sm font-semibold" :class="commissionRules[plan.name]?.minSales ? 'text-gray-800' : 'text-gray-300'">
+                  {{ commissionRules[plan.name]?.minSales || '—' }}
+                </span>
               </td>
             </tr>
 
@@ -252,6 +287,13 @@ import Checkbox from 'primevue/checkbox'
 
 const plansStore = usePlansStore()
 const toast = useToast()
+
+const commissionRules: Record<string, { rate: string; minSales: string }> = {
+  Micro: { rate: '2%', minSales: 'S/ 1,000' },
+  Small: { rate: '1.5%', minSales: 'S/ 2,500' },
+  Medium: { rate: '1%', minSales: 'S/ 5,000' },
+  Large: { rate: '0.5%', minSales: 'S/ 10,000' },
+}
 
 interface PlanFormState {
   name: string
@@ -445,5 +487,15 @@ onBeforeRouteLeave((_to, _from, next) => {
 .slide-up-leave-to {
   transform: translateY(100%);
   opacity: 0;
+}
+</style>
+
+<style>
+.matrix-input {
+  display: inline-flex;
+  max-width: 5rem;
+}
+.matrix-input .p-inputtext {
+  width: 5rem;
 }
 </style>
