@@ -114,16 +114,28 @@
                   <div class="text-xs text-gray-400 truncate">{{ row.domain || `${row.slug}.mitienda.pe` }}</div>
                 </div>
               </router-link>
-              <a
-                :href="row.domain ? `https://${row.domain}` : `https://${row.slug}.mitienda.pe`"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex-shrink-0 text-gray-400 hover:text-primary-600 transition-colors"
-                v-tooltip="'Ver tienda en web'"
-                @click.stop
-              >
-                <i class="pi pi-external-link text-sm"></i>
-              </a>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <a
+                  :href="`https://${row.slug}.tiendabox.co`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-gray-300 hover:text-orange-500 transition-colors"
+                  v-tooltip="'Staging (tiendabox.co)'"
+                  @click.stop
+                >
+                  <i class="pi pi-bolt text-sm"></i>
+                </a>
+                <a
+                  :href="row.domain ? `https://${row.domain}` : `https://${row.slug}.mitienda.pe`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-gray-400 hover:text-primary-600 transition-colors"
+                  v-tooltip="'Producción'"
+                  @click.stop
+                >
+                  <i class="pi pi-external-link text-sm"></i>
+                </a>
+              </div>
             </div>
           </template>
         </Column>

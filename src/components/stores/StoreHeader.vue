@@ -12,9 +12,19 @@
         <div class="flex items-start justify-between gap-4">
           <div>
             <h1 class="text-xl font-bold text-gray-900">{{ store.name }}</h1>
-            <a :href="store.url" target="_blank" class="text-sm text-primary-600 hover:underline">
-              {{ store.url }} <i class="pi pi-external-link text-xs"></i>
-            </a>
+            <div class="flex items-center gap-3">
+              <a :href="store.url" target="_blank" class="text-sm text-primary-600 hover:underline">
+                {{ store.url }} <i class="pi pi-external-link text-xs"></i>
+              </a>
+              <a
+                :href="`https://${store.slug}.tiendabox.co`"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+              >
+                <i class="pi pi-bolt text-xs"></i> Staging
+              </a>
+            </div>
           </div>
           <HealthBadge :label="classificationLabel(store.classification)" :score="store.health_score" />
         </div>
