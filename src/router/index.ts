@@ -139,6 +139,23 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/subscriptions',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'SubscriptionsList',
+        component: () => import('@/views/subscriptions/SubscriptionsListView.vue')
+      },
+      {
+        path: ':id',
+        name: 'SubscriptionDetail',
+        component: () => import('@/views/subscriptions/SubscriptionDetailView.vue')
+      }
+    ]
+  },
+  {
     path: '/plans',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

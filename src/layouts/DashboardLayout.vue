@@ -81,7 +81,9 @@ const pageTitle = computed(() => {
     PlansMatrix: 'Matriz de Planes',
     PlansList: 'Lista de Planes',
     PlanDetail: 'Detalle de Plan',
-    Investor: 'Vista Inversionistas'
+    Investor: 'Vista Inversionistas',
+    SubscriptionsList: 'Suscripciones',
+    SubscriptionDetail: 'Detalle de Suscripción'
   }
   return titles[route.name as string] || 'Dashboard'
 })
