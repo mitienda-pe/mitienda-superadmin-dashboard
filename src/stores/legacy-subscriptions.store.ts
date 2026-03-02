@@ -9,11 +9,12 @@ import { getLegacySubscriptions } from '@/api/legacy-subscriptions.api'
 
 export const useLegacySubscriptionsStore = defineStore('legacySubscriptions', () => {
   const subscriptions = ref<LegacySubscriptionItem[]>([])
-  const meta = ref<LegacyMeta>({ page: 1, total: 0, totalPages: 0, hasMore: false })
+  const meta = ref<LegacyMeta>({ page: 1, total: 0, totalPages: 0, hasMore: false, view: 'latest' })
   const filters = ref<LegacyFilters>({
     status: 'all',
     search: '',
     plan: 'all',
+    view: 'latest',
     page: 1,
     per_page: 20,
   })
@@ -39,7 +40,8 @@ export const useLegacySubscriptionsStore = defineStore('legacySubscriptions', ()
     const resetPage =
       newFilters.status !== undefined ||
       newFilters.search !== undefined ||
-      newFilters.plan !== undefined
+      newFilters.plan !== undefined ||
+      newFilters.view !== undefined
     Object.assign(filters.value, newFilters)
     if (resetPage) {
       filters.value.page = 1

@@ -15,7 +15,7 @@
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">Total</div>
             <div class="text-2xl font-bold text-gray-900 mt-1">{{ legacyStore.meta.total }}</div>
-            <div class="text-xs text-gray-400 mt-1">suscripciones legacy</div>
+            <div class="text-xs text-gray-400 mt-1">{{ legacyViewMode === 'latest' ? 'tiendas únicas' : 'registros históricos' }}</div>
           </div>
           <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">Activas</div>
@@ -66,6 +66,22 @@
               class="w-40"
               @change="applyLegacyFilters"
             />
+            <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                class="px-3 py-2 text-xs font-medium transition-colors"
+                :class="legacyViewMode === 'latest' ? 'bg-primary-50 text-primary-700' : 'bg-white text-gray-500 hover:bg-gray-50'"
+                @click="toggleLegacyView('latest')"
+              >
+                Estado actual
+              </button>
+              <button
+                class="px-3 py-2 text-xs font-medium transition-colors border-l border-gray-200"
+                :class="legacyViewMode === 'history' ? 'bg-primary-50 text-primary-700' : 'bg-white text-gray-500 hover:bg-gray-50'"
+                @click="toggleLegacyView('history')"
+              >
+                Historial
+              </button>
+            </div>
             <Button
               v-if="hasLegacyActiveFilters"
               icon="pi pi-filter-slash"
@@ -114,33 +130,28 @@
                 </router-link>
               </template>
             </Column>
-            <Column header="Plan" style="min-width: 120px">
+            <Column header="Plan" style="min-width: 100px">
               <template #body="{ data: row }">
                 <span class="text-sm text-gray-700">{{ row.plan_titulo || '-' }}</span>
               </template>
             </Column>
-            <Column header="Estado" style="width: 160px">
+            <Column header="Estado" style="width: 140px">
               <template #body="{ data: row }">
                 <LegacyStatusBadge :status="Number(row.status)" :computed-status="row.computed_status" />
               </template>
             </Column>
-            <Column header="Precio" style="width: 100px">
+            <Column header="Precio" style="width: 90px">
               <template #body="{ data: row }">
                 <span class="text-sm font-semibold text-gray-800">
                   {{ formatCurrency(Number(row.precio) || 0) }}
                 </span>
               </template>
             </Column>
-            <Column header="Período" style="width: 100px">
+            <Column header="Período" style="width: 90px">
               <template #body="{ data: row }">
                 <span class="text-sm text-gray-600">
                   {{ formatPeriod(row.periodo, row.periodo_cantidad) }}
                 </span>
-              </template>
-            </Column>
-            <Column header="Inicio" style="width: 110px">
-              <template #body="{ data: row }">
-                <span class="text-sm text-gray-600">{{ formatDate(row.fecha_inicio) }}</span>
               </template>
             </Column>
             <Column header="Vencimiento" style="width: 110px">
@@ -148,11 +159,34 @@
                 <span class="text-sm text-gray-600">{{ formatDate(row.fecha_final) }}</span>
               </template>
             </Column>
-            <Column header="MRR" style="width: 90px">
+            <Column header="MRR" style="width: 80px">
               <template #body="{ data: row }">
                 <span class="text-sm font-medium text-gray-700">
                   {{ formatCurrency(Number(row.mrr) || 0) }}
                 </span>
+              </template>
+            </Column>
+            <Column header="Renovaciones" style="width: 130px">
+              <template #body="{ data: row }">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm text-gray-600">{{ row.total_renovaciones }}</span>
+                  <span
+                    v-if="row.renovaciones_rechazadas > 0"
+                    class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700"
+                    v-tooltip="'Rechazadas'"
+                  >
+                    <i class="pi pi-times-circle text-[10px]"></i>
+                    {{ row.renovaciones_rechazadas }}
+                  </span>
+                  <span
+                    v-if="row.renovaciones_vencidas > 0"
+                    class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-700"
+                    v-tooltip="'Vencidas/Expiradas'"
+                  >
+                    <i class="pi pi-exclamation-triangle text-[10px]"></i>
+                    {{ row.renovaciones_vencidas }}
+                  </span>
+                </div>
               </template>
             </Column>
           </DataTable>
@@ -161,7 +195,7 @@
           <div v-if="legacyStore.meta.totalPages > 1" class="flex items-center justify-between px-5 py-3 border-t border-gray-100">
             <span class="text-sm text-gray-500">
               Página {{ legacyStore.meta.page }} de {{ legacyStore.meta.totalPages }}
-              ({{ legacyStore.meta.total }} registros)
+              ({{ legacyStore.meta.total }} {{ legacyViewMode === 'latest' ? 'tiendas' : 'registros' }})
             </span>
             <div class="flex gap-1">
               <Button
@@ -408,6 +442,7 @@ const activeTab = ref(0)
 const legacySearchQuery = ref('')
 const legacyStatusFilter = ref('all')
 const legacyPlanFilter = ref('all')
+const legacyViewMode = ref<'latest' | 'history'>('latest')
 
 const legacyStatusOptions = [
   { label: 'Todos', value: 'all' },
@@ -472,6 +507,12 @@ function clearLegacyFilters() {
   legacyStatusFilter.value = 'all'
   legacyPlanFilter.value = 'all'
   legacyStore.updateFilters({ search: '', status: 'all', plan: 'all', page: 1 })
+}
+
+function toggleLegacyView(view: 'latest' | 'history') {
+  if (legacyViewMode.value === view) return
+  legacyViewMode.value = view
+  legacyStore.updateFilters({ view })
 }
 
 function formatPeriod(period: string | null, qty: number | null): string {
@@ -562,7 +603,6 @@ function onTabChange(event: { index: number }) {
 }
 
 onMounted(() => {
-  // Load legacy tab by default (tab 0)
   legacyStore.fetchSubscriptions()
 })
 </script>

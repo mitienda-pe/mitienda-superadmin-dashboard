@@ -20,6 +20,7 @@ export async function getLegacySubscriptions(
   if (filters.status && filters.status !== 'all') params.status = filters.status
   if (filters.search) params.search = filters.search
   if (filters.plan && filters.plan !== 'all') params.plan = filters.plan
+  if (filters.view) params.view = filters.view
 
   const res = await api.get<LegacySubscriptionsResponse>(
     '/superadmin/billing/legacy-subscriptions',

@@ -26,12 +26,16 @@ export interface LegacySubscriptionItem {
   max_productos: number
   max_paginas: number
   max_usuarios: number
+  total_renovaciones: number
+  renovaciones_rechazadas: number
+  renovaciones_vencidas: number
 }
 
 export interface LegacyFilters {
   status: string
   search: string
   plan: string
+  view: 'latest' | 'history'
   page: number
   per_page: number
 }
@@ -41,6 +45,7 @@ export interface LegacyMeta {
   total: number
   totalPages: number
   hasMore: boolean
+  view: string
 }
 
 export interface LegacyStatusConfig {
