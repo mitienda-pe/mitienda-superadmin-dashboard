@@ -32,6 +32,7 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_barras_anuncios',
   'mod_carrito_abandonado',
   'mod_referidos',
+  'mod_fidelizacion',
 
   // Content
   'mod_paginas',
