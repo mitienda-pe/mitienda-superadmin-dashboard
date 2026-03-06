@@ -18,6 +18,9 @@ export const MIGRATED_MODULE_CODES = new Set([
   // Catalog
   'mod_productos',
   'mod_carga_productos_lote',
+  'mod_precios_producto',
+  'mod_stock_producto',
+  'mod_orden_producto',
   'mod_categorias',
   'mod_marcas',
   'mod_gammas',
