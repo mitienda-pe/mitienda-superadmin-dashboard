@@ -104,7 +104,7 @@
       </div>
 
       <!-- Tables -->
-      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div class="space-y-6">
         <!-- Ganadas table -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
