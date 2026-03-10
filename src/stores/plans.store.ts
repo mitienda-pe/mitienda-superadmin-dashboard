@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { plansApi } from '@/api/plans.api'
-import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData, MatrixData, MatrixPlanUpdate } from '@/types/plans.types'
+import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData, MatrixData, MatrixPlanUpdate, PricingPlan, PricingPlanUpdate } from '@/types/plans.types'
 
 export const usePlansStore = defineStore('plans', () => {
   const plans = ref<PlanListItem[]>([])
@@ -9,6 +9,10 @@ export const usePlansStore = defineStore('plans', () => {
   const allModules = ref<ModuleDefinition[]>([])
   const storeModulesData = ref<StoreModulesData | null>(null)
   const matrixData = ref<MatrixData | null>(null)
+  const pricingPlans = ref<PricingPlan[]>([])
+  const isPricingLoading = ref(false)
+  const isSavingPricing = ref(false)
+  const pricingError = ref<string | null>(null)
   const isLoading = ref(false)
   const isMatrixLoading = ref(false)
   const isSavingMatrix = ref(false)
@@ -130,6 +134,34 @@ export const usePlansStore = defineStore('plans', () => {
     }
   }
 
+  async function fetchPricing() {
+    isPricingLoading.value = true
+    pricingError.value = null
+    try {
+      const response = await plansApi.getPricing()
+      if (response.success && response.data) {
+        pricingPlans.value = response.data
+      }
+    } catch (e: any) {
+      pricingError.value = e.message || 'Error al cargar pricing'
+    } finally {
+      isPricingLoading.value = false
+    }
+  }
+
+  async function savePricing(plans: PricingPlanUpdate[]) {
+    isSavingPricing.value = true
+    try {
+      const response = await plansApi.updatePricing(plans)
+      if (response.success) {
+        await fetchPricing()
+      }
+      return response
+    } finally {
+      isSavingPricing.value = false
+    }
+  }
+
   return {
     plans,
     currentPlan,
@@ -150,6 +182,12 @@ export const usePlansStore = defineStore('plans', () => {
     isSavingMatrix,
     matrixError,
     fetchMatrix,
-    saveMatrix
+    saveMatrix,
+    pricingPlans,
+    isPricingLoading,
+    isSavingPricing,
+    pricingError,
+    fetchPricing,
+    savePricing
   }
 })

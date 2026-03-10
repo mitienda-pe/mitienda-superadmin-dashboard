@@ -69,6 +69,36 @@ export interface StoreModule {
   plan_enabled: boolean
 }
 
+// Pricing Table types
+export interface PlanFeature {
+  id?: number
+  text: string
+  category: string | null
+  icon: string | null
+  highlighted: boolean
+  sort_order: number
+}
+
+export interface PricingPlan {
+  id: number
+  name: string
+  max_items: number
+  max_pages: number
+  max_users: number
+  active: boolean
+  inherits_from: number | null
+  monthly_price: number | null
+  yearly_price: number | null
+  active_stores: number
+  features: PlanFeature[]
+}
+
+export interface PricingPlanUpdate {
+  id: number
+  inherits_from: number | null
+  features: Omit<PlanFeature, 'id' | 'sort_order'>[]
+}
+
 export interface StoreModulesData {
   plan_id: number | null
   plan_name: string

@@ -80,6 +80,7 @@ const pageTitle = computed(() => {
     Alerts: 'Alertas',
     PlansMatrix: 'Matriz de Planes',
     PlansList: 'Lista de Planes',
+    PlansPricing: 'Pricing Table',
     PlanDetail: 'Detalle de Plan',
     Investor: 'Vista Inversionistas',
     SubscriptionsList: 'Suscripciones',

@@ -1,6 +1,6 @@
 import apiClient from './axios'
 import type { ApiResponse } from '@/types/api.types'
-import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData, MatrixData, MatrixPlanUpdate } from '@/types/plans.types'
+import type { PlanListItem, PlanDetail, ModuleDefinition, StoreModulesData, MatrixData, MatrixPlanUpdate, PricingPlan, PricingPlanUpdate } from '@/types/plans.types'
 
 export const plansApi = {
   async getPlans(): Promise<ApiResponse<PlanListItem[]>> {
@@ -50,6 +50,16 @@ export const plansApi = {
 
   async updateMatrix(plans: MatrixPlanUpdate[]): Promise<ApiResponse> {
     const response = await apiClient.put('/superadmin/dashboard/plans/matrix', { plans })
+    return response.data
+  },
+
+  async getPricing(): Promise<ApiResponse<PricingPlan[]>> {
+    const response = await apiClient.get('/superadmin/dashboard/plans/pricing')
+    return response.data
+  },
+
+  async updatePricing(plans: PricingPlanUpdate[]): Promise<ApiResponse> {
+    const response = await apiClient.put('/superadmin/dashboard/plans/pricing', { plans })
     return response.data
   }
 }

@@ -22,6 +22,11 @@
             Vista lista
           </router-link>
           <span class="text-gray-300">|</span>
+          <router-link to="/plans/pricing" class="text-sm text-gray-500 hover:text-primary-600 transition-colors">
+            <i class="pi pi-tags text-xs mr-1"></i>
+            Pricing Table
+          </router-link>
+          <span class="text-gray-300">|</span>
           <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
             <Checkbox v-model="showOnlyMigrated" :binary="true" />
             <span>Solo modulos migrados</span>
