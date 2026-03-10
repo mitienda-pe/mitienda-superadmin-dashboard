@@ -187,6 +187,8 @@
             class="p-datatable-sm"
             :paginator="store.data.perdidas.length > 10"
             :rows="10"
+            sortField="ltv"
+            :sortOrder="-1"
           >
             <Column header="Tienda" style="min-width: 180px">
               <template #body="{ data: row }">
@@ -221,7 +223,7 @@
                 </span>
               </template>
             </Column>
-            <Column header="LTV" style="min-width: 110px">
+            <Column field="ltv" header="LTV" :sortable="true" style="min-width: 110px">
               <template #body="{ data: row }">
                 <div>
                   <span class="font-medium text-gray-900">{{ formatCurrency(row.ltv) }}</span>
