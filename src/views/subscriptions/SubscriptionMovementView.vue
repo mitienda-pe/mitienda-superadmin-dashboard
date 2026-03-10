@@ -169,12 +169,17 @@
 
         <!-- Perdidas table -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <i class="pi pi-arrow-down-right text-red-600"></i>
-            <h2 class="text-lg font-semibold text-gray-900">
-              Perdidas
-              <span class="text-sm font-normal text-gray-500">({{ store.data.perdidas.length }})</span>
-            </h2>
+          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="pi pi-arrow-down-right text-red-600"></i>
+              <h2 class="text-lg font-semibold text-gray-900">
+                Perdidas
+                <span class="text-sm font-normal text-gray-500">({{ store.data.perdidas.length }})</span>
+              </h2>
+            </div>
+            <div v-if="totalLtvLost > 0" class="text-sm text-gray-500">
+              LTV total perdido: <span class="font-semibold text-red-600">{{ formatCurrency(totalLtvLost) }}</span>
+            </div>
           </div>
           <DataTable
             :value="store.data.perdidas"
@@ -214,6 +219,14 @@
                 <span class="text-sm text-gray-600">
                   {{ row.antiguedad != null ? row.antiguedad + ' a.' : '-' }}
                 </span>
+              </template>
+            </Column>
+            <Column header="LTV" style="min-width: 110px">
+              <template #body="{ data: row }">
+                <div>
+                  <span class="font-medium text-gray-900">{{ formatCurrency(row.ltv) }}</span>
+                  <span class="text-xs text-gray-400 ml-1">({{ row.pagos }} pagos)</span>
+                </div>
               </template>
             </Column>
             <template #empty>
@@ -262,6 +275,10 @@ const selectedMonth = ref(monthOptions[0].value)
 const isCurrentOrFutureMonth = computed(() => {
   return selectedMonth.value === monthOptions[0].value
 })
+
+const totalLtvLost = computed(() =>
+  (store.data?.perdidas ?? []).reduce((sum, s) => sum + (s.ltv || 0), 0)
+)
 
 const kpis = computed(() => store.data?.kpis ?? {
   activas_inicio: 0,

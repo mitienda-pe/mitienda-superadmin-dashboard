@@ -27,6 +27,8 @@ export interface LostStore {
   precio: number
   fecha_fin: string
   antiguedad: number | null
+  ltv: number
+  pagos: number
 }
 
 export interface SubscriptionMovementData {
