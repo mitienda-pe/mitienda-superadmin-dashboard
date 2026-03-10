@@ -127,13 +127,24 @@
               <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Caracteristicas propias
               </label>
-              <button
-                class="text-xs text-primary-600 hover:text-primary-800"
-                @click="addFeature(plan.id)"
-              >
-                <i class="pi pi-plus text-xs mr-0.5"></i>
-                Agregar
-              </button>
+              <div class="flex items-center gap-2">
+                <button
+                  v-if="plansStore.matrixData"
+                  class="text-xs text-gray-500 hover:text-primary-600"
+                  @click="populateFromModules(plan.id)"
+                  title="Pre-poblar desde modulos asignados en la Matriz"
+                >
+                  <i class="pi pi-bolt text-xs mr-0.5"></i>
+                  Desde modulos
+                </button>
+                <button
+                  class="text-xs text-primary-600 hover:text-primary-800"
+                  @click="addFeature(plan.id)"
+                >
+                  <i class="pi pi-plus text-xs mr-0.5"></i>
+                  Agregar
+                </button>
+              </div>
             </div>
 
             <draggable
@@ -402,6 +413,43 @@ function removeFeature(planId: number, index: number) {
   form.value[planId].features.splice(index, 1)
 }
 
+function populateFromModules(planId: number) {
+  const matrix = plansStore.matrixData
+  if (!matrix) return
+
+  const matrixPlan = matrix.plans.find(p => p.id === planId)
+  if (!matrixPlan) return
+
+  const existingTexts = new Set(
+    form.value[planId].features.map(f => f.text.toLowerCase().trim())
+  )
+
+  const assignedModules = matrix.modules.filter(m =>
+    matrixPlan.module_ids.includes(m.id)
+  )
+
+  let added = 0
+  for (const mod of assignedModules) {
+    const normalizedName = mod.name.toLowerCase().trim()
+    if (!existingTexts.has(normalizedName)) {
+      form.value[planId].features.push({
+        key: generateKey(),
+        text: mod.name,
+        category: mod.group || '',
+        highlighted: false
+      })
+      existingTexts.add(normalizedName)
+      added++
+    }
+  }
+
+  if (added > 0) {
+    toast.add({ severity: 'info', summary: 'Modulos importados', detail: `${added} modulos agregados como caracteristicas`, life: 3000 })
+  } else {
+    toast.add({ severity: 'warn', summary: 'Sin nuevos', detail: 'Todos los modulos ya estan como caracteristicas', life: 3000 })
+  }
+}
+
 function inheritOptions(planId: number) {
   const options: { label: string; value: number | null }[] = [
     { label: 'Ninguno', value: null }
@@ -573,7 +621,10 @@ function handleBeforeUnload(e: BeforeUnloadEvent) {
 
 onMounted(async () => {
   window.addEventListener('beforeunload', handleBeforeUnload)
-  await plansStore.fetchPricing()
+  await Promise.all([
+    plansStore.fetchPricing(),
+    plansStore.fetchMatrix()
+  ])
   initForm()
 })
 
