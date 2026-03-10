@@ -34,6 +34,7 @@ const navItems = [
   { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
   { path: '/billing/plan-sales', label: 'Ventas Planes', icon: 'pi pi-receipt' },
   { path: '/subscriptions', label: 'Suscripciones', icon: 'pi pi-sync' },
+  { path: '/subscriptions/movement', label: 'Mov. Suscripciones', icon: 'pi pi-chart-line' },
   { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit' },
   { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell', badge: '' },
   { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },
@@ -42,6 +43,12 @@ const navItems = [
 ]
 
 function isActive(path: string): boolean {
-  return route.path === path || route.path.startsWith(path + '/')
+  if (route.path === path) return true
+  // Avoid parent path matching when a more specific nav item exists
+  const hasMoreSpecificMatch = navItems.some(
+    item => item.path !== path && item.path.startsWith(path + '/') && (route.path === item.path || route.path.startsWith(item.path + '/'))
+  )
+  if (hasMoreSpecificMatch) return false
+  return route.path.startsWith(path + '/')
 }
 </script>
