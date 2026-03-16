@@ -151,7 +151,7 @@
             <i class="pi pi-shopping-cart text-2xl text-blue-400"></i>
           </div>
           <p class="text-xs text-blue-600 mt-2">
-            {{ formatNumber(kpis.renovadas) }} renovadas + {{ formatNumber(kpis.ganadas) }} nuevas
+            {{ formatNumber(kpis.renovadas) }} renovadas + {{ formatNumber(kpis.ganadas) }} ganadas
           </p>
         </div>
       </div>
