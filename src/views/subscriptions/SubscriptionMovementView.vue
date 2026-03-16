@@ -40,8 +40,8 @@
           <div class="h-8 bg-gray-200 rounded w-1/2"></div>
         </div>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div v-for="n in 2" :key="'r'+n" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div v-for="n in 3" :key="'r'+n" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
           <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
           <div class="h-8 bg-gray-200 rounded w-1/2"></div>
         </div>
@@ -112,7 +112,7 @@
       </div>
 
       <!-- Renewal KPI Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Por renovar -->
         <div class="bg-white rounded-xl border border-amber-200 p-5 bg-amber-50/30">
           <div class="flex items-center justify-between">
@@ -138,6 +138,20 @@
             {{ kpis.por_renovar > 0
               ? Math.round((kpis.renovadas / kpis.por_renovar) * 100) + '% tasa de renovacion'
               : 'Sin planes por renovar' }}
+          </p>
+        </div>
+
+        <!-- Total ventas del mes -->
+        <div class="bg-white rounded-xl border border-blue-200 p-5 bg-blue-50/30">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-blue-700 font-medium">Total ventas del mes</p>
+              <p class="text-2xl font-bold text-blue-700 mt-1">{{ formatNumber(kpis.renovadas + kpis.ganadas) }}</p>
+            </div>
+            <i class="pi pi-shopping-cart text-2xl text-blue-400"></i>
+          </div>
+          <p class="text-xs text-blue-600 mt-2">
+            {{ formatNumber(kpis.renovadas) }} renovadas + {{ formatNumber(kpis.ganadas) }} nuevas
           </p>
         </div>
       </div>
