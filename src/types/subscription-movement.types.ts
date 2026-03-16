@@ -4,6 +4,8 @@ export interface SubscriptionMovementKPIs {
   ganadas: number
   perdidas: number
   variacion: number
+  por_renovar: number
+  renovadas: number
 }
 
 export type GainedStoreType = 'nueva' | 'conversion' | 'reactivacion'

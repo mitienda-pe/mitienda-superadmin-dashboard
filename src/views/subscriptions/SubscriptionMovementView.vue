@@ -33,10 +33,18 @@
     </div>
 
     <!-- Loading state -->
-    <div v-if="store.isLoading" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-      <div v-for="n in 5" :key="n" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
-        <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
-        <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+    <div v-if="store.isLoading" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div v-for="n in 5" :key="n" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+          <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+          <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div v-for="n in 2" :key="'r'+n" class="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
+          <div class="h-4 bg-gray-200 rounded w-2/3 mb-3"></div>
+          <div class="h-8 bg-gray-200 rounded w-1/2"></div>
+        </div>
       </div>
     </div>
 
@@ -100,6 +108,37 @@
               {{ kpis.variacion >= 0 ? '+' : '' }}{{ formatNumber(kpis.variacion) }}
             </p>
           </div>
+        </div>
+      </div>
+
+      <!-- Renewal KPI Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Por renovar -->
+        <div class="bg-white rounded-xl border border-amber-200 p-5 bg-amber-50/30">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-amber-700 font-medium">Suscripciones a renovar</p>
+              <p class="text-2xl font-bold text-amber-700 mt-1">{{ formatNumber(kpis.por_renovar) }}</p>
+            </div>
+            <i class="pi pi-calendar-clock text-2xl text-amber-400"></i>
+          </div>
+          <p class="text-xs text-amber-600 mt-2">Planes que vencen en el mes</p>
+        </div>
+
+        <!-- Renovadas -->
+        <div class="bg-white rounded-xl border border-teal-200 p-5 bg-teal-50/30">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm text-teal-700 font-medium">Suscripciones renovadas</p>
+              <p class="text-2xl font-bold text-teal-700 mt-1">{{ formatNumber(kpis.renovadas) }}</p>
+            </div>
+            <i class="pi pi-check-circle text-2xl text-teal-400"></i>
+          </div>
+          <p class="text-xs text-teal-600 mt-2">
+            {{ kpis.por_renovar > 0
+              ? Math.round((kpis.renovadas / kpis.por_renovar) * 100) + '% tasa de renovacion'
+              : 'Sin planes por renovar' }}
+          </p>
         </div>
       </div>
 
@@ -287,7 +326,9 @@ const kpis = computed(() => store.data?.kpis ?? {
   activas_cierre: 0,
   ganadas: 0,
   perdidas: 0,
-  variacion: 0
+  variacion: 0,
+  por_renovar: 0,
+  renovadas: 0
 })
 
 function prevMonth() {
