@@ -53,6 +53,11 @@
           <label class="block text-sm font-medium text-gray-600 mb-1">Grupo</label>
           <InputNumber v-model="configForm.group_id" :min="0" class="w-full" />
         </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-600 mb-1">Umami Website ID</label>
+          <InputText v-model="configForm.umami_website_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full font-mono text-sm" />
+          <p class="text-xs text-gray-400 mt-1">UUID del website en Umami Analytics. Dejar vacío si no está configurado.</p>
+        </div>
         <div class="flex items-center gap-6 md:col-span-2 flex-wrap">
           <div class="flex items-center gap-2">
             <InputSwitch v-model="configForm.ssl_enabled" />
@@ -413,7 +418,8 @@ const configForm = reactive({
   domain_verified: props.config.domain_verified,
   fb_integration: props.config.fb_integration,
   payment_alert: props.config.payment_alert,
-  group_id: props.config.group_id
+  group_id: props.config.group_id,
+  umami_website_id: props.config.umami_website_id || ''
 })
 
 // Reactive form state for plan
@@ -437,6 +443,7 @@ watch(() => props.config, (c) => {
   configForm.fb_integration = c.fb_integration
   configForm.payment_alert = c.payment_alert
   configForm.group_id = c.group_id
+  configForm.umami_website_id = c.umami_website_id || ''
 }, { deep: true })
 
 watch(() => props.plan, (p) => {
@@ -480,7 +487,8 @@ async function saveConfig() {
       domain_verified: configForm.domain_verified,
       fb_integration: configForm.fb_integration,
       payment_alert: configForm.payment_alert,
-      group_id: configForm.group_id
+      group_id: configForm.group_id,
+      umami_website_id: configForm.umami_website_id || null
     })
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Configuración actualizada', life: 3000 })
   } catch {

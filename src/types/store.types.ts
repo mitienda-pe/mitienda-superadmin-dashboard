@@ -79,6 +79,7 @@ export interface StoreConfig {
   group_id: number
   fb_integration: boolean
   payment_alert: boolean
+  umami_website_id: string | null
 }
 
 export type StoreConfigUpdate = Partial<StoreConfig>
