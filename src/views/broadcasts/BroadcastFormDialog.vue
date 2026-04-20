@@ -402,3 +402,24 @@ const severityBadgeClasses = computed(() => ({
   danger: 'bg-red-100 text-red-800'
 })[form.value.severity])
 </script>
+
+<style scoped>
+:deep(.p-radiobutton .p-radiobutton-box) {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+:deep(.p-radiobutton:hover .p-radiobutton-box) {
+  border-color: #00b2a6;
+}
+:deep(.p-radiobutton.p-highlight .p-radiobutton-box),
+:deep(.p-radiobutton .p-radiobutton-box.p-highlight) {
+  border-color: #00b2a6;
+  background: #00b2a6;
+}
+:deep(.p-radiobutton .p-radiobutton-box .p-radiobutton-icon) {
+  background: #fff;
+}
+</style>
