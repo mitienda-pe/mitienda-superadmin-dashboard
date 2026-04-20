@@ -200,6 +200,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/broadcasts',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'Broadcasts',
+        component: () => import('@/views/broadcasts/BroadcastsListView.vue')
+      }
+    ]
+  },
+  {
     path: '/access-denied',
     name: 'AccessDenied',
     component: () => import('@/views/AccessDeniedView.vue'),
