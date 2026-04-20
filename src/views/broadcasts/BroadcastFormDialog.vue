@@ -52,7 +52,11 @@
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje *</label>
-          <Textarea v-model="form.body" rows="4" class="w-full" autoResize />
+          <Textarea v-model="form.body" rows="5" class="w-full font-mono text-sm" autoResize />
+          <p class="text-xs text-gray-500 mt-1.5">
+            Markdown soportado: <code>**negrita**</code>, <code>*cursiva*</code>, listas con <code>- item</code>,
+            enlaces <code>[texto](url)</code>, <code>`código`</code>.
+          </p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
@@ -155,7 +159,10 @@
             <i :class="severityIcon" class="text-base shrink-0" />
             <div class="flex-1 min-w-0">
               <div class="font-semibold">{{ form.title || 'Título del anuncio' }}</div>
-              <div class="opacity-90">{{ form.body || 'Contenido del anuncio' }}</div>
+              <div
+                class="opacity-90 broadcast-preview-bar"
+                v-html="form.body ? renderInlineMd(form.body) : 'Contenido del anuncio'"
+              />
             </div>
             <a v-if="form.cta_label && form.cta_url" class="shrink-0 px-3 py-1 bg-white/20 rounded text-white text-xs font-medium">
               {{ form.cta_label }}
@@ -173,7 +180,10 @@
               {{ severityLabel }}
             </div>
             <h3 class="text-lg font-semibold text-gray-900">{{ form.title || 'Título del modal' }}</h3>
-            <p class="text-sm text-gray-600 mt-2 whitespace-pre-line">{{ form.body || 'Contenido del modal' }}</p>
+            <div
+              class="text-sm text-gray-600 mt-2 broadcast-preview-modal"
+              v-html="form.body ? renderBlockMd(form.body) : 'Contenido del modal'"
+            />
             <div class="mt-5 flex items-center justify-end gap-2">
               <Button v-if="form.is_dismissible" label="Cerrar" severity="secondary" text />
               <Button v-if="form.cta_label" :label="form.cta_label || 'Acción'" />
@@ -216,6 +226,13 @@ import AutoComplete from 'primevue/autocomplete'
 import { getStoresList } from '@/api/stores.api'
 import type { StoreListItem } from '@/types/store.types'
 import type { Broadcast, BroadcastFormInput } from '@/types/broadcast.types'
+import {
+  renderBroadcastMarkdownInline,
+  renderBroadcastMarkdownBlock
+} from '@/utils/broadcast-markdown'
+
+const renderInlineMd = renderBroadcastMarkdownInline
+const renderBlockMd = renderBroadcastMarkdownBlock
 
 interface Props {
   visible: boolean
@@ -421,5 +438,37 @@ const severityBadgeClasses = computed(() => ({
 }
 :deep(.p-radiobutton .p-radiobutton-box .p-radiobutton-icon) {
   background: #fff;
+}
+
+/* Preview bar (markdown inline) */
+.broadcast-preview-bar :deep(a) { text-decoration: underline; }
+.broadcast-preview-bar :deep(code) {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 0.85em;
+}
+
+/* Preview modal (markdown block) */
+.broadcast-preview-modal :deep(p) { margin: 0 0 0.75rem; }
+.broadcast-preview-modal :deep(p:last-child) { margin-bottom: 0; }
+.broadcast-preview-modal :deep(ul),
+.broadcast-preview-modal :deep(ol) { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+.broadcast-preview-modal :deep(ul) { list-style: disc; }
+.broadcast-preview-modal :deep(ol) { list-style: decimal; }
+.broadcast-preview-modal :deep(li) { margin: 0.15rem 0; }
+.broadcast-preview-modal :deep(strong) { font-weight: 600; color: #111827; }
+.broadcast-preview-modal :deep(a) { color: #00b2a6; text-decoration: underline; }
+.broadcast-preview-modal :deep(code) {
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.broadcast-preview-modal :deep(blockquote) {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 0.75rem;
+  color: #6b7280;
+  margin: 0 0 0.75rem;
 }
 </style>
