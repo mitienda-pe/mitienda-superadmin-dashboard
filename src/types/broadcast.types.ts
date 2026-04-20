@@ -21,6 +21,7 @@ export interface Broadcast {
   activo: boolean | 0 | 1
   created_at: string | null
   updated_at: string | null
+  dismissals_count?: number
 }
 
 export interface BroadcastFormInput {

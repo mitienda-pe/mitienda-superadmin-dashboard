@@ -5,7 +5,8 @@ import {
   getBroadcast,
   createBroadcast,
   updateBroadcast,
-  deleteBroadcast
+  deleteBroadcast,
+  resetBroadcastDismissals
 } from '@/api/broadcasts.api'
 import type { Broadcast, BroadcastFormInput, BroadcastListFilters } from '@/types/broadcast.types'
 
@@ -64,6 +65,12 @@ export const useBroadcastsStore = defineStore('broadcasts', () => {
     return res
   }
 
+  async function resetDismissals(id: number) {
+    const res = await resetBroadcastDismissals(id)
+    if (res.success) await fetchAll()
+    return res
+  }
+
   function setFilters(partial: Partial<BroadcastListFilters>) {
     filters.value = { ...filters.value, ...partial }
   }
@@ -80,6 +87,7 @@ export const useBroadcastsStore = defineStore('broadcasts', () => {
     create,
     update,
     remove,
+    resetDismissals,
     setFilters
   }
 })

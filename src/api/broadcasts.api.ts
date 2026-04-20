@@ -36,3 +36,12 @@ export async function deleteBroadcast(id: number) {
   const res = await api.delete<ApiMsg>(`/superadmin/broadcasts/${id}`)
   return res.data
 }
+
+export async function resetBroadcastDismissals(id: number) {
+  const res = await api.post<{
+    success: boolean
+    data: { dismissals_cleared: number }
+    message: string
+  }>(`/superadmin/broadcasts/${id}/reset-dismissals`)
+  return res.data
+}

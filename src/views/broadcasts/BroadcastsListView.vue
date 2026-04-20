@@ -114,10 +114,27 @@
             <i v-else class="pi pi-lock text-orange-600" title="Bloqueante" />
           </template>
         </Column>
-        <Column header="" style="width: 130px">
+        <Column header="Cerrados">
           <template #body="{ data }">
-            <Button icon="pi pi-pencil" text rounded @click="openEdit(data)" />
-            <Button icon="pi pi-trash" severity="danger" text rounded @click="confirmDelete(data)" />
+            <span class="inline-flex items-center gap-1 text-xs text-gray-600">
+              <i class="pi pi-eye-slash" />
+              {{ data.dismissals_count ?? 0 }}
+            </span>
+          </template>
+        </Column>
+        <Column header="" style="width: 170px">
+          <template #body="{ data }">
+            <Button icon="pi pi-pencil" text rounded v-tooltip.top="'Editar'" @click="openEdit(data)" />
+            <Button
+              icon="pi pi-refresh"
+              text
+              rounded
+              severity="info"
+              v-tooltip.top="'Resetear vistas (volver a mostrar a todos)'"
+              :disabled="!(data.dismissals_count ?? 0)"
+              @click="confirmReset(data)"
+            />
+            <Button icon="pi pi-trash" severity="danger" text rounded v-tooltip.top="'Eliminar'" @click="confirmDelete(data)" />
           </template>
         </Column>
       </DataTable>
@@ -144,6 +161,27 @@
         <Button label="Eliminar" severity="danger" icon="pi pi-trash" :loading="isDeleting" @click="handleDelete" />
       </template>
     </Dialog>
+
+    <Dialog
+      v-model:visible="showResetDialog"
+      header="Resetear vistas"
+      :modal="true"
+      :style="{ width: '480px' }"
+    >
+      <div class="space-y-3 text-gray-700">
+        <p>
+          Volver a mostrar <strong>{{ resetTarget?.title }}</strong> a todos los usuarios que ya lo habían cerrado.
+        </p>
+        <p class="text-sm text-gray-500">
+          Se borrarán <strong>{{ resetTarget?.dismissals_count ?? 0 }}</strong> registros de cierre.
+          Los usuarios verán de nuevo el mensaje en su próximo poll (hasta 5 min) o al recargar.
+        </p>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" severity="secondary" text @click="showResetDialog = false" />
+        <Button label="Resetear" severity="info" icon="pi pi-refresh" :loading="isResetting" @click="handleReset" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -156,17 +194,22 @@ import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
+import { useToast } from 'primevue/usetoast'
 import { useBroadcastsStore } from '@/stores/broadcasts.store'
 import type { Broadcast, BroadcastFormInput, BroadcastSeverity } from '@/types/broadcast.types'
 import BroadcastFormDialog from './BroadcastFormDialog.vue'
 
 const store = useBroadcastsStore()
+const toast = useToast()
 
 const showForm = ref(false)
 const editingRecord = ref<Broadcast | null>(null)
 const showDeleteDialog = ref(false)
 const deleteTarget = ref<Broadcast | null>(null)
 const isDeleting = ref(false)
+const showResetDialog = ref(false)
+const resetTarget = ref<Broadcast | null>(null)
+const isResetting = ref(false)
 
 const scopeOptions = [
   { label: 'Todos', value: 'all' },
@@ -202,6 +245,10 @@ function confirmDelete(record: Broadcast) {
   deleteTarget.value = record
   showDeleteDialog.value = true
 }
+function confirmReset(record: Broadcast) {
+  resetTarget.value = record
+  showResetDialog.value = true
+}
 
 async function handleSave(payload: BroadcastFormInput) {
   if (editingRecord.value) {
@@ -222,6 +269,33 @@ async function handleDelete() {
   } finally {
     isDeleting.value = false
     deleteTarget.value = null
+  }
+}
+
+async function handleReset() {
+  if (!resetTarget.value) return
+  isResetting.value = true
+  try {
+    const res = await store.resetDismissals(resetTarget.value.id)
+    if (res.success) {
+      toast.add({
+        severity: 'success',
+        summary: 'Vistas reseteadas',
+        detail: res.message,
+        life: 4000
+      })
+      showResetDialog.value = false
+    }
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error al resetear',
+      detail: e?.response?.data?.message || e?.message || 'No se pudo resetear',
+      life: 5000
+    })
+  } finally {
+    isResetting.value = false
+    resetTarget.value = null
   }
 }
 
