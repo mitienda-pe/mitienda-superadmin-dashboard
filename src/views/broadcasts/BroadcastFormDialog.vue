@@ -3,20 +3,26 @@
     :visible="visible"
     :header="isEdit ? 'Editar broadcast' : 'Nuevo broadcast'"
     :modal="true"
-    :style="{ width: '900px' }"
+    :style="{ width: '960px' }"
+    :pt="{
+      root: { class: 'broadcast-form-dialog' },
+      header: { class: 'px-8 pt-6 pb-4' },
+      content: { class: 'px-8 pb-6' },
+      footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100' }
+    }"
     @update:visible="$emit('update:visible', $event)"
   >
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8 pt-2">
       <!-- Formulario -->
-      <div class="space-y-4">
+      <div class="space-y-5">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Alcance</label>
-          <div class="flex items-center gap-3">
-            <label class="inline-flex items-center gap-2 text-sm">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Alcance</label>
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
               <RadioButton v-model="scopeLocal" inputId="scope-global" value="global" />
               <span>Global (todas las tiendas)</span>
             </label>
-            <label class="inline-flex items-center gap-2 text-sm">
+            <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
               <RadioButton v-model="scopeLocal" inputId="scope-tenant" value="tenant" />
               <span>Tienda específica</span>
             </label>
@@ -24,56 +30,57 @@
         </div>
 
         <div v-if="scopeLocal === 'tenant'">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Tienda</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Tienda</label>
           <AutoComplete
             v-model="selectedStore"
             :suggestions="storeSuggestions"
             optionLabel="name"
             placeholder="Buscar tienda por nombre..."
             class="w-full"
+            inputClass="w-full"
             @complete="searchStoresHandler"
           />
-          <p v-if="selectedStore?.id" class="text-xs text-gray-500 mt-1">
+          <p v-if="selectedStore?.id" class="text-xs text-gray-500 mt-1.5">
             ID: {{ selectedStore.id }}
           </p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Título *</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Título *</label>
           <InputText v-model="form.title" maxlength="200" class="w-full" />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Mensaje *</label>
-          <Textarea v-model="form.body" rows="4" class="w-full" />
+          <label class="block text-sm font-medium text-gray-700 mb-2">Mensaje *</label>
+          <Textarea v-model="form.body" rows="4" class="w-full" autoResize />
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo *</label>
-            <div class="flex items-center gap-3">
-              <label class="inline-flex items-center gap-2 text-sm">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo *</label>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <RadioButton v-model="form.placement" inputId="pl-bar" value="bar" />
                 <span>Barra</span>
               </label>
-              <label class="inline-flex items-center gap-2 text-sm">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <RadioButton v-model="form.placement" inputId="pl-modal" value="modal" />
                 <span>Modal</span>
               </label>
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Severidad *</label>
-            <div class="flex items-center gap-3">
-              <label class="inline-flex items-center gap-2 text-sm">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Severidad *</label>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <RadioButton v-model="form.severity" inputId="sv-info" value="info" />
                 <span>Anuncio</span>
               </label>
-              <label class="inline-flex items-center gap-2 text-sm">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <RadioButton v-model="form.severity" inputId="sv-warning" value="warning" />
                 <span>Warning</span>
               </label>
-              <label class="inline-flex items-center gap-2 text-sm">
+              <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
                 <RadioButton v-model="form.severity" inputId="sv-danger" value="danger" />
                 <span>Danger</span>
               </label>
@@ -81,9 +88,9 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Publicación *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Publicación *</label>
             <Calendar
               v-model="publishedAtDate"
               showTime
@@ -93,7 +100,7 @@
             />
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Expiración *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Expiración *</label>
             <Calendar
               v-model="expiresAtDate"
               showTime
@@ -104,32 +111,35 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
-          <InputSwitch v-model="form.is_dismissible" inputId="switch-dismiss" />
-          <label for="switch-dismiss" class="text-sm text-gray-700">
-            Cerrable por el usuario
-          </label>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+          <div class="flex items-center gap-3">
+            <InputSwitch v-model="form.is_dismissible" inputId="switch-dismiss" />
+            <label for="switch-dismiss" class="text-sm text-gray-700 cursor-pointer">
+              Cerrable por el usuario
+            </label>
+          </div>
+          <p v-if="!form.is_dismissible" class="text-xs text-orange-600 flex items-center gap-1">
+            <i class="pi pi-lock" />
+            El mensaje será bloqueante hasta su fecha de expiración.
+          </p>
         </div>
-        <p v-if="!form.is_dismissible" class="text-xs text-orange-600 -mt-2">
-          El mensaje será bloqueante hasta su fecha de expiración.
-        </p>
 
-        <div class="border-t border-gray-200 pt-4">
-          <p class="text-sm font-medium text-gray-700 mb-2">CTA (opcional)</p>
-          <div class="grid grid-cols-2 gap-4">
+        <div class="border-t border-gray-200 pt-5 space-y-3">
+          <p class="text-sm font-medium text-gray-700">CTA (opcional)</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <InputText v-model="form.cta_label" placeholder="Texto del botón" maxlength="100" class="w-full" />
             <InputText v-model="form.cta_url" placeholder="https://..." maxlength="500" class="w-full" />
           </div>
         </div>
 
-        <div v-if="form.placement === 'modal'" class="border-t border-gray-200 pt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Imagen (URL)</label>
+        <div v-if="form.placement === 'modal'" class="border-t border-gray-200 pt-5 space-y-2">
+          <label class="block text-sm font-medium text-gray-700">Imagen (URL)</label>
           <InputText v-model="form.image_url" placeholder="https://..." maxlength="500" class="w-full" />
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3 pt-2 border-t border-gray-200">
           <InputSwitch v-model="form.activo" inputId="switch-activo" />
-          <label for="switch-activo" class="text-sm text-gray-700">Activo</label>
+          <label for="switch-activo" class="text-sm text-gray-700 cursor-pointer">Activo</label>
         </div>
 
         <div v-if="validationError" class="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm p-3">
@@ -138,38 +148,38 @@
       </div>
 
       <!-- Preview -->
-      <div class="space-y-3">
+      <div class="space-y-3 md:sticky md:top-0 md:self-start">
         <p class="text-sm font-medium text-gray-700">Vista previa</p>
-        <div v-if="form.placement === 'bar'" class="rounded-lg overflow-hidden border border-gray-200">
+        <div v-if="form.placement === 'bar'" class="rounded-lg overflow-hidden border border-gray-200 shadow-sm">
           <div :class="['px-4 py-3 flex items-center gap-3 text-sm', barClasses]">
-            <i :class="severityIcon" />
-            <div class="flex-1">
+            <i :class="severityIcon" class="text-base shrink-0" />
+            <div class="flex-1 min-w-0">
               <div class="font-semibold">{{ form.title || 'Título del anuncio' }}</div>
               <div class="opacity-90">{{ form.body || 'Contenido del anuncio' }}</div>
             </div>
-            <a v-if="form.cta_label && form.cta_url" class="px-3 py-1 bg-white/20 rounded text-white text-xs font-medium">
+            <a v-if="form.cta_label && form.cta_url" class="shrink-0 px-3 py-1 bg-white/20 rounded text-white text-xs font-medium">
               {{ form.cta_label }}
             </a>
-            <i v-if="form.is_dismissible" class="pi pi-times opacity-70" />
-            <i v-else class="pi pi-lock opacity-70" title="Bloqueante" />
+            <i v-if="form.is_dismissible" class="pi pi-times opacity-70 shrink-0" />
+            <i v-else class="pi pi-lock opacity-70 shrink-0" title="Bloqueante" />
           </div>
         </div>
 
-        <div v-else class="rounded-lg overflow-hidden border border-gray-200 shadow-sm">
+        <div v-else class="rounded-lg overflow-hidden border border-gray-200 shadow-sm bg-white">
           <img v-if="form.image_url" :src="form.image_url" class="w-full max-h-48 object-cover" />
-          <div class="p-4 bg-white">
-            <div :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium mb-2', severityBadgeClasses]">
+          <div class="p-5">
+            <div :class="['inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium mb-3', severityBadgeClasses]">
               <i :class="severityIcon" />
               {{ severityLabel }}
             </div>
             <h3 class="text-lg font-semibold text-gray-900">{{ form.title || 'Título del modal' }}</h3>
             <p class="text-sm text-gray-600 mt-2 whitespace-pre-line">{{ form.body || 'Contenido del modal' }}</p>
-            <div class="mt-4 flex items-center justify-end gap-2">
+            <div class="mt-5 flex items-center justify-end gap-2">
               <Button v-if="form.is_dismissible" label="Cerrar" severity="secondary" text />
               <Button v-if="form.cta_label" :label="form.cta_label || 'Acción'" />
             </div>
-            <p v-if="!form.is_dismissible" class="text-xs text-orange-600 mt-3">
-              <i class="pi pi-lock mr-1" /> Mensaje bloqueante — el usuario no podrá cerrarlo.
+            <p v-if="!form.is_dismissible" class="text-xs text-orange-600 mt-4 flex items-center gap-1">
+              <i class="pi pi-lock" /> Mensaje bloqueante — el usuario no podrá cerrarlo.
             </p>
           </div>
         </div>
