@@ -200,6 +200,23 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/complaints',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'ComplaintsList',
+        component: () => import('@/views/complaints/ComplaintsListView.vue')
+      },
+      {
+        path: ':id',
+        name: 'ComplaintDetail',
+        component: () => import('@/views/complaints/ComplaintDetailView.vue')
+      }
+    ]
+  },
+  {
     path: '/broadcasts',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

@@ -40,7 +40,8 @@ const navItems = [
   { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },
   { path: '/investor', label: 'Inversionistas', icon: 'pi pi-briefcase' },
   { path: '/mcp-tokens', label: 'MCP Tokens', icon: 'pi pi-key' },
-  { path: '/broadcasts', label: 'Avisos Backoffice', icon: 'pi pi-megaphone' }
+  { path: '/broadcasts', label: 'Avisos Backoffice', icon: 'pi pi-megaphone' },
+  { path: '/complaints', label: 'Reclamos', icon: 'pi pi-flag' }
 ]
 
 function isActive(path: string): boolean {

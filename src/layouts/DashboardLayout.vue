@@ -84,7 +84,9 @@ const pageTitle = computed(() => {
     PlanDetail: 'Detalle de Plan',
     Investor: 'Vista Inversionistas',
     SubscriptionsList: 'Suscripciones',
-    SubscriptionDetail: 'Detalle de Suscripción'
+    SubscriptionDetail: 'Detalle de Suscripción',
+    ComplaintsList: 'Libro de Reclamaciones',
+    ComplaintDetail: 'Detalle del Reclamo'
   }
   return titles[route.name as string] || 'Dashboard'
 })
