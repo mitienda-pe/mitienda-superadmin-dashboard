@@ -273,27 +273,37 @@ onMounted(loadCatalog)
     </section>
 
     <!-- Dialog: asignar plugin -->
-    <Dialog v-model:visible="showAssignDialog" header="Asignar plugin a tienda" modal :style="{ width: '40rem' }">
-      <div class="space-y-3">
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">Plugin</span>
+    <Dialog
+      v-model:visible="showAssignDialog"
+      header="Asignar plugin a tienda"
+      modal
+      :style="{ width: '40rem' }"
+      :pt="{
+        header: { class: 'px-8 pt-6 pb-4' },
+        content: { class: 'px-8 pb-6' },
+        footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100 flex justify-end gap-2' }
+      }"
+    >
+      <div class="space-y-5 pt-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Plugin</label>
           <select v-model="assignForm.plugin_id" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
             <option v-for="opt in pluginOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
           </select>
-        </label>
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">producto_id (opcional)</span>
-          <InputNumber v-model="assignForm.producto_id" :useGrouping="false" class="w-full" />
-        </label>
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">categoria_id (opcional)</span>
-          <InputNumber v-model="assignForm.categoria_id" :useGrouping="false" class="w-full" />
-        </label>
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">Config inicial (JSON)</span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">producto_id (opcional)</label>
+          <InputNumber v-model="assignForm.producto_id" :useGrouping="false" class="w-full" inputClass="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">categoria_id (opcional)</label>
+          <InputNumber v-model="assignForm.categoria_id" :useGrouping="false" class="w-full" inputClass="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Config inicial (JSON)</label>
           <Textarea v-model="assignConfigText" rows="6" class="w-full font-mono text-xs" />
-        </label>
-        <label class="flex items-center gap-2">
+        </div>
+        <label class="flex items-center gap-2 cursor-pointer">
           <Checkbox v-model="assignForm.activo" binary />
           <span class="text-sm text-gray-700">Activar al crear</span>
         </label>
@@ -305,41 +315,51 @@ onMounted(loadCatalog)
     </Dialog>
 
     <!-- Dialog: nuevo plugin -->
-    <Dialog v-model:visible="showPluginDialog" header="Registrar nuevo plugin" modal :style="{ width: '45rem' }">
-      <div class="grid grid-cols-2 gap-3">
-        <label class="col-span-2 block">
-          <span class="mb-1 block text-sm text-gray-700">Slug (único, kebab-case)</span>
+    <Dialog
+      v-model:visible="showPluginDialog"
+      header="Registrar nuevo plugin"
+      modal
+      :style="{ width: '45rem' }"
+      :pt="{
+        header: { class: 'px-8 pt-6 pb-4' },
+        content: { class: 'px-8 pb-6' },
+        footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100 flex justify-end gap-2' }
+      }"
+    >
+      <div class="grid grid-cols-2 gap-x-6 gap-y-5 pt-2">
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Slug (único, kebab-case)</label>
           <InputText v-model="pluginForm.slug" class="w-full" />
-        </label>
-        <label class="col-span-2 block">
-          <span class="mb-1 block text-sm text-gray-700">Nombre</span>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
           <InputText v-model="pluginForm.name" class="w-full" />
-        </label>
-        <label class="col-span-2 block">
-          <span class="mb-1 block text-sm text-gray-700">Descripción</span>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Descripción</label>
           <Textarea v-model="pluginForm.description" rows="2" class="w-full" />
-        </label>
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">Versión</span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Versión</label>
           <InputText v-model="pluginForm.version" class="w-full" />
-        </label>
-        <label class="block">
-          <span class="mb-1 block text-sm text-gray-700">Pricing mode</span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Pricing mode</label>
           <select v-model="pluginForm.pricingMode" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
             <option value="none">none</option>
             <option value="per_unit">per_unit</option>
             <option value="base_plus_addons">base_plus_addons</option>
           </select>
-        </label>
-        <label class="col-span-2 block">
-          <span class="mb-1 block text-sm text-gray-700">Slots (coma-separado)</span>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Slots (coma-separado)</label>
           <InputText v-model="pluginForm.slots" class="w-full" />
-        </label>
-        <label class="col-span-2 block">
-          <span class="mb-1 block text-sm text-gray-700">Config schema (JSON)</span>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Config schema (JSON)</label>
           <Textarea v-model="pluginForm.configSchema" rows="6" class="w-full font-mono text-xs" />
-        </label>
-        <label class="col-span-2 flex items-center gap-2">
+        </div>
+        <label class="col-span-2 flex items-center gap-2 cursor-pointer">
           <Checkbox v-model="pluginForm.activo" binary />
           <span class="text-sm text-gray-700">Activo en el catálogo</span>
         </label>
