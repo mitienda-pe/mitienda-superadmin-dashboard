@@ -229,6 +229,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/plugins',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'Plugins',
+        component: () => import('@/views/plugins/PluginsManagementView.vue')
+      }
+    ]
+  },
+  {
     path: '/access-denied',
     name: 'AccessDenied',
     component: () => import('@/views/AccessDeniedView.vue'),
