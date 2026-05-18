@@ -45,6 +45,54 @@
           </p>
         </div>
 
+        <div v-if="scopeLocal === 'global'" class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-4">
+          <p class="text-xs font-medium text-gray-600 uppercase tracking-wide">Filtros de audiencia</p>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Plan</label>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label
+                v-for="plan in planOptions"
+                :key="plan.value"
+                class="inline-flex items-center gap-2 text-sm cursor-pointer"
+              >
+                <Checkbox
+                  v-model="form.target_plans"
+                  :inputId="`plan-${plan.value}`"
+                  :value="plan.value"
+                />
+                <span>{{ plan.label }}</span>
+              </label>
+            </div>
+            <p class="text-xs text-gray-500 mt-1.5">
+              Vacío = todos los planes.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Vigencia del plan</label>
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <label
+                v-for="opt in targetStatusOptions"
+                :key="opt.value"
+                class="inline-flex items-center gap-2 text-sm cursor-pointer"
+              >
+                <RadioButton
+                  v-model="form.target_status"
+                  :inputId="`tgt-${opt.value}`"
+                  :value="opt.value"
+                />
+                <span>{{ opt.label }}</span>
+              </label>
+            </div>
+          </div>
+
+          <p class="text-xs text-gray-600 italic">
+            <i class="pi pi-users mr-1" />
+            {{ audienceSummary }}
+          </p>
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Título *</label>
           <InputText v-model="form.title" maxlength="200" class="w-full" />
@@ -219,12 +267,19 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import RadioButton from 'primevue/radiobutton'
+import Checkbox from 'primevue/checkbox'
 import Calendar from 'primevue/calendar'
 import InputSwitch from 'primevue/inputswitch'
 import AutoComplete from 'primevue/autocomplete'
 import { getStoresList } from '@/api/stores.api'
 import type { StoreListItem } from '@/types/store.types'
-import type { Broadcast, BroadcastFormInput } from '@/types/broadcast.types'
+import type {
+  Broadcast,
+  BroadcastFormInput,
+  BroadcastPlanSlug,
+  BroadcastTargetStatus
+} from '@/types/broadcast.types'
+import { BROADCAST_PLAN_LABELS, BROADCAST_TARGET_STATUS_LABELS } from '@/types/broadcast.types'
 import {
   renderBroadcastMarkdownInline,
   renderBroadcastMarkdownBlock
@@ -248,6 +303,8 @@ const isEdit = computed(() => !!props.record?.id)
 
 const emptyForm = (): BroadcastFormInput => ({
   tienda_id: null,
+  target_plans: [],
+  target_status: 'all',
   title: '',
   body: '',
   placement: 'bar',
@@ -260,6 +317,14 @@ const emptyForm = (): BroadcastFormInput => ({
   expires_at: formatDate(addDays(new Date(), 7)),
   activo: true
 })
+
+const planOptions: { value: BroadcastPlanSlug; label: string }[] = (
+  Object.keys(BROADCAST_PLAN_LABELS) as BroadcastPlanSlug[]
+).map((value) => ({ value, label: BROADCAST_PLAN_LABELS[value] }))
+
+const targetStatusOptions: { value: BroadcastTargetStatus; label: string }[] = (
+  Object.keys(BROADCAST_TARGET_STATUS_LABELS) as BroadcastTargetStatus[]
+).map((value) => ({ value, label: BROADCAST_TARGET_STATUS_LABELS[value] }))
 
 const form = ref<BroadcastFormInput>(emptyForm())
 const scopeLocal = ref<'global' | 'tenant'>('global')
@@ -294,6 +359,10 @@ watch(scopeLocal, (s) => {
   if (s === 'global') {
     selectedStore.value = null
     form.value.tienda_id = null
+  } else {
+    // Targeting (plan/vigencia) no aplica a tienda específica
+    form.value.target_plans = []
+    form.value.target_status = 'all'
   }
 })
 
@@ -309,6 +378,8 @@ function resetFromRecord(r: Broadcast | null) {
   if (r) {
     form.value = {
       tienda_id: r.tienda_id,
+      target_plans: r.target_plans ? [...r.target_plans] : [],
+      target_status: r.target_status ?? 'all',
       title: r.title,
       body: r.body,
       placement: r.placement,
@@ -373,8 +444,16 @@ function handleSubmit() {
     return (validationError.value = 'El CTA requiere tanto texto como URL')
   }
 
+  const isGlobal = scopeLocal.value === 'global'
+  const targetPlans = isGlobal && f.target_plans && f.target_plans.length > 0
+    ? f.target_plans
+    : null
+  const targetStatus = isGlobal ? f.target_status : 'all'
+
   emit('submit', {
     ...f,
+    target_plans: targetPlans,
+    target_status: targetStatus,
     title: f.title.trim(),
     body: f.body.trim(),
     cta_label: hasLabel ? f.cta_label!.trim() : null,
@@ -417,6 +496,19 @@ const severityBadgeClasses = computed(() => ({
   warning: 'bg-amber-100 text-amber-800',
   danger: 'bg-red-100 text-red-800'
 })[form.value.severity])
+
+const audienceSummary = computed(() => {
+  const plans = form.value.target_plans ?? []
+  const plansLabel = plans.length === 0
+    ? 'todos los planes'
+    : plans.map((p) => BROADCAST_PLAN_LABELS[p]).join(', ')
+  const statusLabel = ({
+    all: 'cualquier vigencia',
+    active: 'plan activo',
+    expired: 'plan vencido'
+  })[form.value.target_status]
+  return `Llega a tiendas con ${plansLabel} (${statusLabel}).`
+})
 </script>
 
 <style scoped>
@@ -437,6 +529,23 @@ const severityBadgeClasses = computed(() => ({
 }
 :deep(.p-radiobutton .p-radiobutton-box .p-radiobutton-icon) {
   background: #fff;
+}
+
+:deep(.p-checkbox .p-checkbox-box) {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  border-radius: 4px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+:deep(.p-checkbox:hover .p-checkbox-box) {
+  border-color: #00b2a6;
+}
+:deep(.p-checkbox.p-highlight .p-checkbox-box),
+:deep(.p-checkbox .p-checkbox-box.p-highlight) {
+  border-color: #00b2a6;
+  background: #00b2a6;
 }
 
 /* Preview bar (markdown inline) */

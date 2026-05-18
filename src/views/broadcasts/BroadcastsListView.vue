@@ -11,7 +11,7 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
       <Dropdown
         v-model="store.filters.scope"
         :options="scopeOptions"
@@ -46,6 +46,24 @@
         showClear
         @change="store.fetchAll()"
       />
+      <Dropdown
+        v-model="store.filters.target_plan"
+        :options="planFilterOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Plan"
+        showClear
+        @change="store.fetchAll()"
+      />
+      <Dropdown
+        v-model="store.filters.target_status"
+        :options="targetStatusFilterOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Vigencia"
+        showClear
+        @change="store.fetchAll()"
+      />
     </div>
 
     <div v-if="store.error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
@@ -73,13 +91,33 @@
         </Column>
         <Column header="Alcance">
           <template #body="{ data }">
-            <span v-if="data.tienda_id === null" class="inline-flex items-center px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-xs font-medium">
-              <i class="pi pi-globe mr-1" /> Global
-            </span>
-            <span v-else class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium">
-              <i class="pi pi-shop mr-1" />
-              {{ data.tienda_nombre || 'Tienda #' + data.tienda_id }}
-            </span>
+            <div class="flex flex-col gap-1">
+              <span v-if="data.tienda_id === null" class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-xs font-medium">
+                <i class="pi pi-globe mr-1" /> Global
+              </span>
+              <span v-else class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium">
+                <i class="pi pi-shop mr-1" />
+                {{ data.tienda_nombre || 'Tienda #' + data.tienda_id }}
+              </span>
+              <template v-if="data.tienda_id === null">
+                <span
+                  v-if="data.target_plans && data.target_plans.length"
+                  class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px] font-medium"
+                  v-tooltip.top="'Planes: ' + planList(data.target_plans)"
+                >
+                  <i class="pi pi-tag mr-1" />
+                  {{ planList(data.target_plans) }}
+                </span>
+                <span
+                  v-if="data.target_status && data.target_status !== 'all'"
+                  :class="['inline-flex w-fit items-center px-2 py-0.5 rounded text-[11px] font-medium',
+                    data.target_status === 'active' ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700']"
+                >
+                  <i class="pi pi-clock mr-1" />
+                  {{ data.target_status === 'active' ? 'Plan activo' : 'Plan vencido' }}
+                </span>
+              </template>
+            </div>
           </template>
         </Column>
         <Column header="Tipo">
@@ -196,7 +234,13 @@ import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { useBroadcastsStore } from '@/stores/broadcasts.store'
-import type { Broadcast, BroadcastFormInput, BroadcastSeverity } from '@/types/broadcast.types'
+import type {
+  Broadcast,
+  BroadcastFormInput,
+  BroadcastSeverity,
+  BroadcastPlanSlug
+} from '@/types/broadcast.types'
+import { BROADCAST_PLAN_LABELS } from '@/types/broadcast.types'
 import BroadcastFormDialog from './BroadcastFormDialog.vue'
 
 const store = useBroadcastsStore()
@@ -232,6 +276,17 @@ const severityOptions = [
   { label: 'Warning', value: 'warning' },
   { label: 'Danger', value: 'danger' }
 ]
+const planFilterOptions = (Object.keys(BROADCAST_PLAN_LABELS) as BroadcastPlanSlug[]).map(
+  (value) => ({ value, label: BROADCAST_PLAN_LABELS[value] })
+)
+const targetStatusFilterOptions = [
+  { label: 'Plan activo', value: 'active' },
+  { label: 'Plan vencido', value: 'expired' }
+]
+
+function planList(plans: BroadcastPlanSlug[]) {
+  return plans.map((p) => BROADCAST_PLAN_LABELS[p]).join(', ')
+}
 
 function openCreate() {
   editingRecord.value = null

@@ -12,6 +12,8 @@ export async function listBroadcasts(filters: BroadcastListFilters = {}) {
   if (filters.status && filters.status !== 'all') params.status = filters.status
   if (filters.placement) params.placement = filters.placement
   if (filters.severity) params.severity = filters.severity
+  if (filters.target_plan) params.target_plan = filters.target_plan
+  if (filters.target_status) params.target_status = filters.target_status
 
   const res = await api.get<ApiList>('/superadmin/broadcasts', { params })
   return res.data
