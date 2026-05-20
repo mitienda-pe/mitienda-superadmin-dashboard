@@ -183,6 +183,37 @@
         </div>
       </div>
 
+      <!-- POS add-on toggle -->
+      <div
+        v-if="storeModulesLoaded && posModule"
+        class="flex items-center justify-between gap-3 mb-4 pb-4 border-b border-gray-100"
+      >
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <i class="pi pi-desktop text-primary-600"></i>
+            <span class="text-sm font-medium text-gray-700">POS (Punto de Venta)</span>
+            <span
+              v-if="isPdvPlan"
+              class="text-xs px-1.5 py-0.5 rounded bg-primary-50 text-primary-700"
+            >
+              Incluido en plan PDV
+            </span>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">
+            {{
+              isPdvPlan
+                ? 'El plan PDV ya incluye el Punto de Venta. No se puede desactivar aquí.'
+                : 'Activa MiTiendaPOS como complemento del plan actual de esta tienda.'
+            }}
+          </p>
+        </div>
+        <InputSwitch
+          :modelValue="isPosEnabled"
+          :disabled="isPdvPlan || savingSection === 'modules'"
+          @update:modelValue="togglePosAddon"
+        />
+      </div>
+
       <!-- Filter -->
       <div v-if="storeModulesLoaded" class="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
         <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
@@ -347,6 +378,50 @@ function deselectAllModules() {
 function isModuleOverridden(mod: StoreModule): boolean {
   const isEnabled = selectedStoreModuleIds.value.has(mod.id)
   return isEnabled !== mod.plan_enabled
+}
+
+const posModule = computed<StoreModule | null>(() => {
+  return plansStore.storeModulesData?.modules.find(m => m.code === 'mod_pos') ?? null
+})
+
+const isPosEnabled = computed<boolean>(() => {
+  const mod = posModule.value
+  return mod ? selectedStoreModuleIds.value.has(mod.id) : false
+})
+
+const isPdvPlan = computed<boolean>(() => {
+  return (plansStore.storeModulesData?.plan_name ?? '').toUpperCase() === 'PDV'
+})
+
+async function togglePosAddon(enabled: boolean) {
+  const mod = posModule.value
+  if (!mod) return
+  const next = new Set(selectedStoreModuleIds.value)
+  if (enabled) next.add(mod.id)
+  else next.delete(mod.id)
+  selectedStoreModuleIds.value = next
+
+  savingSection.value = 'modules'
+  try {
+    await plansStore.saveStoreModules(props.storeId, Array.from(next))
+    toast.add({
+      severity: 'success',
+      summary: enabled ? 'POS activado' : 'POS desactivado',
+      detail: enabled
+        ? 'MiTiendaPOS habilitado como complemento.'
+        : 'MiTiendaPOS deshabilitado para esta tienda.',
+      life: 3000
+    })
+  } catch {
+    // Rollback local state
+    const rollback = new Set(selectedStoreModuleIds.value)
+    if (enabled) rollback.delete(mod.id)
+    else rollback.add(mod.id)
+    selectedStoreModuleIds.value = rollback
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudo actualizar el estado del POS', life: 5000 })
+  } finally {
+    savingSection.value = null
+  }
 }
 
 async function loadStoreModules() {

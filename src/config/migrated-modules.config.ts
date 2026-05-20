@@ -70,5 +70,8 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_netsuite',
 
   // API
-  'mod_api'
+  'mod_api',
+
+  // POS (Punto de Venta)
+  'mod_pos'
 ])
