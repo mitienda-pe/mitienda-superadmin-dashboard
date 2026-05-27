@@ -82,6 +82,9 @@ export const useStoresStore = defineStore('stores', () => {
       if (currentStore.value?.config) {
         Object.assign(currentStore.value.config, data)
       }
+      if (data.name !== undefined && currentStore.value) {
+        currentStore.value.name = data.name
+      }
       if (data.flag !== undefined) {
         const store = stores.value.find(s => s.id === storeId)
         if (store) store.flag = data.flag
@@ -104,6 +107,7 @@ export const useStoresStore = defineStore('stores', () => {
         if (data.price !== undefined) currentStore.value.plan.price = data.price
         if (data.max_items !== undefined) currentStore.value.plan.max_items = data.max_items
         if (data.max_pages !== undefined) currentStore.value.plan.max_pages = data.max_pages
+        if (data.max_users !== undefined) currentStore.value.plan.max_users = data.max_users
         if (data.payment_note !== undefined) currentStore.value.plan.payment_note = data.payment_note
       }
     } catch (e: any) {

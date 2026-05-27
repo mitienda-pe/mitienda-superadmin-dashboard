@@ -332,7 +332,7 @@ const statusOptions = [
 ]
 
 const flagOptions = [
-  { label: 'Todos los tipos', value: '' },
+  { label: 'Todos los tipos', value: 'all' },
   { label: 'Orgánica', value: 'organic' },
   { label: 'Interna', value: 'internal' },
   { label: 'Corporativa', value: 'corporate' }

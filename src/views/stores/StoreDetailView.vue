@@ -59,6 +59,7 @@
             :config="storesStore.currentStore.config"
             :plan="storesStore.currentStore.plan"
             :store-id="storesStore.currentStore.id"
+            :store-name="storesStore.currentStore.name"
           />
         </TabPanel>
       </TabView>

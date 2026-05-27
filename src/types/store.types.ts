@@ -64,6 +64,7 @@ export interface StorePlan {
   plan_id: number
   max_items: number
   max_pages: number
+  max_users: number
   payment_note: string
 }
 
@@ -82,13 +83,15 @@ export interface StoreConfig {
   umami_website_id: string | null
 }
 
-export type StoreConfigUpdate = Partial<StoreConfig>
+export type StoreConfigUpdate = Partial<StoreConfig> & { name?: string }
 
 export interface StorePlanConfigUpdate {
+  plan_id?: number
   expires_at?: string
   price?: number
   max_items?: number
   max_pages?: number
+  max_users?: number
   payment_note?: string
 }
 

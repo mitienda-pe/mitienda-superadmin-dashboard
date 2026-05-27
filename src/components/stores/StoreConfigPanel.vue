@@ -5,6 +5,10 @@
       <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Clasificación y Estado</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Nombre Comercial</label>
+          <InputText v-model="configForm.name" class="w-full" />
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Flag</label>
           <Dropdown
             v-model="configForm.flag"
@@ -15,7 +19,7 @@
             class="w-full"
           />
         </div>
-        <div class="flex items-center gap-6">
+        <div class="flex items-center gap-6 md:col-span-2">
           <div class="flex items-center gap-2">
             <InputSwitch v-model="configForm.blocked" />
             <label class="text-sm text-gray-600">Bloqueada</label>
@@ -96,6 +100,18 @@
       </h3>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Plan</label>
+          <Dropdown
+            v-model="planForm.plan_id"
+            :options="availablePlans"
+            optionLabel="name"
+            optionValue="id"
+            placeholder="Seleccionar plan"
+            class="w-full"
+            :loading="loadingPlans"
+          />
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Fecha de Vencimiento</label>
           <Calendar
             v-model="planForm.expires_at"
@@ -123,7 +139,11 @@
           <label class="block text-sm font-medium text-gray-600 mb-1">Max Páginas</label>
           <InputNumber v-model="planForm.max_pages" :min="0" class="w-full" />
         </div>
-        <div class="md:col-span-2">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Max Usuarios</label>
+          <InputNumber v-model="planForm.max_users" :min="0" class="w-full" />
+        </div>
+        <div class="md:col-span-3">
           <label class="block text-sm font-medium text-gray-600 mb-1">Nota de Pago</label>
           <Textarea v-model="planForm.payment_note" rows="2" class="w-full" />
         </div>
@@ -298,12 +318,14 @@ import type { StoreConfig, StorePlan } from '@/types/store.types'
 import type { StoreModule } from '@/types/plans.types'
 import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
+import { plansApi } from '@/api/plans.api'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 
 const props = defineProps<{
   config: StoreConfig
   plan: StorePlan | null
   storeId: number
+  storeName: string
 }>()
 
 const toast = useToast()
@@ -311,6 +333,8 @@ const storesStore = useStoresStore()
 const plansStore = usePlansStore()
 const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | 'reset' | null>(null)
 const loadingModules = ref(false)
+const loadingPlans = ref(false)
+const availablePlans = ref<{ id: number; name: string }[]>([])
 const storeModulesLoaded = ref(false)
 const modulesError = ref<string | null>(null)
 const selectedStoreModuleIds = ref(new Set<number>())
@@ -472,8 +496,23 @@ async function resetToDefaults() {
   }
 }
 
+async function loadAvailablePlans() {
+  loadingPlans.value = true
+  try {
+    const res = await plansApi.getPlans()
+    if (res.data) {
+      availablePlans.value = res.data.map(p => ({ id: p.id, name: p.name }))
+    }
+  } catch {
+    // Plans dropdown will just be empty
+  } finally {
+    loadingPlans.value = false
+  }
+}
+
 onMounted(() => {
   loadStoreModules()
+  loadAvailablePlans()
 })
 
 const flagOptions = [
@@ -484,6 +523,7 @@ const flagOptions = [
 
 // Reactive form state for config
 const configForm = reactive({
+  name: props.storeName,
   flag: props.config.flag,
   blocked: props.config.blocked,
   marketplace: props.config.marketplace,
@@ -499,14 +539,20 @@ const configForm = reactive({
 
 // Reactive form state for plan
 const planForm = reactive({
+  plan_id: props.plan?.plan_id ?? null as number | null,
   expires_at: props.plan?.expires_at ? new Date(props.plan.expires_at) : null as Date | null,
   price: props.plan?.price ?? 0,
   max_items: props.plan?.max_items ?? 0,
   max_pages: props.plan?.max_pages ?? 0,
+  max_users: props.plan?.max_users ?? 0,
   payment_note: props.plan?.payment_note ?? ''
 })
 
 // Reset forms when props change
+watch(() => props.storeName, (n) => {
+  configForm.name = n
+})
+
 watch(() => props.config, (c) => {
   configForm.flag = c.flag
   configForm.blocked = c.blocked
@@ -522,10 +568,12 @@ watch(() => props.config, (c) => {
 }, { deep: true })
 
 watch(() => props.plan, (p) => {
+  planForm.plan_id = p?.plan_id ?? null
   planForm.expires_at = p?.expires_at ? new Date(p.expires_at) : null
   planForm.price = p?.price ?? 0
   planForm.max_items = p?.max_items ?? 0
   planForm.max_pages = p?.max_pages ?? 0
+  planForm.max_users = p?.max_users ?? 0
   planForm.payment_note = p?.payment_note ?? ''
 }, { deep: true })
 
@@ -540,6 +588,7 @@ async function saveStatus() {
   savingSection.value = 'status'
   try {
     await storesStore.saveStoreConfig(props.storeId, {
+      name: configForm.name,
       flag: configForm.flag,
       blocked: configForm.blocked,
       marketplace: configForm.marketplace,
@@ -577,10 +626,12 @@ async function savePlan() {
   savingSection.value = 'plan'
   try {
     await storesStore.saveStorePlanConfig(props.storeId, {
+      plan_id: planForm.plan_id ?? undefined,
       expires_at: planForm.expires_at ? formatDate(planForm.expires_at) : undefined,
       price: planForm.price,
       max_items: planForm.max_items,
       max_pages: planForm.max_pages,
+      max_users: planForm.max_users,
       payment_note: planForm.payment_note
     })
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Plan actualizado', life: 3000 })
