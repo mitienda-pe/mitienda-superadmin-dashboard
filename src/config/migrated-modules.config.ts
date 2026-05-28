@@ -29,7 +29,9 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_etiquetas',
 
   // Marketing
-  'mod_promociones',
+  // mod_promociones (legacy V1) quedó despublicado en el backend; ya no aparece en la lista.
+  'mod_cupones',
+  'mod_promociones_v2',
   'mod_upsales',
   'mod_combos',
   'mod_barras_anuncios',
