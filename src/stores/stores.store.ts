@@ -10,9 +10,14 @@ import {
   getStoreOrders, getSubscriptionHistory, getTopProducts,
   updateStoreFlag as apiUpdateStoreFlag,
   updateStoreConfig as apiUpdateStoreConfig,
-  updateStorePlanConfig as apiUpdateStorePlanConfig
+  updateStorePlanConfig as apiUpdateStorePlanConfig,
+  getAvailablePlans as apiGetAvailablePlans,
+  createStore as apiCreateStore
 } from '@/api/stores.api'
-import type { StoreFlag, StoreConfigUpdate, StorePlanConfigUpdate } from '@/types/store.types'
+import type {
+  StoreFlag, StoreConfigUpdate, StorePlanConfigUpdate,
+  AvailablePlan, CreateStorePayload, CreateStoreResult
+} from '@/types/store.types'
 
 export const useStoresStore = defineStore('stores', () => {
   // List state
@@ -42,6 +47,11 @@ export const useStoresStore = defineStore('stores', () => {
   const detailError = ref<string | null>(null)
   const isSavingConfig = ref(false)
   const configError = ref<string | null>(null)
+
+  // Create store state
+  const availablePlans = ref<AvailablePlan[]>([])
+  const isCreating = ref(false)
+  const createError = ref<string | null>(null)
 
   async function fetchStores() {
     isLoading.value = true
@@ -123,6 +133,27 @@ export const useStoresStore = defineStore('stores', () => {
     fetchStores()
   }
 
+  async function fetchAvailablePlans() {
+    if (availablePlans.value.length > 0) return availablePlans.value
+    const res = await apiGetAvailablePlans()
+    availablePlans.value = res.data
+    return availablePlans.value
+  }
+
+  async function createStore(payload: CreateStorePayload): Promise<CreateStoreResult> {
+    isCreating.value = true
+    createError.value = null
+    try {
+      const res = await apiCreateStore(payload)
+      return res.data
+    } catch (e: any) {
+      createError.value = e.response?.data?.message || e.message || 'Error creando la tienda'
+      throw e
+    } finally {
+      isCreating.value = false
+    }
+  }
+
   async function fetchStoreDetail(storeId: number) {
     isDetailLoading.value = true
     detailError.value = null
@@ -159,7 +190,9 @@ export const useStoresStore = defineStore('stores', () => {
     currentStore, dailySales, orders, subscriptionHistory, topProducts,
     isDetailLoading, detailError,
     isSavingConfig, configError,
+    availablePlans, isCreating, createError,
     fetchStores, updateFilters, goToPage, fetchStoreDetail, setStoreFlag,
-    saveStoreConfig, saveStorePlanConfig
+    saveStoreConfig, saveStorePlanConfig,
+    fetchAvailablePlans, createStore
   }
 })

@@ -3,7 +3,8 @@ import type {
   StoreListItem, StoreListMeta, StoreListFilters,
   StoreDetail, DailySales, StoreOrder,
   SubscriptionHistory, TopProduct, StoreFlag,
-  StoreConfigUpdate, StorePlanConfigUpdate
+  StoreConfigUpdate, StorePlanConfigUpdate,
+  AvailablePlan, CreateStorePayload, CreateStoreResult
 } from '@/types/store.types'
 
 export async function getStoresList(filters: Partial<StoreListFilters> = {}) {
@@ -80,6 +81,21 @@ export async function updateStorePlanConfig(storeId: number, data: StorePlanConf
   const res = await api.put<{ success: boolean; message: string }>(
     `/superadmin/dashboard/stores/${storeId}/plan-config`,
     data
+  )
+  return res.data
+}
+
+export async function getAvailablePlans() {
+  const res = await api.get<{ success: boolean; data: AvailablePlan[] }>(
+    '/superadmin/dashboard/plans'
+  )
+  return res.data
+}
+
+export async function createStore(payload: CreateStorePayload) {
+  const res = await api.post<{ success: boolean; message: string; data: CreateStoreResult }>(
+    '/superadmin/dashboard/stores',
+    payload
   )
   return res.data
 }

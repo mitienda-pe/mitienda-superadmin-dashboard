@@ -163,3 +163,45 @@ export interface TopProduct {
   revenue: number
   order_count: number
 }
+
+// Alta manual de tiendas (superadmin)
+
+export interface AvailablePlanDetail {
+  plandetalle_id: number
+  precio: number
+}
+
+export interface AvailablePlan {
+  plan_id: number
+  plan_titulo: string
+  plan_descripcion: string
+  max_items: number
+  max_pages: number
+  max_users: number
+  is_superadmin: boolean
+  monthly: AvailablePlanDetail | null
+  annual: AvailablePlanDetail | null
+}
+
+export interface CreateStorePayload {
+  business_name: string
+  admin_name: string
+  email: string
+  phone?: string
+  ruc?: string
+  razon_social?: string
+  address?: string
+  country?: string
+  plan_id: number
+  subscription_type: 'trial' | 'paid'
+  billing_frequency: 'monthly' | 'annual'
+  start_date: string
+  end_date: string
+}
+
+export interface CreateStoreResult {
+  store_id: number
+  slug: string
+  usuario_id: number
+  email_sent: boolean
+}
