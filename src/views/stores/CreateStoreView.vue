@@ -221,9 +221,6 @@ const form = reactive<CreateStorePayload>({
   razon_social: '',
   address: '',
   ubigeo: undefined,
-  dpto: '',
-  prov: '',
-  dist: '',
   country: 'PE',
   plan_id: 0,
   subscription_type: 'paid',
@@ -253,9 +250,6 @@ function resetUbigeo() {
   provinces.value = []
   districts.value = []
   form.ubigeo = undefined
-  form.dpto = ''
-  form.prov = ''
-  form.dist = ''
 }
 
 async function loadRegions() {
@@ -279,10 +273,7 @@ watch(selectedRegion, async (region) => {
   selectedDistrict.value = null
   provinces.value = []
   districts.value = []
-  form.prov = ''
-  form.dist = ''
   form.ubigeo = undefined
-  form.dpto = region?.name || ''
   if (!region || !currentCodPais.value || region.codDpto == null) return
   loadingProvinces.value = true
   try {
@@ -297,9 +288,7 @@ watch(selectedRegion, async (region) => {
 watch(selectedProvince, async (province) => {
   selectedDistrict.value = null
   districts.value = []
-  form.dist = ''
   form.ubigeo = undefined
-  form.prov = province?.name || ''
   if (!province || !currentCodPais.value || selectedRegion.value?.codDpto == null || province.codProv == null) return
   loadingDistricts.value = true
   try {
@@ -312,7 +301,7 @@ watch(selectedProvince, async (province) => {
 })
 
 watch(selectedDistrict, (district) => {
-  form.dist = district?.name || ''
+  // Solo enviamos el ubigeo; el backend puebla dpto/prov/dist desde la BD.
   form.ubigeo = district?.id ?? undefined
 })
 
