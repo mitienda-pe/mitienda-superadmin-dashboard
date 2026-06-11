@@ -179,6 +179,7 @@ export interface AvailablePlan {
   max_pages: number
   max_users: number
   is_superadmin: boolean
+  has_pos: boolean
   monthly: AvailablePlanDetail | null
   annual: AvailablePlanDetail | null
 }
@@ -198,6 +199,8 @@ export interface CreateStorePayload {
   dist?: string
   country?: string
   plan_id: number
+  // Add-on PDV sobre un plan e-commerce (1 caja, +S/30/mes o +S/300/año)
+  include_pos?: boolean
   subscription_type: 'trial' | 'paid'
   billing_frequency: 'monthly' | 'annual'
   start_date: string

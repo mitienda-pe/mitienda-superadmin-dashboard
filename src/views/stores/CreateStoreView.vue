@@ -156,6 +156,17 @@
             />
           </div>
 
+          <!-- Add-on PDV: solo para planes e-commerce (los que no traen POS) -->
+          <div v-if="canIncludePos" class="md:col-span-2 flex items-start gap-3 rounded-lg border border-gray-200 p-3">
+            <InputSwitch v-model="form.include_pos" inputId="include_pos" />
+            <label for="include_pos" class="cursor-pointer">
+              <span class="block text-sm font-medium text-gray-700">Incluir Punto de Venta (PDV)</span>
+              <span class="block text-xs text-gray-500">
+                Agrega 1 caja POS al plan: +{{ currencySymbol }} 30/mes ({{ currencySymbol }} 300/año). Habilita la venta presencial y el acceso al POS.
+              </span>
+            </label>
+          </div>
+
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio <span class="text-red-500">*</span></label>
             <Calendar v-model="startDate" dateFormat="yy-mm-dd" showIcon class="w-full" :class="{ 'p-invalid': errors.start_date }" />
@@ -173,6 +184,7 @@
           <span class="text-sm text-gray-600">
             {{ form.subscription_type === 'trial' ? 'Suscripción de cortesía (trial)' : 'Suscripción pagada' }}
             · {{ form.billing_frequency === 'annual' ? 'Anual' : 'Mensual' }}
+            <template v-if="posAddonActive"> · incluye PDV (1 caja)</template>
           </span>
           <span class="text-lg font-semibold text-gray-900">{{ priceDisplay }}</span>
         </div>
@@ -197,6 +209,7 @@ import Textarea from 'primevue/textarea'
 import Dropdown from 'primevue/dropdown'
 import SelectButton from 'primevue/selectbutton'
 import Calendar from 'primevue/calendar'
+import InputSwitch from 'primevue/inputswitch'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import { useStoresStore } from '@/stores/stores.store'
@@ -223,6 +236,7 @@ const form = reactive<CreateStorePayload>({
   ubigeo: undefined,
   country: 'PE',
   plan_id: 0,
+  include_pos: false,
   subscription_type: 'paid',
   billing_frequency: 'monthly',
   start_date: '',
@@ -334,13 +348,28 @@ const selectedPlan = computed(() =>
   storesStore.availablePlans.find(p => p.plan_id === form.plan_id) || null
 )
 
+// Add-on PDV (PE): +S/30/mes o +S/300/año por caja (1 caja fija). Solo aplica a
+// planes e-commerce (los que NO traen POS de fábrica).
+const POS_ADDON_MONTHLY = 30
+const POS_ADDON_YEARLY = 300
+const canIncludePos = computed(() => !!selectedPlan.value && !selectedPlan.value.has_pos)
+const posAddonActive = computed(() => canIncludePos.value && !!form.include_pos)
+
+// Mantener include_pos coherente: si el plan ya es POS, no aplica el add-on.
+watch(() => form.plan_id, () => {
+  if (!canIncludePos.value) form.include_pos = false
+})
+
 const currencySymbol = computed(() => (form.country === 'CO' ? '$' : form.country === 'EC' ? '$' : 'S/'))
 
 const priceDisplay = computed(() => {
   if (form.subscription_type === 'trial') return `${currencySymbol.value} 0.00`
   const detail = form.billing_frequency === 'annual' ? selectedPlan.value?.annual : selectedPlan.value?.monthly
   if (!detail) return 'Sin tarifa definida'
-  return `${currencySymbol.value} ${detail.precio.toFixed(2)}`
+  const addon = posAddonActive.value
+    ? (form.billing_frequency === 'annual' ? POS_ADDON_YEARLY : POS_ADDON_MONTHLY)
+    : 0
+  return `${currencySymbol.value} ${(detail.precio + addon).toFixed(2)}`
 })
 
 function toIsoDate(d: Date | null): string {
