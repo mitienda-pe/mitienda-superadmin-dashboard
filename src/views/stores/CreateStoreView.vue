@@ -37,6 +37,47 @@
             <Textarea v-model="form.address" class="w-full" rows="2" autoResize placeholder="Dirección donde se usará la solución MiTienda" />
             <small class="text-gray-400">Se usará como dirección de la sucursal "Principal".</small>
           </div>
+
+          <div class="md:col-span-2">
+            <p class="text-xs text-gray-500 mb-2">
+              Ubicación (opcional) — solo necesaria si la sucursal despachará pedidos (origen de envío para couriers).
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Dropdown
+                v-model="selectedRegion"
+                :options="regions"
+                optionLabel="name"
+                :loading="loadingRegions"
+                :disabled="!currentCodPais"
+                placeholder="Departamento"
+                class="w-full"
+                showClear
+                filter
+              />
+              <Dropdown
+                v-model="selectedProvince"
+                :options="provinces"
+                optionLabel="name"
+                :loading="loadingProvinces"
+                :disabled="!selectedRegion"
+                placeholder="Provincia"
+                class="w-full"
+                showClear
+                filter
+              />
+              <Dropdown
+                v-model="selectedDistrict"
+                :options="districts"
+                optionLabel="name"
+                :loading="loadingDistricts"
+                :disabled="!selectedProvince"
+                placeholder="Distrito"
+                class="w-full"
+                showClear
+                filter
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -160,6 +201,10 @@ import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
 import { useStoresStore } from '@/stores/stores.store'
 import type { CreateStorePayload } from '@/types/store.types'
+import {
+  getUbigeoCountries, getUbigeoRegions, getUbigeoProvinces, getUbigeoDistricts,
+  type UbigeoItem
+} from '@/api/ubigeo.api'
 
 const router = useRouter()
 const toast = useToast()
@@ -175,12 +220,100 @@ const form = reactive<CreateStorePayload>({
   ruc: '',
   razon_social: '',
   address: '',
+  ubigeo: undefined,
+  dpto: '',
+  prov: '',
+  dist: '',
   country: 'PE',
   plan_id: 0,
   subscription_type: 'paid',
   billing_frequency: 'monthly',
   start_date: '',
   end_date: ''
+})
+
+// --- Ubigeo (cascada departamento → provincia → distrito) ---
+const codPaisByIso = ref<Record<string, number>>({})
+const regions = ref<UbigeoItem[]>([])
+const provinces = ref<UbigeoItem[]>([])
+const districts = ref<UbigeoItem[]>([])
+const selectedRegion = ref<UbigeoItem | null>(null)
+const selectedProvince = ref<UbigeoItem | null>(null)
+const selectedDistrict = ref<UbigeoItem | null>(null)
+const loadingRegions = ref(false)
+const loadingProvinces = ref(false)
+const loadingDistricts = ref(false)
+
+const currentCodPais = computed(() => codPaisByIso.value[form.country || 'PE'] ?? null)
+
+function resetUbigeo() {
+  selectedRegion.value = null
+  selectedProvince.value = null
+  selectedDistrict.value = null
+  provinces.value = []
+  districts.value = []
+  form.ubigeo = undefined
+  form.dpto = ''
+  form.prov = ''
+  form.dist = ''
+}
+
+async function loadRegions() {
+  regions.value = []
+  resetUbigeo()
+  if (!currentCodPais.value) return
+  loadingRegions.value = true
+  try {
+    regions.value = await getUbigeoRegions(currentCodPais.value)
+  } catch {
+    // Silencioso: el ubigeo es opcional, no debe bloquear el alta.
+  } finally {
+    loadingRegions.value = false
+  }
+}
+
+watch(() => form.country, loadRegions)
+
+watch(selectedRegion, async (region) => {
+  selectedProvince.value = null
+  selectedDistrict.value = null
+  provinces.value = []
+  districts.value = []
+  form.prov = ''
+  form.dist = ''
+  form.ubigeo = undefined
+  form.dpto = region?.name || ''
+  if (!region || !currentCodPais.value || region.codDpto == null) return
+  loadingProvinces.value = true
+  try {
+    provinces.value = await getUbigeoProvinces(currentCodPais.value, region.codDpto)
+  } catch {
+    // opcional
+  } finally {
+    loadingProvinces.value = false
+  }
+})
+
+watch(selectedProvince, async (province) => {
+  selectedDistrict.value = null
+  districts.value = []
+  form.dist = ''
+  form.ubigeo = undefined
+  form.prov = province?.name || ''
+  if (!province || !currentCodPais.value || selectedRegion.value?.codDpto == null || province.codProv == null) return
+  loadingDistricts.value = true
+  try {
+    districts.value = await getUbigeoDistricts(currentCodPais.value, selectedRegion.value.codDpto, province.codProv)
+  } catch {
+    // opcional
+  } finally {
+    loadingDistricts.value = false
+  }
+})
+
+watch(selectedDistrict, (district) => {
+  form.dist = district?.name || ''
+  form.ubigeo = district?.id ?? undefined
 })
 
 const startDate = ref<Date | null>(new Date())
@@ -317,6 +450,19 @@ onMounted(async () => {
   } finally {
     loadingPlans.value = false
   }
+
+  // Cargar países (para mapear iso2 → codPais) y los departamentos del país actual.
+  try {
+    const countries = await getUbigeoCountries()
+    codPaisByIso.value = countries.reduce<Record<string, number>>((acc, c) => {
+      if (c.iso2) acc[c.iso2] = c.codPais
+      return acc
+    }, {})
+    await loadRegions()
+  } catch {
+    // El ubigeo es opcional; si falla, el alta sigue funcionando sin ubicación.
+  }
+
   suggestEndDate()
 })
 </script>

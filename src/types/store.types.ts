@@ -191,6 +191,11 @@ export interface CreateStorePayload {
   ruc?: string
   razon_social?: string
   address?: string
+  // Ubigeo opcional de la sucursal (solo necesario si despachará pedidos)
+  ubigeo?: number
+  dpto?: string
+  prov?: string
+  dist?: string
   country?: string
   plan_id: number
   subscription_type: 'trial' | 'paid'
