@@ -8,7 +8,7 @@ import {
 export const useUsersStore = defineStore('users', () => {
   const users = ref<AdminUserItem[]>([])
   const meta = ref<AdminUsersMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
-  const filters = ref<AdminUsersFilters>({ search: '', status: 'all', store_status: 'vigente', rol: 'all', page: 1, per_page: 20 })
+  const filters = ref<AdminUsersFilters>({ search: '', status: 'all', store_status: 'vigente', rol: 'all', sort: 'creado', order: 'DESC', page: 1, per_page: 20 })
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const resendingId = ref<number | null>(null)

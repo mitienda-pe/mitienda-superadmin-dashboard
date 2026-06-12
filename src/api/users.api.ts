@@ -31,6 +31,8 @@ export interface AdminUsersFilters {
   status: string // all | activado | pendiente | expirado | sin_invitacion
   store_status: string // all | vigente | vencido
   rol: string // all | principal | colaborador
+  sort: string // nombre | tienda | plan | ultimo_ingreso | creado | estado | estado_tienda
+  order: 'ASC' | 'DESC'
   page: number
   per_page: number
 }
@@ -41,6 +43,8 @@ export async function getAdminUsers(filters: Partial<AdminUsersFilters> = {}) {
   if (filters.status && filters.status !== 'all') params.status = filters.status
   if (filters.store_status && filters.store_status !== 'all') params.store_status = filters.store_status
   if (filters.rol && filters.rol !== 'all') params.rol = filters.rol
+  if (filters.sort) params.sort = filters.sort
+  if (filters.order) params.order = filters.order
   if (filters.page) params.page = filters.page
   if (filters.per_page) params.per_page = filters.per_page
 

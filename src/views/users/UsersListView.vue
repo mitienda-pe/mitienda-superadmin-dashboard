@@ -61,8 +61,16 @@
 
     <!-- Tabla -->
     <div v-else class="bg-white rounded-xl border border-gray-200">
-      <DataTable :value="usersStore.users" :loading="usersStore.isLoading" stripedRows class="p-datatable-sm">
-        <Column header="Usuario" style="min-width: 240px">
+      <DataTable
+        :value="usersStore.users"
+        :loading="usersStore.isLoading"
+        stripedRows
+        class="p-datatable-sm"
+        @sort="onSort"
+        :sortField="usersStore.filters.sort"
+        :sortOrder="usersStore.filters.order === 'ASC' ? 1 : -1"
+      >
+        <Column field="nombre" header="Usuario" :sortable="true" style="min-width: 240px">
           <template #body="{ data: row }">
             <div>
               <span class="font-medium text-gray-800 block">{{ row.nombre || '—' }}</span>
@@ -71,7 +79,7 @@
           </template>
         </Column>
 
-        <Column header="Tienda" style="min-width: 180px">
+        <Column field="tienda" header="Tienda" :sortable="true" style="min-width: 180px">
           <template #body="{ data: row }">
             <router-link :to="`/stores/${row.tienda_id}`" class="text-gray-700 hover:text-primary-600">
               {{ row.tienda }}
@@ -80,7 +88,7 @@
           </template>
         </Column>
 
-        <Column header="Estado tienda" style="width: 120px">
+        <Column field="estado_tienda" header="Estado tienda" :sortable="true" style="width: 120px">
           <template #body="{ data: row }">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
@@ -91,19 +99,19 @@
           </template>
         </Column>
 
-        <Column field="rol" header="Rol" style="min-width: 140px">
+        <Column field="rol" header="Rol" :sortable="true" style="min-width: 140px">
           <template #body="{ data: row }">
             <span class="text-sm text-gray-600">{{ row.rol }}</span>
           </template>
         </Column>
 
-        <Column header="Último ingreso" style="min-width: 140px">
+        <Column field="ultimo_ingreso" header="Último ingreso" :sortable="true" style="min-width: 140px">
           <template #body="{ data: row }">
             <span class="text-sm text-gray-600">{{ formatDate(row.ultimo_ingreso) }}</span>
           </template>
         </Column>
 
-        <Column header="Estado" style="width: 150px">
+        <Column field="estado" header="Estado" :sortable="true" style="width: 150px">
           <template #body="{ data: row }">
             <span
               class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
@@ -196,6 +204,13 @@ function applyFilters() {
     status: statusFilter.value,
     store_status: storeStatusFilter.value,
     rol: rolFilter.value
+  })
+}
+
+function onSort(event: any) {
+  usersStore.updateFilters({
+    sort: event.sortField,
+    order: event.sortOrder === 1 ? 'ASC' : 'DESC'
   })
 }
 
