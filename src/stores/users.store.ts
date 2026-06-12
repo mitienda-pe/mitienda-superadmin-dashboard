@@ -8,7 +8,7 @@ import {
 export const useUsersStore = defineStore('users', () => {
   const users = ref<AdminUserItem[]>([])
   const meta = ref<AdminUsersMeta>({ current_page: 1, per_page: 20, total: 0, total_pages: 0 })
-  const filters = ref<AdminUsersFilters>({ search: '', status: 'all', page: 1, per_page: 20 })
+  const filters = ref<AdminUsersFilters>({ search: '', status: 'all', store_status: 'all', page: 1, per_page: 20 })
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const resendingId = ref<number | null>(null)
@@ -29,7 +29,7 @@ export const useUsersStore = defineStore('users', () => {
 
   function updateFilters(newFilters: Partial<AdminUsersFilters>) {
     Object.assign(filters.value, newFilters)
-    if (newFilters.search !== undefined || newFilters.status !== undefined) {
+    if (newFilters.search !== undefined || newFilters.status !== undefined || newFilters.store_status !== undefined) {
       filters.value.page = 1
     }
     fetchUsers()

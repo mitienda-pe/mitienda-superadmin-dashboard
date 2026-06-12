@@ -27,7 +27,16 @@
           :options="statusOptions"
           optionLabel="label"
           optionValue="value"
-          placeholder="Estado"
+          placeholder="Activación"
+          class="w-48"
+          @change="applyFilters"
+        />
+        <Dropdown
+          v-model="storeStatusFilter"
+          :options="storeStatusOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Estado tienda"
           class="w-48"
           @change="applyFilters"
         />
@@ -59,6 +68,17 @@
               {{ row.tienda }}
             </router-link>
             <div class="text-xs text-gray-400">{{ row.plan || '—' }}</div>
+          </template>
+        </Column>
+
+        <Column header="Estado tienda" style="width: 120px">
+          <template #body="{ data: row }">
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+              :class="row.estado_tienda === 'vigente' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'"
+            >
+              {{ row.estado_tienda === 'vigente' ? 'Vigente' : 'Vencido' }}
+            </span>
           </template>
         </Column>
 
@@ -135,19 +155,27 @@ const toast = useToast()
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
+const storeStatusFilter = ref('all')
 
 const statusOptions = [
-  { label: 'Todos los estados', value: 'all' },
+  { label: 'Toda activación', value: 'all' },
   { label: 'Activado', value: 'activado' },
   { label: 'Pendiente', value: 'pendiente' },
-  { label: 'Token expirado', value: 'expirado' }
+  { label: 'Token expirado', value: 'expirado' },
+  { label: 'Sin invitación', value: 'sin_invitacion' }
+]
+
+const storeStatusOptions = [
+  { label: 'Toda tienda', value: 'all' },
+  { label: 'Tienda vigente', value: 'vigente' },
+  { label: 'Tienda vencida', value: 'vencido' }
 ]
 
 function applySearch() {
   usersStore.updateFilters({ search: searchQuery.value })
 }
 function applyFilters() {
-  usersStore.updateFilters({ search: searchQuery.value, status: statusFilter.value })
+  usersStore.updateFilters({ search: searchQuery.value, status: statusFilter.value, store_status: storeStatusFilter.value })
 }
 
 const estadoLabels: Record<UserActivationEstado, string> = {

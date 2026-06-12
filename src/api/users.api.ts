@@ -2,6 +2,8 @@ import api from './axios'
 
 export type UserActivationEstado = 'activado' | 'pendiente' | 'expirado' | 'sin_invitacion'
 
+export type StoreEstado = 'vigente' | 'vencido'
+
 export interface AdminUserItem {
   usuario_id: number
   tienda_id: number
@@ -14,6 +16,7 @@ export interface AdminUserItem {
   creado: string
   ultimo_ingreso: string | null
   estado: UserActivationEstado
+  estado_tienda: StoreEstado
 }
 
 export interface AdminUsersMeta {
@@ -25,7 +28,8 @@ export interface AdminUsersMeta {
 
 export interface AdminUsersFilters {
   search: string
-  status: string // all | activado | pendiente | expirado
+  status: string // all | activado | pendiente | expirado | sin_invitacion
+  store_status: string // all | vigente | vencido
   page: number
   per_page: number
 }
@@ -34,6 +38,7 @@ export async function getAdminUsers(filters: Partial<AdminUsersFilters> = {}) {
   const params: Record<string, string | number> = {}
   if (filters.search) params.search = filters.search
   if (filters.status && filters.status !== 'all') params.status = filters.status
+  if (filters.store_status && filters.store_status !== 'all') params.store_status = filters.store_status
   if (filters.page) params.page = filters.page
   if (filters.per_page) params.per_page = filters.per_page
 
