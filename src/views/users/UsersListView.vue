@@ -105,6 +105,12 @@
           </template>
         </Column>
 
+        <Column field="creado" header="Creado" :sortable="true" style="min-width: 130px">
+          <template #body="{ data: row }">
+            <span class="text-sm text-gray-600">{{ formatDate(row.creado) }}</span>
+          </template>
+        </Column>
+
         <Column field="ultimo_ingreso" header="Último ingreso" :sortable="true" style="min-width: 140px">
           <template #body="{ data: row }">
             <span class="text-sm text-gray-600">{{ formatDate(row.ultimo_ingreso) }}</span>
