@@ -40,6 +40,15 @@
           class="w-48"
           @change="applyFilters"
         />
+        <Dropdown
+          v-model="rolFilter"
+          :options="rolOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Rol"
+          class="w-48"
+          @change="applyFilters"
+        />
       </div>
     </div>
 
@@ -155,7 +164,8 @@ const toast = useToast()
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
-const storeStatusFilter = ref('all')
+const storeStatusFilter = ref('vigente')
+const rolFilter = ref('all')
 
 const statusOptions = [
   { label: 'Toda activación', value: 'all' },
@@ -171,11 +181,22 @@ const storeStatusOptions = [
   { label: 'Tienda vencida', value: 'vencido' }
 ]
 
+const rolOptions = [
+  { label: 'Todo rol', value: 'all' },
+  { label: 'Administrador principal', value: 'principal' },
+  { label: 'Colaborador', value: 'colaborador' }
+]
+
 function applySearch() {
   usersStore.updateFilters({ search: searchQuery.value })
 }
 function applyFilters() {
-  usersStore.updateFilters({ search: searchQuery.value, status: statusFilter.value, store_status: storeStatusFilter.value })
+  usersStore.updateFilters({
+    search: searchQuery.value,
+    status: statusFilter.value,
+    store_status: storeStatusFilter.value,
+    rol: rolFilter.value
+  })
 }
 
 const estadoLabels: Record<UserActivationEstado, string> = {
