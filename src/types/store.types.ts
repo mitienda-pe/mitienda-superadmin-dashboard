@@ -212,4 +212,5 @@ export interface CreateStoreResult {
   slug: string
   usuario_id: number
   email_sent: boolean
+  attached_existing_user: boolean
 }

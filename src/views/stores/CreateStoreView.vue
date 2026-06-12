@@ -437,14 +437,14 @@ async function onSubmit() {
 
   try {
     const result = await storesStore.createStore(payload)
-    toast.add({
-      severity: 'success',
-      summary: 'Tienda creada',
-      detail: result.email_sent
-        ? 'Se envió el email de bienvenida con el enlace para definir contraseña.'
-        : 'La tienda se creó, pero el email de bienvenida no pudo enviarse.',
-      life: 6000
-    })
+    const attached = result.attached_existing_user
+    const summary = attached ? 'Tienda agregada a cuenta existente' : 'Tienda creada'
+    const base = attached
+      ? `El correo ya tenía cuenta: la tienda se agregó y aparecerá en su selector. Entra con su contraseña actual${result.email_sent ? ' (se le envió un aviso por correo)' : ''}.`
+      : (result.email_sent
+          ? 'Se envió el email de bienvenida con el enlace para definir contraseña.'
+          : 'La tienda se creó, pero el email de bienvenida no pudo enviarse.')
+    toast.add({ severity: 'success', summary, detail: base, life: 7000 })
     router.push(`/stores/${result.store_id}`)
   } catch (e: any) {
     toast.add({
