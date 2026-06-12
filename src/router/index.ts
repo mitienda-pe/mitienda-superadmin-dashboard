@@ -60,6 +60,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/users',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'Users',
+        component: () => import('@/views/users/UsersListView.vue')
+      }
+    ]
+  },
+  {
     path: '/revenue',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

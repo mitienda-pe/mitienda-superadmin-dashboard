@@ -29,6 +29,7 @@ const route = useRoute()
 const navItems = [
   { path: '/dashboard', label: 'Overview', icon: 'pi pi-chart-bar' },
   { path: '/stores', label: 'Tiendas', icon: 'pi pi-shop' },
+  { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
   { path: '/pipeline', label: 'Pipeline', icon: 'pi pi-filter' },
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
   { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
