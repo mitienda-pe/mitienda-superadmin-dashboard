@@ -88,6 +88,26 @@ body {
   border-color: var(--primary-500);
 }
 
+/* Restaura el layout de `p-input-icon-left` que PrimeVue 3.52 removió
+   (migró a IconField/InputIcon). Sin esto, el icono pi-search de los
+   buscadores se monta sobre el placeholder. Fix en raíz: cubre los 9
+   buscadores que usan el patrón <span class="p-input-icon-left">. */
+.p-input-icon-left {
+  position: relative;
+  display: block;
+}
+.p-input-icon-left > i:first-child {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  margin-top: -0.5rem;
+  color: #6b7280;
+  pointer-events: none;
+}
+.p-input-icon-left > .p-inputtext {
+  padding-left: 2.5rem;
+}
+
 /* PrimeVue Button spacing */
 .p-button {
   padding: 0.75rem 1.25rem;
