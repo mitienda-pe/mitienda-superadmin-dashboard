@@ -36,6 +36,8 @@
     <template v-else-if="storesStore.currentStore">
       <StoreHeader :store="storesStore.currentStore" />
 
+      <InvitationStatusPanel :store-id="storesStore.currentStore.id" />
+
       <TabView v-model:activeIndex="activeTab">
         <TabPanel header="Ventas">
           <SalesPanel
@@ -74,6 +76,7 @@ import Button from 'primevue/button'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
 import StoreHeader from '@/components/stores/StoreHeader.vue'
+import InvitationStatusPanel from '@/components/stores/InvitationStatusPanel.vue'
 import SalesPanel from '@/components/stores/SalesPanel.vue'
 import SubscriptionPanel from '@/components/stores/SubscriptionPanel.vue'
 import TopProductsPanel from '@/components/stores/TopProductsPanel.vue'

@@ -99,3 +99,35 @@ export async function createStore(payload: CreateStorePayload) {
   )
   return res.data
 }
+
+export type InvitationEstado = 'activado' | 'pendiente' | 'expirado' | 'sin_invitacion'
+
+export interface InvitationStatus {
+  usuario_id: number | null
+  email: string | null
+  estado: InvitationEstado
+  token: { sent_at: string | null; expires_at: string | null; used_at: string | null } | null
+  ultimo_ingreso: string | null
+  email_delivery: {
+    status: string // sent | failed | bounced | complained
+    sent_at: number | null
+    opened_at: number | null
+    open_count: number
+    template: string | null
+  } | null
+}
+
+export async function getInvitationStatus(storeId: number) {
+  const res = await api.get<{ success: boolean; data: InvitationStatus }>(
+    `/superadmin/dashboard/stores/${storeId}/invitation-status`
+  )
+  return res.data
+}
+
+export async function resendStoreInvitation(storeId: number) {
+  const res = await api.post<{ success: boolean; message: string; email_sent: boolean }>(
+    `/superadmin/dashboard/stores/${storeId}/resend-invitation`,
+    {}
+  )
+  return res.data
+}
