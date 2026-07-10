@@ -63,6 +63,7 @@
             :store-id="storesStore.currentStore.id"
             :store-name="storesStore.currentStore.name"
             @renewed="loadStore"
+            @expired="loadStore"
           />
         </TabPanel>
       </TabView>

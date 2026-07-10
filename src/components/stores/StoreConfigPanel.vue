@@ -99,13 +99,23 @@
           Plan Actual
           <span class="text-xs font-normal text-gray-400 ml-2">{{ plan.name }}</span>
         </h3>
-        <Button
-          label="Renovar plan"
-          icon="pi pi-refresh"
-          size="small"
-          outlined
-          @click="openRenewDialog"
-        />
+        <div class="flex items-center gap-2">
+          <Button
+            label="Renovar plan"
+            icon="pi pi-refresh"
+            size="small"
+            outlined
+            @click="openRenewDialog"
+          />
+          <Button
+            label="Dar de baja"
+            icon="pi pi-ban"
+            size="small"
+            outlined
+            severity="danger"
+            @click="expireDialogVisible = true"
+          />
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <div>
@@ -389,6 +399,44 @@
         />
       </template>
     </Dialog>
+
+    <!-- Dar de baja dialog -->
+    <Dialog
+      v-model:visible="expireDialogVisible"
+      modal
+      header="Dar de baja la tienda"
+      :style="{ width: '30rem' }"
+    >
+      <div class="space-y-4">
+        <div class="flex items-start gap-3 bg-red-50 border border-red-100 rounded-lg p-3">
+          <i class="pi pi-exclamation-triangle text-red-500 mt-0.5"></i>
+          <p class="text-sm text-red-700">
+            Se expirará el plan vigente (vencimiento = ayer) y la tienda quedará
+            <strong>inactiva de inmediato</strong>: el storefront dejará de servirla.
+            Es reversible con «Renovar plan».
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Motivo (opcional)</label>
+          <Textarea
+            v-model="expireReason"
+            rows="2"
+            class="w-full"
+            placeholder="Ej: Falta de pago / solicitud del cliente"
+          />
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text severity="secondary" @click="expireDialogVisible = false" />
+        <Button
+          label="Dar de baja"
+          icon="pi pi-ban"
+          severity="danger"
+          :loading="expiring"
+          @click="submitExpire"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -410,7 +458,7 @@ import type { StoreModule } from '@/types/plans.types'
 import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
 import { plansApi } from '@/api/plans.api'
-import { getAvailablePlans, renewStorePlan } from '@/api/stores.api'
+import { getAvailablePlans, renewStorePlan, expireStorePlan } from '@/api/stores.api'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 
 const props = defineProps<{
@@ -420,7 +468,7 @@ const props = defineProps<{
   storeName: string
 }>()
 
-const emit = defineEmits<{ (e: 'renewed'): void }>()
+const emit = defineEmits<{ (e: 'renewed'): void; (e: 'expired'): void }>()
 
 const toast = useToast()
 const storesStore = useStoresStore()
@@ -838,6 +886,36 @@ async function submitRenewal() {
     })
   } finally {
     renewing.value = false
+  }
+}
+
+// ── Dar de baja (expira el plan vigente) ─────────────────────────────────
+const expireDialogVisible = ref(false)
+const expiring = ref(false)
+const expireReason = ref('')
+
+async function submitExpire() {
+  expiring.value = true
+  try {
+    await expireStorePlan(props.storeId, expireReason.value.trim() || undefined)
+    toast.add({
+      severity: 'success',
+      summary: 'Tienda dada de baja',
+      detail: 'El plan fue expirado. La tienda quedó inactiva.',
+      life: 4000
+    })
+    expireDialogVisible.value = false
+    expireReason.value = ''
+    emit('expired')
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: e?.response?.data?.message || 'No se pudo dar de baja la tienda',
+      life: 5000
+    })
+  } finally {
+    expiring.value = false
   }
 }
 </script>

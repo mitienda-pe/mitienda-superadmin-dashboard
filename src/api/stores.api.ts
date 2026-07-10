@@ -119,6 +119,22 @@ export async function renewStorePlan(storeId: number, payload: RenewStorePlanPay
   return res.data
 }
 
+/**
+ * Baja manual de tienda: expira el plan vigente (fechafinal = ayer) dejándola
+ * inactiva de inmediato. Reversible con renewStorePlan.
+ */
+export async function expireStorePlan(storeId: number, reason?: string) {
+  const res = await api.post<{
+    success: boolean
+    message: string
+    data: { tiendaplan_id: number; tiendaplan_fechafinal: string }
+  }>(
+    `/superadmin/dashboard/stores/${storeId}/expire`,
+    reason ? { reason } : {}
+  )
+  return res.data
+}
+
 export async function createStore(payload: CreateStorePayload) {
   const res = await api.post<{ success: boolean; message: string; data: CreateStoreResult }>(
     '/superadmin/dashboard/stores',
