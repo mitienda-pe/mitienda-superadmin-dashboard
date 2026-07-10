@@ -62,6 +62,7 @@
             :plan="storesStore.currentStore.plan"
             :store-id="storesStore.currentStore.id"
             :store-name="storesStore.currentStore.name"
+            @renewed="loadStore"
           />
         </TabPanel>
       </TabView>

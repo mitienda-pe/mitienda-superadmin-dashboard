@@ -92,6 +92,33 @@ export async function getAvailablePlans() {
   return res.data
 }
 
+export interface RenewStorePlanPayload {
+  plandetalle_id: number
+  price?: number
+  payment_note?: string
+}
+
+export interface RenewStorePlanResult {
+  tiendaplan_id: number
+  plan_id: number
+  plan_titulo: string
+  tiendaplan_fechainicio: string
+  tiendaplan_fechafinal: string
+  tiendaplan_precio: number
+}
+
+/**
+ * Renovación manual de plan (legacy): inserta una fila nueva en tiendasplanes
+ * extendiendo desde el vencimiento vigente, preservando add-ons/módulos.
+ */
+export async function renewStorePlan(storeId: number, payload: RenewStorePlanPayload) {
+  const res = await api.post<{ success: boolean; message: string; data: RenewStorePlanResult }>(
+    `/superadmin/dashboard/stores/${storeId}/renew`,
+    payload
+  )
+  return res.data
+}
+
 export async function createStore(payload: CreateStorePayload) {
   const res = await api.post<{ success: boolean; message: string; data: CreateStoreResult }>(
     '/superadmin/dashboard/stores',
