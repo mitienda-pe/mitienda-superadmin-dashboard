@@ -84,6 +84,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/store-sales',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'StoreSales',
+        component: () => import('@/views/store-sales/StoreSalesReportView.vue')
+      }
+    ]
+  },
+  {
     path: '/alerts',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

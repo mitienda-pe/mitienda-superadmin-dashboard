@@ -32,6 +32,7 @@ const navItems = [
   { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
   { path: '/pipeline', label: 'Pipeline', icon: 'pi pi-filter' },
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
+  { path: '/store-sales', label: 'Ventas Tiendas', icon: 'pi pi-shopping-cart' },
   { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
   { path: '/billing/plan-sales', label: 'Ventas Planes', icon: 'pi pi-receipt' },
   { path: '/subscriptions', label: 'Suscripciones', icon: 'pi pi-sync' },
