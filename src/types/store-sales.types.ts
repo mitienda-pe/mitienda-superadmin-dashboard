@@ -10,6 +10,9 @@ export interface StoreSalesRow extends StoreSalesTotals {
   id: number
   name: string
   slug: string
+  flag: string | null
+  plan: string | null
+  status: 'vigente' | 'vencido'
 }
 
 export interface StoreSalesReport {
@@ -18,4 +21,12 @@ export interface StoreSalesReport {
   totals: StoreSalesTotals
   store_count: number
   stores: StoreSalesRow[]
+}
+
+export interface StoreSalesFilters {
+  start: string
+  end: string
+  plan?: string
+  status?: string
+  flag?: string
 }

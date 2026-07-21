@@ -1,19 +1,19 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getStoreSalesReport } from '@/api/store-sales.api'
-import type { StoreSalesReport } from '@/types/store-sales.types'
+import type { StoreSalesReport, StoreSalesFilters } from '@/types/store-sales.types'
 
 export const useStoreSalesStore = defineStore('storeSales', () => {
   const data = ref<StoreSalesReport | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchReport(start: string, end: string) {
+  async function fetchReport(filters: StoreSalesFilters) {
     isLoading.value = true
     error.value = null
 
     try {
-      const res = await getStoreSalesReport(start, end)
+      const res = await getStoreSalesReport(filters)
       if (res.success && res.data) {
         data.value = res.data
       } else {
