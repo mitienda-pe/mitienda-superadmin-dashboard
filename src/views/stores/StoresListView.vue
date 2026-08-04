@@ -19,7 +19,7 @@
             <i class="pi pi-search" />
             <InputText
               v-model="searchQuery"
-              placeholder="Buscar tienda..."
+              placeholder="Buscar por ID, nombre, slug o correo..."
               class="w-full"
               @keyup.enter="applySearch"
             />
