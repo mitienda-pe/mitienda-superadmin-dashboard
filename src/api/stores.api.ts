@@ -14,6 +14,7 @@ export async function getStoresList(filters: Partial<StoreListFilters> = {}) {
   if (filters.classification) params.classification = filters.classification
   if (filters.status) params.status = filters.status
   if (filters.flag) params.flag = filters.flag
+  if (filters.storefront) params.storefront = filters.storefront
   if (filters.sort) params.sort = filters.sort
   if (filters.order) params.order = filters.order
   if (filters.page) params.page = filters.page

@@ -3,6 +3,35 @@
 export type StoreFlag = 'internal' | 'corporate' | null
 export type StoreStatus = 'vigente' | 'vencido'
 
+/**
+ * A qué servidor resuelve el hostname público de la tienda. Lo escribe el cron
+ * `stores:check-migration` en la API; no se edita a mano.
+ *
+ * - `nuevo`: storefront Nuxt 3.
+ * - `legacy`: storefront viejo (CI3 / Apache). Es lo que falta migrar.
+ * - `nxdomain`: dominio propio que ya no resuelve. Cuenta como migrada — el
+ *   comprador entra por el subdominio, que está en el server nuevo.
+ * - `externo`: IP de terceros (CDN, proxy, hosting propio). Hay que mirarla.
+ * - `null`: nunca chequeada.
+ */
+export type StorefrontDnsStatus = 'nuevo' | 'legacy' | 'nxdomain' | 'externo' | 'error' | null
+
+export interface StorefrontStatus {
+  status: StorefrontDnsStatus
+  /** null cuando nunca se chequeó. */
+  migrated: boolean | null
+  ip: string | null
+  checked_at: string | null
+  legacy_orders_30d: number
+  last_legacy_order: string | null
+  /**
+   * DNS ya en el server nuevo pero siguen entrando pedidos creados fuera de CI4:
+   * cutover a medias. Mirar `last_legacy_order` antes de alarmarse — una tienda
+   * recién migrada arrastra su cola de pedidos dentro de la ventana de 30 días.
+   */
+  mismatch: boolean
+}
+
 export interface StoreListItem {
   id: number
   name: string
@@ -12,6 +41,7 @@ export interface StoreListItem {
   created_at: string
   flag: StoreFlag
   status: StoreStatus
+  storefront: StorefrontStatus
   seniority_months: number
   owner_name: string | null
   owner_email: string | null
@@ -47,6 +77,8 @@ export interface StoreListFilters {
   classification: string
   status: string
   flag: string
+  /** migrado | pendiente | mismatch | sin_datos | nuevo | legacy | nxdomain | externo */
+  storefront: string
   sort: string
   order: 'ASC' | 'DESC'
   page: number

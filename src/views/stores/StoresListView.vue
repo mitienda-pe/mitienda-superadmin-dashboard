@@ -61,6 +61,15 @@
           class="w-40"
           @change="applyFilters"
         />
+        <Dropdown
+          v-model="storefrontFilter"
+          :options="storefrontOptions"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Storefront"
+          class="w-48"
+          @change="applyFilters"
+        />
         <Button
           v-if="hasActiveFilters"
           icon="pi pi-filter-slash"
@@ -158,6 +167,25 @@
               Corporativa
             </span>
             <span v-else class="text-xs text-gray-400">Orgánica</span>
+          </template>
+        </Column>
+
+        <Column header="Storefront" :sortable="false" style="width: 130px">
+          <template #body="{ data: row }">
+            <div class="flex items-center gap-1.5">
+              <span
+                class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                :class="storefrontBadgeClass(row.storefront)"
+                v-tooltip.top="storefrontTooltip(row.storefront)"
+              >
+                {{ storefrontLabel(row.storefront) }}
+              </span>
+              <i
+                v-if="row.storefront?.mismatch"
+                class="pi pi-exclamation-triangle text-amber-500 text-xs"
+                v-tooltip.top="`Cutover a medias: ${row.storefront.legacy_orders_30d} pedidos legacy en 30d, el último el ${formatDate(row.storefront.last_legacy_order)}`"
+              ></i>
+            </div>
           </template>
         </Column>
 
@@ -295,16 +323,17 @@ import Menu from 'primevue/menu'
 import HealthBadge from '@/components/ui/HealthBadge.vue'
 import { useStoresStore } from '@/stores/stores.store'
 import { useFormatters } from '@/composables/useFormatters'
-import type { StoreListItem, StoreFlag } from '@/types/store.types'
+import type { StoreListItem, StoreFlag, StorefrontStatus } from '@/types/store.types'
 
 const storesStore = useStoresStore()
-const { formatCurrency, formatNumber } = useFormatters()
+const { formatCurrency, formatNumber, formatDate } = useFormatters()
 
 const searchQuery = ref('')
 const planFilter = ref('')
 const classificationFilter = ref('')
 const statusFilter = ref('vigente')
 const flagFilter = ref('')
+const storefrontFilter = ref('')
 
 const planCategoryLabels: Record<string, string> = {
   trial: 'Prueba gratis',
@@ -341,9 +370,59 @@ const flagOptions = [
   { label: 'Corporativa', value: 'corporate' }
 ]
 
+const storefrontOptions = [
+  { label: 'Todo storefront', value: '' },
+  { label: 'Migradas', value: 'migrado' },
+  { label: 'Faltan migrar', value: 'pendiente' },
+  { label: 'Cutover a medias', value: 'mismatch' },
+  { label: 'IP externa', value: 'externo' },
+  { label: 'Sin chequear', value: 'sin_datos' }
+]
+
 const hasActiveFilters = computed(() =>
-  searchQuery.value || planFilter.value || classificationFilter.value || statusFilter.value || flagFilter.value
+  searchQuery.value || planFilter.value || classificationFilter.value || statusFilter.value ||
+  flagFilter.value || storefrontFilter.value
 )
+
+/**
+ * El estado sale de resolver el DNS del hostname público (cron
+ * `stores:check-migration`), no de marcarlo a mano ni de mirar los pedidos.
+ * 'nxdomain' se muestra como migrada porque sin dominio propio vivo el comprador
+ * entra por el subdominio, que está en el server nuevo desde el wildcard.
+ */
+function storefrontLabel(sf?: StorefrontStatus): string {
+  if (!sf?.status) return 'Sin datos'
+  const labels: Record<string, string> = {
+    nuevo: 'Nuevo',
+    legacy: 'Legacy',
+    nxdomain: 'Nuevo',
+    externo: 'Externo',
+    error: 'Error'
+  }
+  return labels[sf.status] || sf.status
+}
+
+function storefrontBadgeClass(sf?: StorefrontStatus): string {
+  if (!sf?.status) return 'bg-gray-100 text-gray-500'
+  if (sf.status === 'legacy') return 'bg-amber-50 text-amber-700'
+  if (sf.status === 'externo' || sf.status === 'error') return 'bg-gray-100 text-gray-600'
+  return 'bg-green-50 text-green-700'
+}
+
+function storefrontTooltip(sf?: StorefrontStatus): string {
+  if (!sf?.status) return 'Nunca chequeada. Corre stores:check-migration.'
+
+  const detail: Record<string, string> = {
+    nuevo: 'Sirve el storefront Nuxt 3',
+    legacy: 'Sigue en el storefront viejo (CI3)',
+    nxdomain: 'Dominio propio sin DNS: la atiende su subdominio, ya migrado',
+    externo: `IP de terceros (${sf.ip || 'sin IP'}) — revisar a mano`,
+    error: 'No se pudo resolver'
+  }
+
+  const when = sf.checked_at ? ` · chequeado ${formatDate(sf.checked_at)}` : ''
+  return (detail[sf.status] || sf.status) + when
+}
 
 const visiblePages = computed(() => {
   const current = storesStore.meta.current_page
@@ -401,7 +480,8 @@ function applyFilters() {
     plan: planFilter.value,
     classification: classificationFilter.value,
     status: statusFilter.value,
-    flag: flagFilter.value
+    flag: flagFilter.value,
+    storefront: storefrontFilter.value
   })
 }
 
@@ -411,7 +491,8 @@ function clearFilters() {
   classificationFilter.value = ''
   statusFilter.value = ''
   flagFilter.value = ''
-  storesStore.updateFilters({ search: '', plan: '', classification: '', status: '', flag: '', page: 1 })
+  storefrontFilter.value = ''
+  storesStore.updateFilters({ search: '', plan: '', classification: '', status: '', flag: '', storefront: '', page: 1 })
 }
 
 function onSort(event: any) {

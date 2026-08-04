@@ -29,6 +29,7 @@ export const useStoresStore = defineStore('stores', () => {
     classification: '',
     status: 'vigente',
     flag: '',
+    storefront: '',
     sort: 'current_month_sales',
     order: 'DESC',
     page: 1,
