@@ -116,12 +116,38 @@
 
     <!-- Table -->
     <div v-else class="bg-white rounded-xl border border-gray-200">
+      <!-- Barra de acciones del lote: solo aparece con algo seleccionado -->
+      <div
+        v-if="selectedPending.length > 0"
+        class="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3"
+      >
+        <span class="text-sm font-medium text-gray-700">
+          {{ selectedPending.length }} seleccionada{{ selectedPending.length === 1 ? '' : 's' }}
+          sin facturar
+        </span>
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="batchSendEmail" inputId="batchSendEmail" binary />
+          <label for="batchSendEmail" class="text-sm text-gray-600">Enviar por correo</label>
+        </div>
+        <Button
+          label="Emitir seleccionadas"
+          icon="pi pi-file-edit"
+          size="small"
+          class="ml-auto"
+          :loading="batchRunning"
+          @click="confirmBatch"
+        />
+      </div>
+
       <DataTable
+        v-model:selection="selectedRows"
         :value="store.planSales"
         :loading="store.planSalesLoading"
+        dataKey="id"
         stripedRows
         class="p-datatable-sm"
       >
+        <Column selectionMode="multiple" style="width: 40px" />
         <Column field="tienda_nombre" header="Tienda" style="min-width: 180px">
           <template #body="{ data: row }">
             <router-link
@@ -214,7 +240,7 @@
           </template>
         </Column>
 
-        <Column header="" style="width: 110px">
+        <Column header="" style="width: 140px">
           <template #body="{ data: row }">
             <Button
               v-if="row.sw_facturado !== 1"
@@ -224,6 +250,16 @@
               outlined
               :loading="previewingId === row.id"
               @click="openEmitDialog(row)"
+            />
+            <Button
+              v-else
+              label="Enviar"
+              icon="pi pi-envelope"
+              size="small"
+              text
+              :loading="emailingId === row.id"
+              v-tooltip="'Enviar el comprobante por correo al comercio'"
+              @click="sendEmail(row)"
             />
           </template>
         </Column>
@@ -343,6 +379,66 @@
         />
       </template>
     </Dialog>
+
+    <!-- Resultado del lote: detalle por item, para que quede claro que salio -->
+    <Dialog
+      v-model:visible="batchResultVisible"
+      modal
+      header="Resultado de la emision"
+      :style="{ width: '640px' }"
+    >
+      <div v-if="batchResult" class="space-y-4">
+        <div class="flex flex-wrap gap-4 text-sm">
+          <span class="font-medium text-green-700">{{ batchResult.emitted }} emitidas</span>
+          <span v-if="batchResult.failed" class="font-medium text-red-700">
+            {{ batchResult.failed }} con error
+          </span>
+          <span v-if="batchResult.skipped" class="font-medium text-gray-500">
+            {{ batchResult.skipped }} omitidas
+          </span>
+          <span v-if="batchResult.pending" class="font-medium text-amber-700">
+            {{ batchResult.pending }} sin procesar
+          </span>
+        </div>
+
+        <div
+          v-if="batchResult.pending"
+          class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          Se agoto el tiempo del proceso. Las {{ batchResult.pending }} restantes
+          <strong>no se emitieron</strong>: volve a seleccionarlas y emitilas en otro lote.
+        </div>
+
+        <div class="max-h-80 overflow-y-auto rounded-lg border border-gray-100">
+          <table class="w-full text-sm">
+            <tbody class="divide-y divide-gray-100">
+              <tr v-for="item in batchResult.results" :key="item.tiendaplan_id">
+                <td class="px-3 py-2 font-mono text-xs text-gray-400">#{{ item.tiendaplan_id }}</td>
+                <td class="px-3 py-2">
+                  <span
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                    :class="batchStatusClass(item.status)"
+                  >
+                    {{ batchStatusLabel(item.status) }}
+                  </span>
+                </td>
+                <td class="px-3 py-2 text-gray-700">
+                  <span v-if="item.comprobante" class="font-mono">{{ item.comprobante }}</span>
+                  <span v-else>{{ item.message }}</span>
+                  <span v-if="item.email_error" class="block text-xs text-amber-700">
+                    Comprobante emitido, pero el correo no salio: {{ item.email_error }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <template #footer>
+        <Button label="Cerrar" @click="batchResultVisible = false" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -354,22 +450,28 @@ import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import { useBillingStore } from '@/stores/billing.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getPlatformInvoiceStatus,
   previewPlanSaleInvoice,
-  emitPlanSaleInvoice
+  emitPlanSaleInvoice,
+  emitPlanSalesBatch,
+  sendPlanSaleInvoiceEmail
 } from '@/api/billing.api'
 import type {
   PlanSaleItem,
   PlatformInvoiceStatus,
-  PlatformInvoicePreview
+  PlatformInvoicePreview,
+  PlatformBatchResult
 } from '@/types/billing.types'
 
 const store = useBillingStore()
 const toast = useToast()
+const confirm = useConfirm()
 const { formatCurrency, formatDate } = useFormatters()
 
 // --- Emision de comprobantes de plataforma ---
@@ -396,6 +498,86 @@ async function openEmitDialog(row: PlanSaleItem) {
     })
   } finally {
     previewingId.value = null
+  }
+}
+
+// --- Emision por lote ---
+const selectedRows = ref<PlanSaleItem[]>([])
+const batchSendEmail = ref(false)
+const batchRunning = ref(false)
+const batchResult = ref<PlatformBatchResult | null>(null)
+const batchResultVisible = ref(false)
+const emailingId = ref<number | null>(null)
+
+// Solo las pendientes: seleccionar una ya facturada no deberia sumar al lote
+// (el backend la omitiria igual, pero el contador mentiria sobre cuantas se van
+// a emitir).
+const selectedPending = computed(() => selectedRows.value.filter(r => r.sw_facturado !== 1))
+
+function batchStatusLabel(status: string): string {
+  return { emitted: 'Emitida', failed: 'Error', skipped: 'Omitida' }[status] || status
+}
+
+function batchStatusClass(status: string): string {
+  return {
+    emitted: 'bg-green-50 text-green-700',
+    failed: 'bg-red-50 text-red-700',
+    skipped: 'bg-gray-100 text-gray-600'
+  }[status] || 'bg-gray-100 text-gray-600'
+}
+
+function confirmBatch() {
+  const n = selectedPending.value.length
+  confirm.require({
+    header: 'Emitir en lote',
+    message:
+      `Se emitiran ${n} comprobante${n === 1 ? '' : 's'}` +
+      (batchSendEmail.value ? ' y se enviaran por correo al comercio' : '') +
+      '. Emitir es irreversible: consume correlativo y llega a SUNAT.',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Emitir',
+    rejectLabel: 'Cancelar',
+    accept: runBatch
+  })
+}
+
+async function runBatch() {
+  batchRunning.value = true
+  try {
+    const res = await emitPlanSalesBatch(
+      selectedPending.value.map(r => r.id),
+      batchSendEmail.value
+    )
+    batchResult.value = res.data
+    batchResultVisible.value = true
+    selectedRows.value = []
+    store.fetchPlanSales()
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo emitir el lote',
+      detail: e?.response?.data?.message || e.message,
+      life: 8000
+    })
+  } finally {
+    batchRunning.value = false
+  }
+}
+
+async function sendEmail(row: PlanSaleItem) {
+  emailingId.value = row.id
+  try {
+    const res = await sendPlanSaleInvoiceEmail(row.id)
+    toast.add({ severity: 'success', summary: 'Correo enviado', detail: res.message, life: 6000 })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo enviar',
+      detail: e?.response?.data?.message || e.message,
+      life: 8000
+    })
+  } finally {
+    emailingId.value = null
   }
 }
 

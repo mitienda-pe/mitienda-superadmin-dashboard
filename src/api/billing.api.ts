@@ -4,7 +4,8 @@ import type {
   InvoiceItem, InvoiceSummary, InvoiceFilters,
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta,
-  PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult
+  PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult,
+  PlatformBatchResult
 } from '@/types/billing.types'
 
 interface CommissionsResponse {
@@ -93,6 +94,22 @@ export async function previewPlanSaleInvoice(tiendaPlanId: number) {
 export async function emitPlanSaleInvoice(tiendaPlanId: number) {
   const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
     `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/emit`
+  )
+  return res.data
+}
+
+export async function emitPlanSalesBatch(ids: number[], sendEmail = false) {
+  const res = await api.post<{ message: string; data: PlatformBatchResult }>(
+    '/superadmin/platform-invoices/plan-sales/emit-batch',
+    { ids, send_email: sendEmail }
+  )
+  return res.data
+}
+
+export async function sendPlanSaleInvoiceEmail(tiendaPlanId: number, email?: string) {
+  const res = await api.post<{ message: string }>(
+    `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/send-email`,
+    email ? { email } : {}
   )
   return res.data
 }

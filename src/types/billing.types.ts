@@ -152,3 +152,22 @@ export interface PlatformInvoiceResult {
   persisted: boolean
   environment: 'demo' | 'production'
 }
+
+export interface PlatformBatchItemResult {
+  tiendaplan_id: number
+  status: 'emitted' | 'failed' | 'skipped'
+  message?: string
+  comprobante?: string
+  persisted?: boolean
+  email_sent?: boolean
+  email_error?: string | null
+}
+
+export interface PlatformBatchResult {
+  results: PlatformBatchItemResult[]
+  emitted: number
+  failed: number
+  skipped: number
+  /** Quedaron sin procesar porque se agoto el presupuesto de tiempo del request. */
+  pending: number
+}
