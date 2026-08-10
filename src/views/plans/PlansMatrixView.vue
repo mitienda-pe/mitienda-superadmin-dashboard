@@ -317,9 +317,10 @@ interface PlanFormState {
 const form = ref<Record<number, PlanFormState>>({})
 const originalSnapshot = ref('')
 
-const MAIN_PLAN_IDS = [1, 2, 3, 4, 8] // Micro, Small, Medium, Large, Prueba Gratis
+// Planes vigentes (plan_activado = 1): Micro, Small, Medium, Large, Prueba Gratis, PDV.
+// Los planes descontinuados quedan fuera sin necesidad de mantener una lista fija.
 const matrixPlans = computed(() =>
-  (plansStore.matrixData?.plans ?? []).filter(p => MAIN_PLAN_IDS.includes(p.id))
+  (plansStore.matrixData?.plans ?? []).filter(p => p.active)
 )
 const showOnlyMigrated = ref(true)
 const rawModules = computed(() => plansStore.matrixData?.modules ?? [])

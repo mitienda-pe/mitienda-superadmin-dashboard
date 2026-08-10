@@ -340,8 +340,6 @@ import draggable from 'vuedraggable'
 const plansStore = usePlansStore()
 const toast = useToast()
 
-const MAIN_PLAN_IDS = [1, 2, 3, 4, 8]
-
 interface FeatureFormItem {
   key: string
   text: string
@@ -358,8 +356,10 @@ const form = ref<Record<number, PlanFormState>>({})
 const originalSnapshot = ref('')
 let keyCounter = 0
 
+// Planes vigentes (plan_activado = 1): Micro, Small, Medium, Large, Prueba Gratis, PDV.
+// Los planes descontinuados quedan fuera sin necesidad de mantener una lista fija.
 const mainPlans = computed(() =>
-  plansStore.pricingPlans.filter(p => MAIN_PLAN_IDS.includes(p.id))
+  plansStore.pricingPlans.filter(p => p.active)
 )
 
 function generateKey(): string {
