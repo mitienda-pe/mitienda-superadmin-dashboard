@@ -6,6 +6,26 @@
       <p class="text-sm text-gray-500 mt-1">Renovaciones y pagos de suscripciones</p>
     </div>
 
+    <!--
+      El entorno del emisor tiene que estar SIEMPRE a la vista: en demo se emite
+      igual, pero la suscripcion no queda marcada como facturada. Sin este aviso
+      es facil creer que se cerro la cola cuando no se cerro.
+    -->
+    <div
+      v-if="platformStatus && !platformStatus.is_production"
+      class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+    >
+      <i class="pi pi-exclamation-triangle text-amber-500 mt-0.5"></i>
+      <div class="text-sm">
+        <p class="font-medium text-amber-900">Emision en modo PRUEBAS</p>
+        <p class="text-amber-800 mt-0.5">
+          Los comprobantes se emiten contra el ambiente demo de Nubefact y
+          <strong>no se marcan como facturados</strong>. Series
+          {{ platformStatus.series.factura?.serie }} / {{ platformStatus.series.boleta?.serie }}.
+        </p>
+      </div>
+    </div>
+
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -193,6 +213,20 @@
             <span v-else class="text-sm text-gray-300">-</span>
           </template>
         </Column>
+
+        <Column header="" style="width: 110px">
+          <template #body="{ data: row }">
+            <Button
+              v-if="row.sw_facturado !== 1"
+              label="Emitir"
+              icon="pi pi-file-edit"
+              size="small"
+              outlined
+              :loading="previewingId === row.id"
+              @click="openEmitDialog(row)"
+            />
+          </template>
+        </Column>
       </DataTable>
 
       <!-- Pagination -->
@@ -231,6 +265,84 @@
         </div>
       </div>
     </div>
+
+    <!--
+      Confirmacion con el detalle real del comprobante. Emitir es irreversible
+      (consume correlativo y llega a SUNAT), asi que el superadmin ve tipo de
+      documento, receptor y total ANTES de apretar.
+    -->
+    <Dialog
+      v-model:visible="emitDialogVisible"
+      modal
+      header="Emitir comprobante"
+      :style="{ width: '520px' }"
+    >
+      <div v-if="preview" class="space-y-4">
+        <div
+          v-if="!preview.can_emit"
+          class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          {{ preview.blocking_reason }}
+        </div>
+
+        <div
+          v-else-if="!preview.serie_active"
+          class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+        >
+          La serie {{ preview.serie }} esta inactiva. Se habilita recien cuando este
+          dada de alta en Nubefact.
+        </div>
+
+        <dl class="divide-y divide-gray-100 text-sm">
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Tipo</dt>
+            <dd class="font-medium text-gray-900">{{ preview.document_type_name }}</dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Comprobante</dt>
+            <dd class="font-mono text-gray-900">
+              {{ preview.serie }}-{{ String(preview.next_correlative ?? 0).padStart(8, '0') }}
+            </dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Receptor</dt>
+            <dd class="text-right font-medium text-gray-900">{{ preview.client.business_name }}</dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Documento</dt>
+            <dd class="font-mono text-gray-900">{{ preview.client.document_number }}</dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Domicilio fiscal</dt>
+            <dd class="text-right text-gray-700">{{ preview.client.address }}</dd>
+          </div>
+          <div class="flex justify-between py-2">
+            <dt class="text-gray-500">Total (IGV incluido)</dt>
+            <dd class="text-base font-bold text-gray-900">
+              {{ formatCurrency(preview.total_with_tax) }}
+            </dd>
+          </div>
+        </dl>
+
+        <p v-if="preview.environment !== 'production'" class="text-xs text-amber-700">
+          Entorno de pruebas: se emitira contra el demo de Nubefact y la suscripcion
+          NO quedara marcada como facturada.
+        </p>
+      </div>
+
+      <div v-else class="py-6 text-center text-sm text-gray-400">Cargando...</div>
+
+      <template #footer>
+        <Button label="Cancelar" text severity="secondary" @click="emitDialogVisible = false" />
+        <Button
+          label="Emitir"
+          icon="pi pi-check"
+          :loading="emitting"
+          :disabled="!preview?.can_emit || !preview?.serie_active"
+          @click="confirmEmit"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -241,11 +353,81 @@ import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import { useToast } from 'primevue/usetoast'
 import { useBillingStore } from '@/stores/billing.store'
 import { useFormatters } from '@/composables/useFormatters'
+import {
+  getPlatformInvoiceStatus,
+  previewPlanSaleInvoice,
+  emitPlanSaleInvoice
+} from '@/api/billing.api'
+import type {
+  PlanSaleItem,
+  PlatformInvoiceStatus,
+  PlatformInvoicePreview
+} from '@/types/billing.types'
 
 const store = useBillingStore()
+const toast = useToast()
 const { formatCurrency, formatDate } = useFormatters()
+
+// --- Emision de comprobantes de plataforma ---
+const platformStatus = ref<PlatformInvoiceStatus | null>(null)
+const emitDialogVisible = ref(false)
+const preview = ref<PlatformInvoicePreview | null>(null)
+const previewingId = ref<number | null>(null)
+const emitting = ref(false)
+
+async function openEmitDialog(row: PlanSaleItem) {
+  previewingId.value = row.id
+  preview.value = null
+  try {
+    // Se pide el preview ANTES de abrir para no mostrar un dialogo vacio si el
+    // backend ya sabe que esa fila no se puede facturar.
+    preview.value = await previewPlanSaleInvoice(row.id)
+    emitDialogVisible.value = true
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo preparar el comprobante',
+      detail: e?.response?.data?.message || e.message,
+      life: 6000
+    })
+  } finally {
+    previewingId.value = null
+  }
+}
+
+async function confirmEmit() {
+  if (!preview.value) return
+
+  emitting.value = true
+  try {
+    const res = await emitPlanSaleInvoice(preview.value.tiendaplan_id)
+    emitDialogVisible.value = false
+
+    toast.add({
+      // En demo se emitio de verdad pero la fila NO quedo marcada: no es un
+      // exito completo y el mensaje no debe sugerir que la cola se cerro.
+      severity: res.data.persisted ? 'success' : 'warn',
+      summary: res.data.persisted ? 'Comprobante emitido' : 'Emitido en PRUEBAS',
+      detail: res.message,
+      life: 8000
+    })
+
+    if (res.data.persisted) store.fetchPlanSales()
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo emitir',
+      detail: e?.response?.data?.message || e.message,
+      life: 8000
+    })
+  } finally {
+    emitting.value = false
+  }
+}
 
 function getPreviousMonth(): string {
   const now = new Date()
@@ -319,7 +501,14 @@ function clearFilters() {
   store.updatePlanSalesFilters({ search: '', period: '', invoiced: 'all', plan: '', page: 1 })
 }
 
-onMounted(() => {
+onMounted(async () => {
   store.updatePlanSalesFilters({ period: periodFilter.value })
+
+  try {
+    platformStatus.value = await getPlatformInvoiceStatus()
+  } catch {
+    // Si el estado no carga, la tabla sigue funcionando: solo se pierde el
+    // aviso de entorno. No vale romper la vista por eso.
+  }
 })
 </script>

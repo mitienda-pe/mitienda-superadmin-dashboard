@@ -3,7 +3,8 @@ import type {
   CommissionItem, CommissionSummary,
   InvoiceItem, InvoiceSummary, InvoiceFilters,
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
-  BillingFilters, BillingMeta
+  BillingFilters, BillingMeta,
+  PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult
 } from '@/types/billing.types'
 
 interface CommissionsResponse {
@@ -69,6 +70,29 @@ export async function getPlanSales(filters: Partial<PlanSaleFilters> = {}) {
   const res = await api.get<PlanSalesResponse>(
     '/superadmin/dashboard/plan-sales',
     { params }
+  )
+  return res.data
+}
+
+// --- Comprobantes de plataforma ---
+
+export async function getPlatformInvoiceStatus() {
+  const res = await api.get<{ data: PlatformInvoiceStatus }>(
+    '/superadmin/platform-invoices/status'
+  )
+  return res.data.data
+}
+
+export async function previewPlanSaleInvoice(tiendaPlanId: number) {
+  const res = await api.get<{ data: PlatformInvoicePreview }>(
+    `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/preview`
+  )
+  return res.data.data
+}
+
+export async function emitPlanSaleInvoice(tiendaPlanId: number) {
+  const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
+    `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/emit`
   )
   return res.data
 }

@@ -100,3 +100,55 @@ export interface BillingMeta {
   total: number
   total_pages: number
 }
+
+// --- Comprobantes de plataforma (MiTienda emite con su propio RUC) ---
+// Distinto de la facturacion que cada tienda emite a sus compradores.
+
+export interface PlatformSerieState {
+  serie: string
+  correlative: number
+  is_active: boolean
+  next: number
+}
+
+export interface PlatformInvoiceStatus {
+  environment: 'demo' | 'production'
+  is_production: boolean
+  ruc: string
+  business_name: string
+  series: {
+    factura: PlatformSerieState | null
+    boleta: PlatformSerieState | null
+  }
+}
+
+export interface PlatformInvoicePreview {
+  tiendaplan_id: number
+  can_emit: boolean
+  blocking_reason: string | null
+  environment: 'demo' | 'production'
+  document_type: 1 | 2
+  document_type_name: string
+  serie: string | null
+  serie_active: boolean
+  next_correlative: number | null
+  client: {
+    business_name: string
+    document_number: string
+    address: string
+    email: string
+  }
+  currency: string
+  total_with_tax: number
+}
+
+export interface PlatformInvoiceResult {
+  success: boolean
+  message?: string
+  serie?: string
+  correlative?: number
+  comprobante?: string
+  /** false en entorno demo: se emitio pero la suscripcion NO quedo marcada. */
+  persisted: boolean
+  environment: 'demo' | 'production'
+}
