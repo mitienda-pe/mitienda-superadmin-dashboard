@@ -20,6 +20,10 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_carga_productos_lote',
   'mod_precios_producto',
   'mod_stock_producto',
+  // Inventario y almacenes: stock por almacén, kardex y transferencias.
+  // Rutas en el backoffice (/store/branch-stock, /inventory) y en el API
+  // (ModuleRoutes: branch-stock, inventory).
+  'mod_stock_sucursal',
   'mod_orden_producto',
   'mod_categorias',
   'mod_marcas',
