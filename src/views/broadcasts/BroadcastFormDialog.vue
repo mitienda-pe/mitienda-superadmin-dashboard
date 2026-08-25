@@ -233,7 +233,9 @@
               v-html="form.body ? renderBlockMd(form.body) : 'Contenido del modal'"
             />
             <div v-if="form.cta_label" class="mt-5 flex items-center justify-end gap-2">
-              <Button :label="form.cta_label" />
+              <span class="inline-flex items-center gap-2 rounded-md bg-[#00b2a6] px-5 py-2.5 text-sm font-semibold text-white shadow-sm">
+                {{ form.cta_label }}
+              </span>
             </div>
             <p v-if="!form.is_dismissible" class="text-xs text-orange-600 mt-4 flex items-center gap-1">
               <i class="pi pi-lock" /> Mensaje bloqueante — el usuario no podrá cerrarlo.
