@@ -164,6 +164,13 @@ const routes: RouteRecordRaw[] = [
         path: 'plan-sales',
         name: 'BillingPlanSales',
         component: () => import('@/views/billing/PlanSalesListView.vue')
+      },
+      {
+        // El cierre del mes: comisiones calculadas al vuelo y emitibles. Es una
+        // vista aparte de `commissions`, que lista las ya emitidas.
+        path: 'commission-period',
+        name: 'BillingCommissionPeriod',
+        component: () => import('@/views/billing/CommissionPeriodView.vue')
       }
     ]
   },

@@ -5,7 +5,8 @@ import type {
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
   BillingFilters, BillingMeta,
   PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult,
-  PlatformBatchResult
+  PlatformBatchResult,
+  CommissionPeriodResponse, CommissionInvoicePreview, CommissionBatchResult
 } from '@/types/billing.types'
 
 interface CommissionsResponse {
@@ -109,6 +110,52 @@ export async function emitPlanSalesBatch(ids: number[], sendEmail = false) {
 export async function sendPlanSaleInvoiceEmail(tiendaPlanId: number, email?: string) {
   const res = await api.post<{ message: string }>(
     `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/send-email`,
+    email ? { email } : {}
+  )
+  return res.data
+}
+
+// --- Comprobantes de comisiones ---
+
+export async function getCommissionPeriod(period: string) {
+  const res = await api.get<{ data: CommissionPeriodResponse }>(
+    '/superadmin/platform-invoices/commissions',
+    { params: { period } }
+  )
+  return res.data.data
+}
+
+export async function previewCommissionInvoice(tiendaId: number, period: string) {
+  const res = await api.get<{ data: CommissionInvoicePreview }>(
+    `/superadmin/platform-invoices/commissions/${tiendaId}/preview`,
+    { params: { period } }
+  )
+  return res.data.data
+}
+
+export async function emitCommissionInvoice(tiendaId: number, period: string) {
+  const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
+    `/superadmin/platform-invoices/commissions/${tiendaId}/emit`,
+    { period }
+  )
+  return res.data
+}
+
+export async function emitCommissionsBatch(
+  tiendaIds: number[],
+  period: string,
+  sendEmail = false
+) {
+  const res = await api.post<{ message: string; data: CommissionBatchResult }>(
+    '/superadmin/platform-invoices/commissions/emit-batch',
+    { tienda_ids: tiendaIds, period, send_email: sendEmail }
+  )
+  return res.data
+}
+
+export async function sendCommissionInvoiceEmail(tiendacomisionId: number, email?: string) {
+  const res = await api.post<{ message: string }>(
+    `/superadmin/platform-invoices/commissions/${tiendacomisionId}/send-email`,
     email ? { email } : {}
   )
   return res.data

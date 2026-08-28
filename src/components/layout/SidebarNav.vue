@@ -34,6 +34,7 @@ const navItems = [
   { path: '/revenue', label: 'Revenue', icon: 'pi pi-dollar' },
   { path: '/store-sales', label: 'Ventas Tiendas', icon: 'pi pi-shopping-cart' },
   { path: '/billing/commissions', label: 'Comisiones', icon: 'pi pi-percentage' },
+  { path: '/billing/commission-period', label: 'Cierre Comisiones', icon: 'pi pi-calendar-clock' },
   { path: '/billing/plan-sales', label: 'Ventas Planes', icon: 'pi pi-receipt' },
   { path: '/subscriptions', label: 'Suscripciones', icon: 'pi pi-sync' },
   { path: '/subscriptions/movement', label: 'Mov. Suscripciones', icon: 'pi pi-chart-line' },
