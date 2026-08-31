@@ -160,3 +160,19 @@ export async function sendCommissionInvoiceEmail(tiendacomisionId: number, email
   )
   return res.data
 }
+
+/**
+ * Excepciones a la comision del plan. `exonerada` corta la emision; `tasa` es
+ * una tasa propia en fraccion (0.015 = 1.5%). Ambas en falso/null borran la
+ * excepcion y la tienda vuelve a la regla de su plan.
+ */
+export async function updateCommissionSettings(
+  tiendaId: number,
+  payload: { exonerada: boolean; tasa?: number | null; motivo?: string }
+) {
+  const res = await api.put<{ message: string }>(
+    `/superadmin/platform-invoices/commissions/${tiendaId}/settings`,
+    payload
+  )
+  return res.data
+}

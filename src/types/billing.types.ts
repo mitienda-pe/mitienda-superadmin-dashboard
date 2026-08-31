@@ -189,6 +189,11 @@ export interface CommissionPeriodRow {
   commission_with_tax: number
   can_emit: boolean
   blocking_reason: string | null
+  /** No se le factura comision, cualquiera sea su plan. */
+  exonerated: boolean
+  exoneration_reason: string | null
+  /** La tasa viene de un acuerdo propio, no del plan. */
+  rate_is_custom: boolean
   /** Serie-numero, si ya se emitio (por este panel o por el legacy). */
   comprobante: string | null
   tiendacomision_id: number | null

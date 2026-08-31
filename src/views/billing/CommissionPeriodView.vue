@@ -146,7 +146,14 @@
         </Column>
 
         <Column field="rate" header="Tasa">
-          <template #body="{ data: row }">{{ (row.rate * 100).toFixed(2) }}%</template>
+          <template #body="{ data: row }">
+            {{ (row.rate * 100).toFixed(2) }}%
+            <i
+              v-if="row.rate_is_custom"
+              class="pi pi-star-fill text-amber-400 text-[10px] ml-1"
+              v-tooltip="'Tasa propia, no la del plan'"
+            ></i>
+          </template>
         </Column>
 
         <Column field="commission_with_tax" header="Comision (con IGV)">
@@ -162,6 +169,13 @@
               class="inline-block rounded px-2 py-0.5 text-xs bg-green-50 text-green-700"
             >
               {{ row.comprobante }}
+            </span>
+            <span
+              v-else-if="row.exonerated"
+              class="inline-block rounded px-2 py-0.5 text-xs bg-purple-50 text-purple-700"
+              v-tooltip="row.exoneration_reason || 'Sin motivo registrado'"
+            >
+              Exonerada
             </span>
             <span
               v-else-if="row.can_emit"
@@ -183,6 +197,14 @@
                 outlined
                 :loading="previewingId === row.tienda_id"
                 @click="openEmitDialog(row)"
+              />
+              <Button
+                icon="pi pi-ban"
+                size="small"
+                :severity="row.exonerated ? 'help' : 'secondary'"
+                text
+                @click="openSettings(row)"
+                v-tooltip="row.exonerated ? 'Quitar exoneracion' : 'Exonerar de comision'"
               />
               <Button
                 v-if="row.tiendacomision_id"
@@ -251,6 +273,52 @@
       </template>
     </Dialog>
 
+    <!-- Exoneracion -->
+    <Dialog
+      v-model:visible="settingsVisible"
+      :header="settingsRow?.exonerated ? 'Quitar exoneracion' : 'Exonerar de comision'"
+      modal
+      :style="{ width: '30rem' }"
+    >
+      <div v-if="settingsRow" class="space-y-3 text-sm">
+        <p class="text-gray-700">
+          <strong>{{ settingsRow.tienda }}</strong> — plan {{ settingsRow.plan || 'sin plan' }},
+          tasa {{ (settingsRow.rate * 100).toFixed(2) }}%.
+        </p>
+
+        <template v-if="settingsRow.exonerated">
+          <p class="text-gray-600">
+            Vuelve a la comision de su plan y aparecera como emitible en los proximos cierres.
+          </p>
+          <p v-if="settingsRow.exoneration_reason" class="text-xs text-gray-500">
+            Motivo actual: {{ settingsRow.exoneration_reason }}
+          </p>
+        </template>
+
+        <template v-else>
+          <p class="text-gray-600">
+            Deja de ofrecerse para emitir, en este periodo y en los siguientes, hasta que alguien
+            la reactive. Sigue apareciendo en el listado, marcada.
+          </p>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Motivo (obligatorio)</label>
+            <InputText v-model="settingsMotivo" class="w-full" placeholder="Ej: acuerdo comercial 2026" />
+          </div>
+        </template>
+      </div>
+
+      <template #footer>
+        <Button label="Cancelar" severity="secondary" text @click="settingsVisible = false" />
+        <Button
+          :label="settingsRow?.exonerated ? 'Quitar exoneracion' : 'Exonerar'"
+          :severity="settingsRow?.exonerated ? 'secondary' : 'help'"
+          :loading="savingSettings"
+          :disabled="!settingsRow?.exonerated && settingsMotivo.trim() === ''"
+          @click="saveSettings"
+        />
+      </template>
+    </Dialog>
+
     <!-- Resultado del lote -->
     <Dialog v-model:visible="batchResultVisible" header="Resultado del lote" modal :style="{ width: '38rem' }">
       <div v-if="batchResult" class="space-y-3 text-sm">
@@ -293,7 +361,8 @@ import {
   previewCommissionInvoice,
   emitCommissionInvoice,
   emitCommissionsBatch,
-  sendCommissionInvoiceEmail
+  sendCommissionInvoiceEmail,
+  updateCommissionSettings
 } from '@/api/billing.api'
 import type {
   CommissionPeriodResponse,
@@ -454,6 +523,45 @@ async function runBatch() {
     })
   } finally {
     batchRunning.value = false
+  }
+}
+
+// --- Exoneracion ---
+const settingsVisible = ref(false)
+const settingsRow = ref<CommissionPeriodRow | null>(null)
+const settingsMotivo = ref('')
+const savingSettings = ref(false)
+
+function openSettings(row: CommissionPeriodRow) {
+  settingsRow.value = row
+  settingsMotivo.value = ''
+  settingsVisible.value = true
+}
+
+async function saveSettings() {
+  if (!settingsRow.value) return
+
+  const quitar = settingsRow.value.exonerated
+  savingSettings.value = true
+  try {
+    // Al quitar la exoneracion no se manda tasa: la tienda vuelve entera a la
+    // regla de su plan, que es lo que espera quien aprieta "quitar".
+    const res = await updateCommissionSettings(settingsRow.value.tienda_id, {
+      exonerada: !quitar,
+      motivo: quitar ? undefined : settingsMotivo.value.trim()
+    })
+    settingsVisible.value = false
+    toast.add({ severity: 'success', summary: 'Listo', detail: res.message, life: 6000 })
+    load()
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo guardar',
+      detail: e?.response?.data?.message || e.message,
+      life: 8000
+    })
+  } finally {
+    savingSettings.value = false
   }
 }
 
