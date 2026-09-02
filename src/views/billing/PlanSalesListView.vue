@@ -21,7 +21,7 @@
         <p class="text-amber-800 mt-0.5">
           Los comprobantes se emiten contra el ambiente demo de Nubefact y
           <strong>no se marcan como facturados</strong>. Series
-          {{ platformStatus.series.factura?.serie }} / {{ platformStatus.series.boleta?.serie }}.
+          {{ platformStatus.series.suscripcion.factura?.serie }} / {{ platformStatus.series.suscripcion.boleta?.serie }}.
         </p>
       </div>
     </div>

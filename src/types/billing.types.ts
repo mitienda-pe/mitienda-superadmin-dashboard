@@ -116,9 +116,20 @@ export interface PlatformInvoiceStatus {
   is_production: boolean
   ruc: string
   business_name: string
+  /**
+   * Cuatro contadores: cada concepto tiene numeracion propia porque
+   * contabilidad concilia por serie. Suscripciones y comisiones no comparten
+   * correlativos.
+   */
   series: {
-    factura: PlatformSerieState | null
-    boleta: PlatformSerieState | null
+    suscripcion: {
+      factura: PlatformSerieState | null
+      boleta: PlatformSerieState | null
+    }
+    comision: {
+      factura: PlatformSerieState | null
+      boleta: PlatformSerieState | null
+    }
   }
 }
 
