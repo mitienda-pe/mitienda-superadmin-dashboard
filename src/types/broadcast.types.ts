@@ -4,6 +4,17 @@ export type BroadcastStatusFilter = 'all' | 'active' | 'scheduled' | 'expired' |
 export type BroadcastScope = 'all' | 'global' | 'tenant'
 export type BroadcastPlanSlug = 'micro' | 'small' | 'medium' | 'large' | 'trial'
 export type BroadcastTargetStatus = 'all' | 'active' | 'expired'
+export type BroadcastTargetScope = 'global' | 'stores'
+
+export interface BroadcastStoreRef {
+  id: number
+  nombre: string | null
+}
+
+export interface BroadcastStoresResolution {
+  found: BroadcastStoreRef[]
+  missing: number[]
+}
 
 export const BROADCAST_PLAN_LABELS: Record<BroadcastPlanSlug, string> = {
   micro: 'Micro',
@@ -21,8 +32,9 @@ export const BROADCAST_TARGET_STATUS_LABELS: Record<BroadcastTargetStatus, strin
 
 export interface Broadcast {
   id: number
-  tienda_id: number | null
-  tienda_nombre?: string | null
+  target_scope: BroadcastTargetScope
+  tienda_ids: number[]
+  tiendas: BroadcastStoreRef[]
   target_plans: BroadcastPlanSlug[] | null
   target_status: BroadcastTargetStatus
   title: string
@@ -30,6 +42,8 @@ export interface Broadcast {
   placement: BroadcastPlacement
   severity: BroadcastSeverity
   is_dismissible: boolean | 0 | 1
+  dismiss_delay_seconds: number | null
+  reshow_after_minutes: number | null
   cta_label: string | null
   cta_url: string | null
   image_url: string | null
@@ -43,7 +57,8 @@ export interface Broadcast {
 }
 
 export interface BroadcastFormInput {
-  tienda_id: number | null
+  target_scope: BroadcastTargetScope
+  tienda_ids: number[]
   target_plans: BroadcastPlanSlug[] | null
   target_status: BroadcastTargetStatus
   title: string
@@ -51,6 +66,10 @@ export interface BroadcastFormInput {
   placement: BroadcastPlacement
   severity: BroadcastSeverity
   is_dismissible: boolean
+  /** Segundos a la vista antes de poder cerrarlo. null = de inmediato. */
+  dismiss_delay_seconds: number | null
+  /** Tras cerrarlo, reaparece a los N minutos. null = no vuelve; 0 = en la siguiente pantalla. */
+  reshow_after_minutes: number | null
   cta_label: string | null
   cta_url: string | null
   image_url: string | null

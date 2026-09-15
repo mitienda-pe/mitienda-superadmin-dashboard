@@ -19,33 +19,92 @@
           <label class="block text-sm font-medium text-gray-700 mb-2">Alcance</label>
           <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
             <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
-              <RadioButton v-model="scopeLocal" inputId="scope-global" value="global" />
+              <RadioButton v-model="form.target_scope" inputId="scope-global" value="global" />
               <span>Global (todas las tiendas)</span>
             </label>
             <label class="inline-flex items-center gap-2 text-sm cursor-pointer">
-              <RadioButton v-model="scopeLocal" inputId="scope-tenant" value="tenant" />
-              <span>Tienda específica</span>
+              <RadioButton v-model="form.target_scope" inputId="scope-stores" value="stores" />
+              <span>Tiendas específicas</span>
             </label>
           </div>
         </div>
 
-        <div v-if="scopeLocal === 'tenant'">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Tienda</label>
-          <AutoComplete
-            v-model="selectedStore"
-            :suggestions="storeSuggestions"
-            optionLabel="name"
-            placeholder="Buscar tienda por nombre..."
-            class="w-full"
-            inputClass="w-full"
-            @complete="searchStoresHandler"
-          />
-          <p v-if="selectedStore?.id" class="text-xs text-gray-500 mt-1.5">
-            ID: {{ selectedStore.id }}
-          </p>
+        <div v-if="form.target_scope === 'stores'" class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Buscar y agregar</label>
+            <AutoComplete
+              v-model="storeQuery"
+              :suggestions="storeSuggestions"
+              optionLabel="name"
+              placeholder="Buscar tienda por nombre..."
+              class="w-full"
+              inputClass="w-full"
+              @complete="searchStoresHandler"
+              @item-select="onStoreSelected"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">O pegar IDs</label>
+            <div class="flex gap-2">
+              <InputText
+                v-model="pastedIds"
+                placeholder="Ej: 1203, 1377, 9082"
+                class="w-full"
+                @keydown.enter.prevent="addPastedIds"
+              />
+              <Button
+                label="Agregar"
+                severity="secondary"
+                outlined
+                :loading="resolvingIds"
+                :disabled="!pastedIds.trim()"
+                @click="addPastedIds"
+              />
+            </div>
+            <p class="text-xs text-gray-500 mt-1.5">Separados por comas, espacios o saltos de línea.</p>
+            <p v-if="missingIds.length" class="text-xs text-red-600 mt-1.5">
+              <i class="pi pi-exclamation-triangle mr-1" />
+              No existen y no se agregaron: {{ missingIds.join(', ') }}
+            </p>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-gray-700">
+                {{ selectedStores.length }} {{ selectedStores.length === 1 ? 'tienda' : 'tiendas' }}
+              </span>
+              <button
+                v-if="selectedStores.length"
+                type="button"
+                class="text-xs text-gray-500 hover:text-red-600"
+                @click="selectedStores = []"
+              >
+                Quitar todas
+              </button>
+            </div>
+            <div v-if="selectedStores.length" class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+              <span
+                v-for="st in selectedStores"
+                :key="st.id"
+                class="inline-flex items-center gap-1 rounded-full bg-white border border-gray-200 pl-2.5 pr-1 py-0.5 text-xs text-gray-700"
+              >
+                {{ st.nombre || 'Tienda' }} <span class="text-gray-400">#{{ st.id }}</span>
+                <button
+                  type="button"
+                  class="ml-0.5 rounded-full w-4 h-4 inline-flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50"
+                  :aria-label="'Quitar ' + (st.nombre || st.id)"
+                  @click="removeStore(st.id)"
+                >
+                  <i class="pi pi-times" style="font-size: 0.6rem" />
+                </button>
+              </span>
+            </div>
+            <p v-else class="text-xs text-gray-500">Todavía no agregaste tiendas.</p>
+          </div>
         </div>
 
-        <div v-if="scopeLocal === 'global'" class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-4">
+        <div v-if="form.target_scope === 'global'" class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-4">
           <p class="text-xs font-medium text-gray-600 uppercase tracking-wide">Filtros de audiencia</p>
 
           <div>
@@ -174,6 +233,33 @@
             <i class="pi pi-lock" />
             El mensaje será bloqueante hasta su fecha de expiración.
           </p>
+
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Se puede cerrar</label>
+              <Dropdown
+                v-model="delayChoice"
+                :options="delayOptions"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1.5">Después de cerrarlo</label>
+              <Dropdown
+                v-model="reshowChoice"
+                :options="reshowOptions"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+              />
+            </div>
+            <p class="sm:col-span-2 text-xs text-gray-600 italic">
+              <i class="pi pi-info-circle mr-1" />
+              {{ dismissSummary }}
+            </p>
+          </div>
         </div>
 
         <div class="border-t border-gray-200 pt-5 space-y-3">
@@ -215,7 +301,10 @@
             <a v-if="form.cta_label && form.cta_url" class="shrink-0 px-3 py-1 bg-white/20 rounded text-white text-xs font-medium">
               {{ form.cta_label }}
             </a>
-            <i v-if="form.is_dismissible" class="pi pi-times opacity-70 shrink-0" />
+            <span v-if="form.is_dismissible && form.dismiss_delay_seconds" class="shrink-0 inline-flex items-center gap-1 text-xs opacity-80 tabular-nums">
+              <i class="pi pi-clock text-xs" /> {{ formatCountdown(form.dismiss_delay_seconds) }}
+            </span>
+            <i v-else-if="form.is_dismissible" class="pi pi-times opacity-70 shrink-0" />
             <i v-else class="pi pi-lock opacity-70 shrink-0" title="Bloqueante" />
           </div>
         </div>
@@ -239,6 +328,9 @@
             </div>
             <p v-if="!form.is_dismissible" class="text-xs text-orange-600 mt-4 flex items-center gap-1">
               <i class="pi pi-lock" /> Mensaje bloqueante — el usuario no podrá cerrarlo.
+            </p>
+            <p v-else-if="form.dismiss_delay_seconds" class="text-xs text-gray-500 mt-4 flex items-center gap-1 tabular-nums">
+              <i class="pi pi-clock" /> Podrás cerrar este aviso en {{ formatCountdown(form.dismiss_delay_seconds) }}
             </p>
           </div>
         </div>
@@ -273,12 +365,15 @@ import Checkbox from 'primevue/checkbox'
 import Calendar from 'primevue/calendar'
 import InputSwitch from 'primevue/inputswitch'
 import AutoComplete from 'primevue/autocomplete'
+import Dropdown from 'primevue/dropdown'
 import { getStoresList } from '@/api/stores.api'
+import { resolveBroadcastStores } from '@/api/broadcasts.api'
 import type { StoreListItem } from '@/types/store.types'
 import type {
   Broadcast,
   BroadcastFormInput,
   BroadcastPlanSlug,
+  BroadcastStoreRef,
   BroadcastTargetStatus
 } from '@/types/broadcast.types'
 import { BROADCAST_PLAN_LABELS, BROADCAST_TARGET_STATUS_LABELS } from '@/types/broadcast.types'
@@ -304,7 +399,8 @@ const emit = defineEmits<{
 const isEdit = computed(() => !!props.record?.id)
 
 const emptyForm = (): BroadcastFormInput => ({
-  tienda_id: null,
+  target_scope: 'global',
+  tienda_ids: [],
   target_plans: [],
   target_status: 'all',
   title: '',
@@ -312,6 +408,8 @@ const emptyForm = (): BroadcastFormInput => ({
   placement: 'bar',
   severity: 'info',
   is_dismissible: true,
+  dismiss_delay_seconds: null,
+  reshow_after_minutes: null,
   cta_label: null,
   cta_url: null,
   image_url: null,
@@ -328,10 +426,38 @@ const targetStatusOptions: { value: BroadcastTargetStatus; label: string }[] = (
   Object.keys(BROADCAST_TARGET_STATUS_LABELS) as BroadcastTargetStatus[]
 ).map((value) => ({ value, label: BROADCAST_TARGET_STATUS_LABELS[value] }))
 
+// El Dropdown de PrimeVue 3 no muestra como elegida una opción con valor null,
+// así que en el select "de inmediato" es 0 y "no vuelve" es -1; el form
+// guarda null en ambos casos.
+type TimingOption = { label: string; value: number }
+const RESHOW_NEVER = -1
+
+const DELAY_PRESETS: TimingOption[] = [
+  { label: 'De inmediato', value: 0 },
+  { label: 'A los 15 segundos', value: 15 },
+  { label: 'A los 30 segundos', value: 30 },
+  { label: 'Al minuto', value: 60 },
+  { label: 'A los 2 minutos', value: 120 },
+  { label: 'A los 3 minutos', value: 180 },
+  { label: 'A los 5 minutos', value: 300 }
+]
+const RESHOW_PRESETS: TimingOption[] = [
+  { label: 'No vuelve a aparecer', value: RESHOW_NEVER },
+  { label: 'Reaparece en cada pantalla', value: 0 },
+  { label: 'Reaparece a los 10 min', value: 10 },
+  { label: 'Reaparece a los 30 min', value: 30 },
+  { label: 'Reaparece cada hora', value: 60 },
+  { label: 'Reaparece cada 4 horas', value: 240 },
+  { label: 'Reaparece una vez al día', value: 1440 }
+]
+
 const form = ref<BroadcastFormInput>(emptyForm())
-const scopeLocal = ref<'global' | 'tenant'>('global')
-const selectedStore = ref<{ id: number; name: string } | null>(null)
-const storeSuggestions = ref<Array<{ id: number; name: string }>>([])
+const selectedStores = ref<BroadcastStoreRef[]>([])
+const storeQuery = ref<{ id: number; name: string; nombre: string } | string | null>(null)
+const storeSuggestions = ref<Array<{ id: number; name: string; nombre: string }>>([])
+const pastedIds = ref('')
+const missingIds = ref<number[]>([])
+const resolvingIds = ref(false)
 const publishedAtDate = ref<Date>(new Date())
 const expiresAtDate = ref<Date>(addDays(new Date(), 7))
 const validationError = ref<string | null>(null)
@@ -357,20 +483,95 @@ watch(
 watch(publishedAtDate, (d) => { if (d) form.value.published_at = formatDate(d) })
 watch(expiresAtDate,   (d) => { if (d) form.value.expires_at = formatDate(d) })
 
-watch(scopeLocal, (s) => {
-  if (s === 'global') {
-    selectedStore.value = null
-    form.value.tienda_id = null
-  } else {
-    // Targeting (plan/vigencia) no aplica a tienda específica
+watch(() => form.value.target_scope, (s) => {
+  if (s === 'stores') {
+    // Targeting (plan/vigencia) no aplica a tiendas específicas
     form.value.target_plans = []
     form.value.target_status = 'all'
   }
 })
 
-watch(selectedStore, (s) => {
-  form.value.tienda_id = s?.id ?? null
+watch(() => form.value.is_dismissible, (d) => {
+  if (!d) {
+    form.value.dismiss_delay_seconds = null
+    form.value.reshow_after_minutes = null
+  }
 })
+
+const delayChoice = computed<number>({
+  get: () => form.value.dismiss_delay_seconds ?? 0,
+  set: (v) => { form.value.dismiss_delay_seconds = v > 0 ? v : null }
+})
+const reshowChoice = computed<number>({
+  get: () => form.value.reshow_after_minutes ?? RESHOW_NEVER,
+  set: (v) => { form.value.reshow_after_minutes = v === RESHOW_NEVER ? null : v }
+})
+
+/** Opciones con el valor guardado incluido aunque no sea uno de los presets. */
+function withCurrent(presets: TimingOption[], current: number, label: (v: number) => string) {
+  if (presets.some((o) => o.value === current)) return presets
+  return [...presets, { label: label(current), value: current }]
+}
+const delayOptions = computed(() =>
+  withCurrent(DELAY_PRESETS, delayChoice.value, (v) => `A los ${v} segundos`)
+)
+const reshowOptions = computed(() =>
+  withCurrent(RESHOW_PRESETS, reshowChoice.value, (v) => `Reaparece a los ${v} min`)
+)
+
+const dismissSummary = computed(() => {
+  const delay = form.value.dismiss_delay_seconds
+  const reshow = form.value.reshow_after_minutes
+  const wait = delay ? `debe tenerlo a la vista ${formatCountdown(delay)} antes de cerrarlo` : 'puede cerrarlo de inmediato'
+  const back = reshow === null
+    ? 'y no vuelve a verlo'
+    : reshow === 0
+      ? 'y vuelve a aparecer en cada pantalla que abra'
+      : `y vuelve a aparecer ${RESHOW_PRESETS.find((o) => o.value === reshow)?.label.replace('Reaparece ', '') ?? `a los ${reshow} min`}`
+  return `El usuario ${wait}, ${back}.`
+})
+
+function onStoreSelected(ev: { value: { id: number; nombre: string } }) {
+  addStores([{ id: ev.value.id, nombre: ev.value.nombre }])
+  storeQuery.value = null
+}
+
+function addStores(stores: BroadcastStoreRef[]) {
+  const known = new Set(selectedStores.value.map((s) => s.id))
+  const fresh = stores.filter((s) => !known.has(s.id))
+  if (fresh.length) selectedStores.value = [...selectedStores.value, ...fresh]
+}
+
+function removeStore(id: number) {
+  selectedStores.value = selectedStores.value.filter((s) => s.id !== id)
+}
+
+async function addPastedIds() {
+  const ids = [...new Set(
+    pastedIds.value
+      .split(/[\s,;]+/)
+      .filter((t) => /^\d+$/.test(t))
+      .map(Number)
+      .filter((n) => n > 0)
+  )]
+  missingIds.value = []
+  if (!ids.length) return
+  resolvingIds.value = true
+  try {
+    const res = await resolveBroadcastStores(ids)
+    if (res.success) {
+      addStores(res.data.found)
+      missingIds.value = res.data.missing
+      pastedIds.value = res.data.missing.join(', ')
+    } else {
+      validationError.value = res.message || 'No se pudieron validar los IDs'
+    }
+  } catch (e: any) {
+    validationError.value = e?.response?.data?.message || 'No se pudieron validar los IDs'
+  } finally {
+    resolvingIds.value = false
+  }
+}
 
 watch(() => form.value.placement, (p) => {
   if (p === 'bar') form.value.image_url = null
@@ -379,7 +580,8 @@ watch(() => form.value.placement, (p) => {
 function resetFromRecord(r: Broadcast | null) {
   if (r) {
     form.value = {
-      tienda_id: r.tienda_id,
+      target_scope: r.target_scope ?? 'global',
+      tienda_ids: [...(r.tienda_ids ?? [])],
       target_plans: r.target_plans ? [...r.target_plans] : [],
       target_status: r.target_status ?? 'all',
       title: r.title,
@@ -387,6 +589,8 @@ function resetFromRecord(r: Broadcast | null) {
       placement: r.placement,
       severity: r.severity,
       is_dismissible: !!r.is_dismissible,
+      dismiss_delay_seconds: r.dismiss_delay_seconds ?? null,
+      reshow_after_minutes: r.reshow_after_minutes ?? null,
       cta_label: r.cta_label,
       cta_url: r.cta_url,
       image_url: r.image_url,
@@ -396,17 +600,16 @@ function resetFromRecord(r: Broadcast | null) {
     }
     publishedAtDate.value = new Date(r.published_at.replace(' ', 'T'))
     expiresAtDate.value = new Date(r.expires_at.replace(' ', 'T'))
-    scopeLocal.value = r.tienda_id ? 'tenant' : 'global'
-    selectedStore.value = r.tienda_id
-      ? { id: r.tienda_id, name: r.tienda_nombre || `Tienda #${r.tienda_id}` }
-      : null
+    selectedStores.value = (r.tiendas ?? []).map((t) => ({ ...t }))
   } else {
     form.value = emptyForm()
     publishedAtDate.value = new Date()
     expiresAtDate.value = addDays(new Date(), 7)
-    scopeLocal.value = 'global'
-    selectedStore.value = null
+    selectedStores.value = []
   }
+  storeQuery.value = null
+  pastedIds.value = ''
+  missingIds.value = []
   validationError.value = null
 }
 
@@ -420,6 +623,7 @@ async function searchStoresHandler(ev: { query: string }) {
     if (res.success) {
       storeSuggestions.value = (res.data || []).map((s: StoreListItem) => ({
         id: s.id,
+        nombre: s.name,
         name: `${s.name} (ID ${s.id})`
       }))
     }
@@ -434,8 +638,9 @@ function handleSubmit() {
 
   if (!f.title.trim()) return (validationError.value = 'El título es requerido')
   if (!f.body.trim()) return (validationError.value = 'El mensaje es requerido')
-  if (scopeLocal.value === 'tenant' && !f.tienda_id) {
-    return (validationError.value = 'Seleccioná una tienda o cambiá a alcance global')
+  const isGlobal = f.target_scope === 'global'
+  if (!isGlobal && selectedStores.value.length === 0) {
+    return (validationError.value = 'Agregá al menos una tienda o cambiá a alcance global')
   }
   if (new Date(f.expires_at) <= new Date(f.published_at)) {
     return (validationError.value = 'La fecha de expiración debe ser posterior a la de publicación')
@@ -446,7 +651,6 @@ function handleSubmit() {
     return (validationError.value = 'El CTA requiere tanto texto como URL')
   }
 
-  const isGlobal = scopeLocal.value === 'global'
   const targetPlans = isGlobal && f.target_plans && f.target_plans.length > 0
     ? f.target_plans
     : null
@@ -454,14 +658,22 @@ function handleSubmit() {
 
   emit('submit', {
     ...f,
+    tienda_ids: isGlobal ? [] : selectedStores.value.map((s) => s.id),
     target_plans: targetPlans,
     target_status: targetStatus,
+    dismiss_delay_seconds: f.is_dismissible ? f.dismiss_delay_seconds : null,
+    reshow_after_minutes: f.is_dismissible ? f.reshow_after_minutes : null,
     title: f.title.trim(),
     body: f.body.trim(),
     cta_label: hasLabel ? f.cta_label!.trim() : null,
     cta_url: hasUrl ? f.cta_url!.trim() : null,
     image_url: f.placement === 'modal' && f.image_url ? f.image_url.trim() : null
   })
+}
+
+function formatCountdown(totalSeconds: number): string {
+  const s = Math.max(0, Math.ceil(totalSeconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 
 function formatDate(d: Date): string {

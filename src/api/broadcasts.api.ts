@@ -1,5 +1,10 @@
 import api from './axios'
-import type { Broadcast, BroadcastFormInput, BroadcastListFilters } from '@/types/broadcast.types'
+import type {
+  Broadcast,
+  BroadcastFormInput,
+  BroadcastListFilters,
+  BroadcastStoresResolution
+} from '@/types/broadcast.types'
 
 type ApiList = { success: boolean; data: Broadcast[] }
 type ApiItem = { success: boolean; data: Broadcast; message?: string }
@@ -45,5 +50,14 @@ export async function resetBroadcastDismissals(id: number) {
     data: { dismissals_cleared: number }
     message: string
   }>(`/superadmin/broadcasts/${id}/reset-dismissals`)
+  return res.data
+}
+
+/** Valida IDs de tienda pegados a mano: separa los que existen de los que no. */
+export async function resolveBroadcastStores(ids: number[]) {
+  const res = await api.get<{ success: boolean; data: BroadcastStoresResolution; message?: string }>(
+    '/superadmin/broadcasts/resolve-stores',
+    { params: { ids: ids.join(',') } }
+  )
   return res.data
 }

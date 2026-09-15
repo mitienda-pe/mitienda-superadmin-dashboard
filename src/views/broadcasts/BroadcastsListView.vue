@@ -4,7 +4,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Avisos Backoffice</h1>
         <p class="text-sm text-gray-500 mt-1">
-          Publicá barras y modales dentro del backoffice para todos los tenants o para una tienda específica.
+          Publicá barras y modales dentro del backoffice para todos los tenants o para una lista de tiendas.
         </p>
       </div>
       <Button label="Nuevo broadcast" icon="pi pi-plus" @click="openCreate" />
@@ -92,14 +92,18 @@
         <Column header="Alcance">
           <template #body="{ data }">
             <div class="flex flex-col gap-1">
-              <span v-if="data.tienda_id === null" class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-xs font-medium">
+              <span v-if="data.target_scope !== 'stores'" class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-xs font-medium">
                 <i class="pi pi-globe mr-1" /> Global
               </span>
-              <span v-else class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium">
+              <span
+                v-else
+                class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium"
+                v-tooltip.top="(data.tiendas?.length ?? 0) > 1 ? storeList(data) : undefined"
+              >
                 <i class="pi pi-shop mr-1" />
-                {{ data.tienda_nombre || 'Tienda #' + data.tienda_id }}
+                {{ storeScopeLabel(data) }}
               </span>
-              <template v-if="data.tienda_id === null">
+              <template v-if="data.target_scope !== 'stores'">
                 <span
                   v-if="data.target_plans && data.target_plans.length"
                   class="inline-flex w-fit items-center px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 text-[11px] font-medium"
@@ -148,7 +152,15 @@
         </Column>
         <Column header="Cerrable">
           <template #body="{ data }">
-            <i v-if="data.is_dismissible" class="pi pi-check text-green-600" />
+            <div v-if="data.is_dismissible" class="flex flex-col gap-0.5 text-xs text-gray-600">
+              <span v-if="data.dismiss_delay_seconds" class="inline-flex items-center gap-1">
+                <i class="pi pi-clock" /> a los {{ formatWait(data.dismiss_delay_seconds) }}
+              </span>
+              <i v-else class="pi pi-check text-green-600" />
+              <span v-if="data.reshow_after_minutes !== null && data.reshow_after_minutes !== undefined" class="inline-flex items-center gap-1">
+                <i class="pi pi-replay" /> {{ reshowLabel(data.reshow_after_minutes) }}
+              </span>
+            </div>
             <i v-else class="pi pi-lock text-orange-600" title="Bloqueante" />
           </template>
         </Column>
@@ -258,7 +270,7 @@ const isResetting = ref(false)
 const scopeOptions = [
   { label: 'Todos', value: 'all' },
   { label: 'Global', value: 'global' },
-  { label: 'Por tienda', value: 'tenant' }
+  { label: 'Tiendas específicas', value: 'tenant' }
 ]
 const statusOptions = [
   { label: 'Todos', value: 'all' },
@@ -286,6 +298,26 @@ const targetStatusFilterOptions = [
 
 function planList(plans: BroadcastPlanSlug[]) {
   return plans.map((p) => BROADCAST_PLAN_LABELS[p]).join(', ')
+}
+
+function storeScopeLabel(b: Broadcast) {
+  const stores = b.tiendas ?? []
+  if (stores.length === 1) return stores[0].nombre || `Tienda #${stores[0].id}`
+  return `${stores.length} tiendas`
+}
+function storeList(b: Broadcast) {
+  const stores = b.tiendas ?? []
+  const shown = stores.slice(0, 25).map((t) => `${t.nombre || 'Tienda'} #${t.id}`)
+  return shown.join(', ') + (stores.length > shown.length ? ` y ${stores.length - shown.length} más` : '')
+}
+function formatWait(seconds: number) {
+  return seconds % 60 === 0 ? `${seconds / 60} min` : `${seconds} s`
+}
+function reshowLabel(minutes: number) {
+  if (minutes === 0) return 'en cada pantalla'
+  if (minutes % 1440 === 0) return minutes === 1440 ? 'cada día' : `cada ${minutes / 1440} días`
+  if (minutes % 60 === 0) return minutes === 60 ? 'cada hora' : `cada ${minutes / 60} h`
+  return `cada ${minutes} min`
 }
 
 function openCreate() {
