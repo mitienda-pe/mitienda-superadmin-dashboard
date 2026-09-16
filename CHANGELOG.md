@@ -3,10 +3,31 @@
 Generado con `scripts/changelog.sh` desde los conventional commits.
 No editar a mano: los cambios se pierden en la siguiente regeneracion.
 
+## [v2026.09.1] - 2026-09-16
+
+Primera version etiquetada. Lo anterior esta en el historico.
+
+---
+
+# Historico (previo al versionado)
+
+## Septiembre 2026
+
+### Novedades
+
+- **tiendas:** crear tiendas de Costa Rica desde el superadmin ([`28a1f38`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/28a1f381227974c9f7928a31414bd8012a8b60fd))
+- **broadcasts:** enviar avisos a varias tiendas y configurar cuándo se pueden cerrar ([`b9e123b`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/b9e123b62195d4d72690e356e6e1c4fe07f4f3e0))
+
+### Correcciones
+
+- **comisiones:** el estado del emisor ahora trae las series por concepto ([`d4f0fe3`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/d4f0fe391842afcb272e666f83968f38b7face9d))
+
 ## Agosto 2026
 
 ### Novedades
 
+- **comisiones:** marcar comercios exonerados desde el cierre ([`e5d03b5`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/e5d03b5416ad981a30510a781497b65570baf27c))
+- **comisiones:** pantalla de cierre mensual con emisión de comprobantes ([`10fb809`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/10fb809eba3d83f41229058475971ef886a0d506))
 - **billing:** emision en lote y envio por correo en Ventas de Planes ([`a5b1a0d`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/a5b1a0d2cbc110958ad3c207f6f1f8406742bcb6))
 - **billing:** boton Emitir en Ventas de Planes ([`1c8efbd`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/1c8efbd22676d9b7efa129ed107751c986715e44))
 - **stores:** indicar en el buscador que acepta ID de tienda ([`7af4075`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/7af40750ac9999a7a9318a049a8acc3bc1b4a5f1))
@@ -14,6 +35,8 @@ No editar a mano: los cambios se pierden en la siguiente regeneracion.
 
 ### Correcciones
 
+- **broadcasts:** la vista previa pintaba el CTA con el azul de PrimeVue ([`9edb34e`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/9edb34e52460283eb2e720935af6ddf034449c11))
+- **modulos:** mostrar "Inventario y almacenes" en la ficha de tienda ([`21bb4a4`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/21bb4a49239a7b4a0beadecf05018ce894a60ee8))
 - **planes:** mostrar el plan PDV en la matriz y en precios del superadmin ([`d800fd7`](https://github.com/mitienda-pe/mitienda-superadmin-dashboard/commit/d800fd78b7dcb6fbfc2ed0c2207fb0edc6b7b556))
 
 ## Julio 2026
