@@ -49,7 +49,7 @@
                 optionLabel="name"
                 :loading="loadingRegions"
                 :disabled="!currentCodPais"
-                placeholder="Departamento"
+                :placeholder="territoryLabels.dpto"
                 class="w-full"
                 showClear
                 filter
@@ -60,7 +60,7 @@
                 optionLabel="name"
                 :loading="loadingProvinces"
                 :disabled="!selectedRegion"
-                placeholder="Provincia"
+                :placeholder="territoryLabels.prov"
                 class="w-full"
                 showClear
                 filter
@@ -71,7 +71,7 @@
                 optionLabel="name"
                 :loading="loadingDistricts"
                 :disabled="!selectedProvince"
-                placeholder="Distrito"
+                :placeholder="territoryLabels.dist"
                 class="w-full"
                 showClear
                 filter
@@ -133,6 +133,9 @@
               optionValue="value"
               class="w-full"
             />
+            <small v-if="billedFromPeru" class="text-gray-400">
+              La tienda opera en su país (moneda y ubicaciones locales); la suscripción se factura desde Perú, en soles y con RUC peruano.
+            </small>
           </div>
 
           <div>
@@ -337,8 +340,19 @@ const frequencyOptions = [
 const countryOptions = [
   { label: 'Perú', value: 'PE' },
   { label: 'Ecuador', value: 'EC' },
-  { label: 'Colombia', value: 'CO' }
+  { label: 'Colombia', value: 'CO' },
+  { label: 'Costa Rica', value: 'CR' }
 ]
+
+// Países sin facturación de plataforma propia: el API registra la suscripción
+// con origen Perú (PaisService::billingOrigenId), así que el precio va en soles.
+const billedFromPeru = computed(() => form.country === 'CR')
+
+const territoryLabels = computed(() =>
+  form.country === 'CR'
+    ? { dpto: 'Provincia', prov: 'Cantón', dist: 'Distrito' }
+    : { dpto: 'Departamento', prov: 'Provincia', dist: 'Distrito' }
+)
 
 const planOptions = computed(() =>
   storesStore.availablePlans.map(p => ({ label: p.plan_titulo, value: p.plan_id }))
