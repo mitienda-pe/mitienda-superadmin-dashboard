@@ -191,7 +191,7 @@
             <label class="block text-sm font-medium text-gray-600 mb-1">Medio *</label>
             <Dropdown
               v-model="paymentDialog.method"
-              :options="PAYMENT_METHODS"
+              :options="PLAN_PAYMENT_METHODS"
               editable
               placeholder="BCP, BBVA, Yape…"
               class="w-full"
@@ -202,9 +202,15 @@
             <InputText v-model="paymentDialog.reference" maxlength="100" class="w-full" />
           </div>
         </template>
-        <p v-else class="text-sm text-gray-600">
-          La tienda sigue activa: esto solo registra que el dinero todavía no entró.
-        </p>
+        <template v-else>
+          <p class="text-sm text-gray-600">
+            La tienda sigue activa hasta la fecha límite: esto registra que el dinero todavía no entró.
+          </p>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Fecha límite de pago *</label>
+            <Calendar v-model="paymentDialog.dueDate" dateFormat="yy-mm-dd" :minDate="today" showIcon class="w-full" />
+          </div>
+        </template>
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Nota</label>
           <InputText v-model="paymentDialog.note" maxlength="255" class="w-full" />
@@ -234,7 +240,8 @@ import InputText from 'primevue/inputtext'
 import { useToast } from 'primevue/usetoast'
 import { useFormatters } from '@/composables/useFormatters'
 import { getPlanChanges, updatePlanPayment } from '@/api/stores.api'
-import { toIsoDate } from '@/utils/dates'
+import { parseLocalDate, toIsoDate } from '@/utils/dates'
+import { PLAN_PAYMENT_METHODS, CREDIT_DAYS_DEFAULT } from '@/config/plan-payment.config'
 import type { PlanChangesResult, StorePlan, SubscriptionHistory } from '@/types/store.types'
 
 const props = defineProps<{
@@ -250,7 +257,6 @@ const { formatCurrency, formatDate } = useFormatters()
 
 /** Día en que se desplegaron los triggers: antes de eso no hay bitácora. */
 const BITACORA_DESDE = '25 de septiembre de 2026'
-const PAYMENT_METHODS = ['BCP', 'BBVA', 'Interbank', 'Scotiabank', 'Yape', 'Plin', 'Mercado Pago', 'Culqi']
 const today = new Date()
 
 // Los checkouts que nunca se pagaron (status 9) no son historia de suscripción.
@@ -276,7 +282,8 @@ function paymentLabel(sub: SubscriptionHistory): string {
   switch (p.status) {
     case 'cobrado':
       return p.source === 'backfill' ? 'Cobrado (sin verificar)' : 'Cobrado'
-    case 'pendiente': return 'Pendiente de cobro'
+    case 'pendiente':
+      return p.due_date ? `Pendiente · vence ${formatDate(p.due_date)}` : 'Pendiente de cobro (sin fecha límite)'
     case 'incobrable': return 'Incobrable'
     case 'sin_cargo': return 'Sin cargo'
     default: return 'Cobro sin clasificar'
@@ -354,15 +361,24 @@ const paymentDialog = reactive({
   status: 'cobrado' as 'cobrado' | 'pendiente',
   row: null as SubscriptionHistory | null,
   date: null as Date | null,
+  dueDate: null as Date | null,
   method: '',
   reference: '',
   note: ''
 })
 
+function defaultDueDate(): Date {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  d.setDate(d.getDate() + CREDIT_DAYS_DEFAULT)
+  return d
+}
+
 function openPaymentDialog(row: SubscriptionHistory, status: 'cobrado' | 'pendiente') {
   paymentDialog.row = row
   paymentDialog.status = status
   paymentDialog.date = new Date()
+  paymentDialog.dueDate = row.payment.due_date ? parseLocalDate(row.payment.due_date) : defaultDueDate()
   paymentDialog.method = row.payment.method ?? ''
   paymentDialog.reference = row.payment.reference ?? ''
   paymentDialog.note = ''
@@ -373,6 +389,10 @@ async function savePayment() {
   const row = paymentDialog.row
   if (!row) return
 
+  if (paymentDialog.status === 'pendiente' && !paymentDialog.dueDate) {
+    toast.add({ severity: 'warn', summary: 'Faltan datos', detail: 'Indica la fecha límite de pago', life: 4000 })
+    return
+  }
   if (paymentDialog.status === 'cobrado' && (!paymentDialog.date || !paymentDialog.method.trim())) {
     toast.add({ severity: 'warn', summary: 'Faltan datos', detail: 'Indica la fecha del abono y el medio', life: 4000 })
     return
@@ -388,7 +408,11 @@ async function savePayment() {
           reference: paymentDialog.reference.trim() || undefined,
           note: paymentDialog.note.trim() || undefined
         }
-      : { status: 'pendiente', note: paymentDialog.note.trim() || undefined })
+      : {
+          status: 'pendiente',
+          due_date: paymentDialog.dueDate ? toIsoDate(paymentDialog.dueDate) : undefined,
+          note: paymentDialog.note.trim() || undefined
+        })
 
     toast.add({
       severity: 'success',

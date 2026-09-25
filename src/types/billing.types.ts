@@ -151,6 +151,9 @@ export interface PlatformInvoicePreview {
   }
   currency: string
   total_with_tax: number
+  /** 'Crédito' si el cobro está pendiente: una cuota que vence en credit_due_date */
+  payment_condition: 'Contado' | 'Crédito'
+  credit_due_date: string | null
 }
 
 export interface PlatformInvoiceResult {

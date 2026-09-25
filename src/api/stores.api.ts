@@ -115,6 +115,11 @@ export interface RenewStorePlanPayload {
   plandetalle_id: number
   price?: number
   payment_note?: string
+  /**
+   * Obligatorio: registrar la renovación ya no la da por pagada. Pendiente =
+   * activa hasta la fecha límite y se factura a crédito.
+   */
+  payment: PlanPaymentUpdate
 }
 
 export interface RenewStorePlanResult {
@@ -124,6 +129,8 @@ export interface RenewStorePlanResult {
   tiendaplan_fechainicio: string
   tiendaplan_fechafinal: string
   tiendaplan_precio: number
+  payment_status: string
+  payment_due_date: string | null
 }
 
 /**

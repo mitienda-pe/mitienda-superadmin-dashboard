@@ -358,6 +358,13 @@
               {{ formatCurrency(preview.total_with_tax) }}
             </dd>
           </div>
+          <div v-if="preview.document_type === 1" class="flex justify-between py-2">
+            <dt class="text-gray-500">Forma de pago</dt>
+            <dd class="text-right" :class="preview.payment_condition === 'Crédito' ? 'font-semibold text-amber-700' : 'text-gray-700'">
+              {{ preview.payment_condition }}
+              <span v-if="preview.credit_due_date"> · vence {{ preview.credit_due_date }}</span>
+            </dd>
+          </div>
         </dl>
 
         <p v-if="preview.environment !== 'production'" class="text-xs text-amber-700">

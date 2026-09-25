@@ -210,6 +210,8 @@ export interface SubscriptionHistory {
     reference: string | null
     /** pasarela · superadmin · backfill (inferido, sin verificar) */
     source: string | null
+    /** Fecha límite de pago de un cobro pendiente */
+    due_date: string | null
   }
 }
 
@@ -241,6 +243,8 @@ export interface PlanPaymentUpdate {
   date?: string
   method?: string
   reference?: string
+  /** Solo pendiente: sin ella se conserva la fecha límite que tenía */
+  due_date?: string
   note?: string
 }
 
