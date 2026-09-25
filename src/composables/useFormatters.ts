@@ -1,3 +1,5 @@
+import { parseLocalDate } from '@/utils/dates'
+
 export function useFormatters() {
   function formatCurrency(value: number, decimals = 0): string {
     return `S/${value.toLocaleString('es-PE', {
@@ -25,7 +27,7 @@ export function useFormatters() {
   }
 
   function formatDate(date: string | Date): string {
-    const d = new Date(date)
+    const d = parseLocalDate(date)
     return d.toLocaleDateString('es-PE', {
       day: '2-digit',
       month: 'short',

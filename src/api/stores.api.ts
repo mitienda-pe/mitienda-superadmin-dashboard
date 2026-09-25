@@ -4,7 +4,8 @@ import type {
   StoreDetail, DailySales, StoreOrder,
   SubscriptionHistory, TopProduct, StoreFlag,
   StoreConfigUpdate, StorePlanConfigUpdate,
-  AvailablePlan, CreateStorePayload, CreateStoreResult
+  AvailablePlan, CreateStorePayload, CreateStoreResult,
+  PlanChangesResult, PlanPaymentUpdate
 } from '@/types/store.types'
 
 export async function getStoresList(filters: Partial<StoreListFilters> = {}) {
@@ -51,6 +52,23 @@ export async function getStoreOrders(storeId: number) {
 export async function getSubscriptionHistory(storeId: number) {
   const res = await api.get<{ success: boolean; data: SubscriptionHistory[] }>(
     `/superadmin/dashboard/stores/${storeId}/subscription-history`
+  )
+  return res.data
+}
+
+/** Bitácora de vigencia: cada alta y cambio de fechas, estado, precio o cobro. */
+export async function getPlanChanges(storeId: number) {
+  const res = await api.get<{ success: boolean; data: PlanChangesResult }>(
+    `/superadmin/dashboard/stores/${storeId}/plan-changes`
+  )
+  return res.data
+}
+
+/** Confirma el cobro de una fila de plan o la devuelve a pendiente. */
+export async function updatePlanPayment(storeId: number, planRowId: number, data: PlanPaymentUpdate) {
+  const res = await api.put<{ success: boolean; message: string }>(
+    `/superadmin/dashboard/stores/${storeId}/plans/${planRowId}/payment`,
+    data
   )
   return res.data
 }

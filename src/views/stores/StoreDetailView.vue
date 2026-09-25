@@ -48,8 +48,10 @@
         </TabPanel>
         <TabPanel header="Suscripción">
           <SubscriptionPanel
+            :store-id="storesStore.currentStore.id"
             :current-plan="storesStore.currentStore.plan"
             :history="storesStore.subscriptionHistory"
+            @changed="loadStore"
           />
         </TabPanel>
         <TabPanel header="Productos">

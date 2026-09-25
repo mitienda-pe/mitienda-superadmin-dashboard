@@ -138,6 +138,18 @@
             :showIcon="true"
             class="w-full"
           />
+          <p v-if="expiryChanged && plan?.expires_at" class="text-xs text-amber-700 mt-1">
+            Antes: {{ plan.expires_at }}. El cambio queda registrado con tu usuario.
+          </p>
+        </div>
+        <div v-if="expiryChanged" class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-600 mb-1">Motivo del cambio de vencimiento *</label>
+          <InputText
+            v-model="planForm.reason"
+            maxlength="255"
+            placeholder="Ej.: cortesía por caída del sitio, corrección de renovación mal cargada"
+            class="w-full"
+          />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Precio (PEN)</label>
@@ -460,6 +472,7 @@ import { usePlansStore } from '@/stores/plans.store'
 import { plansApi } from '@/api/plans.api'
 import { getAvailablePlans, renewStorePlan, expireStorePlan } from '@/api/stores.api'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
+import { parseLocalDate, toIsoDate } from '@/utils/dates'
 
 const props = defineProps<{
   config: StoreConfig
@@ -682,12 +695,19 @@ const configForm = reactive({
 // Reactive form state for plan
 const planForm = reactive({
   plan_id: props.plan?.plan_id ?? null as number | null,
-  expires_at: props.plan?.expires_at ? new Date(props.plan.expires_at) : null as Date | null,
+  expires_at: props.plan?.expires_at ? parseLocalDate(props.plan.expires_at) : null as Date | null,
   price: props.plan?.price ?? 0,
   max_items: props.plan?.max_items ?? 0,
   max_pages: props.plan?.max_pages ?? 0,
   max_users: props.plan?.max_users ?? 0,
-  payment_note: props.plan?.payment_note ?? ''
+  payment_note: props.plan?.payment_note ?? '',
+  reason: ''
+})
+
+// Mover el vencimiento a mano queda en la bitácora del plan, y el API exige motivo.
+const expiryChanged = computed(() => {
+  const next = planForm.expires_at ? toIsoDate(planForm.expires_at) : null
+  return next !== null && next !== (props.plan?.expires_at ?? null)
 })
 
 // Reset forms when props change
@@ -711,7 +731,8 @@ watch(() => props.config, (c) => {
 
 watch(() => props.plan, (p) => {
   planForm.plan_id = p?.plan_id ?? null
-  planForm.expires_at = p?.expires_at ? new Date(p.expires_at) : null
+  planForm.expires_at = p?.expires_at ? parseLocalDate(p.expires_at) : null
+  planForm.reason = ''
   planForm.price = p?.price ?? 0
   planForm.max_items = p?.max_items ?? 0
   planForm.max_pages = p?.max_pages ?? 0
@@ -719,12 +740,6 @@ watch(() => props.plan, (p) => {
   planForm.payment_note = p?.payment_note ?? ''
 }, { deep: true })
 
-function formatDate(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
 
 async function saveStatus() {
   savingSection.value = 'status'
@@ -765,11 +780,17 @@ async function saveConfig() {
 }
 
 async function savePlan() {
+  if (expiryChanged.value && !planForm.reason.trim()) {
+    toast.add({ severity: 'warn', summary: 'Falta el motivo', detail: 'Indica por qué cambia la fecha de vencimiento', life: 5000 })
+    return
+  }
   savingSection.value = 'plan'
   try {
     await storesStore.saveStorePlanConfig(props.storeId, {
       plan_id: planForm.plan_id ?? undefined,
-      expires_at: planForm.expires_at ? formatDate(planForm.expires_at) : undefined,
+      // Solo si cambió: reenviar la misma fecha no debe tocar el vencimiento.
+      expires_at: expiryChanged.value && planForm.expires_at ? toIsoDate(planForm.expires_at) : undefined,
+      reason: expiryChanged.value ? planForm.reason.trim() : undefined,
       price: planForm.price,
       max_items: planForm.max_items,
       max_pages: planForm.max_pages,
@@ -814,7 +835,7 @@ function formatDateLabel(d: Date): string {
 }
 
 const currentExpiryDate = computed<Date | null>(
-  () => props.plan?.expires_at ? new Date(props.plan.expires_at) : null
+  () => props.plan?.expires_at ? parseLocalDate(props.plan.expires_at) : null
 )
 const currentExpiryLabel = computed(
   () => currentExpiryDate.value ? formatDateLabel(currentExpiryDate.value) : '—'

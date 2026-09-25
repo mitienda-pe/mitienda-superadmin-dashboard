@@ -125,6 +125,8 @@ export interface StorePlanConfigUpdate {
   max_pages?: number
   max_users?: number
   payment_note?: string
+  /** Obligatorio si cambia expires_at: queda en la bitácora del plan. */
+  reason?: string
 }
 
 export interface StoreSales {
@@ -178,6 +180,8 @@ export interface StoreOrder {
   item_count: number
 }
 
+export type PlanPaymentStatus = 'pendiente' | 'cobrado' | 'incobrable' | 'sin_cargo' | 'sin_clasificar'
+
 export interface SubscriptionHistory {
   id: number
   plan_name: string
@@ -187,6 +191,57 @@ export interface SubscriptionHistory {
   started_at: string
   expires_at: string
   status: 'active' | 'expired' | 'inactive'
+  /** tiendaplan_status crudo: 1 activa, 3 reemplazada, 9 checkout sin completar */
+  raw_status: number
+  registered_at: string | null
+  observation: string | null
+  payment_note: string | null
+  /** Vencimiento que corresponde por la duración del plan */
+  expected_expires_at: string | null
+  /** Días de más (+) o de menos (−) frente al esperado */
+  expiry_diff_days: number | null
+  expiry_mismatch: boolean
+  invoiced: boolean
+  invoice: string | null
+  payment: {
+    status: PlanPaymentStatus
+    date: string | null
+    method: string | null
+    reference: string | null
+    /** pasarela · superadmin · backfill (inferido, sin verificar) */
+    source: string | null
+  }
+}
+
+export interface PlanChange {
+  id: number
+  plan_row_id: number
+  /** 'alta' o fechainicio · fechafinal · status · precio · plan_id · plandetalle_id · cobro_estado */
+  field: string
+  old_value: string | null
+  new_value: string | null
+  days_delta: number | null
+  /** superadmin · comando · externo (panel legacy o SQL a mano) */
+  origin: string | null
+  user_id: number | null
+  user_name: string | null
+  reason: string | null
+  db_user: string | null
+  created_at: string
+}
+
+export interface PlanChangesResult {
+  granted_days: number
+  removed_days: number
+  changes: PlanChange[]
+}
+
+export interface PlanPaymentUpdate {
+  status: 'cobrado' | 'pendiente'
+  date?: string
+  method?: string
+  reference?: string
+  note?: string
 }
 
 export interface TopProduct {
