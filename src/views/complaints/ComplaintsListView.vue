@@ -225,7 +225,8 @@ const dateToInput = ref<Date | null>(store.filters.date_to ? new Date(store.filt
 
 const typeOptions = [
   { label: 'Reclamo', value: '1' },
-  { label: 'Queja', value: '2' }
+  { label: 'Queja', value: '2' },
+  { label: 'Petición', value: '3' }
 ]
 
 const pageStart = computed(() => {
