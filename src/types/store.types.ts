@@ -305,3 +305,61 @@ export interface CreateStoreResult {
   email_sent: boolean
   attached_existing_user: boolean
 }
+
+/**
+ * Usuarios, sucursales y cajeros de una tienda (GET stores/:id/team), para
+ * cobrar adicionales. `max_users` 0 = sin límite. Los cajeros PIN no ocupan
+ * cupo de usuarios: son otra tabla y otro espacio de IDs.
+ */
+export interface StoreTeamSummary {
+  users: number
+  max_users: number
+  /** 'store' si la tienda tiene un cupo propio, 'plan' si usa el del plan. */
+  max_users_source: 'store' | 'plan'
+  extra_users: number
+  plan_name: string | null
+  branches: number
+  branches_published: number
+  branches_with_cashiers: number
+  cashiers_active: number
+  failed_pin_30d: number
+}
+
+export interface StoreTeamUser {
+  id: number
+  name: string
+  email: string
+  role_id: number
+  role: string
+  created_at: string | null
+  last_login_any_store: string | null
+  last_login_this_store: string | null
+  logins_30d: number
+  /** 0 = sin alcance por sucursal (ve todas). */
+  branches_assigned: number
+}
+
+export interface StoreTeamBranch {
+  id: number
+  name: string
+  address: string
+  published: boolean
+  warehouse: boolean
+  cashiers: number
+}
+
+export interface StoreTeamCashier {
+  id: number
+  name: string
+  role: string
+  active: boolean
+  last_login: string | null
+  logins_30d: number
+}
+
+export interface StoreTeam {
+  summary: StoreTeamSummary
+  users: StoreTeamUser[]
+  branches: StoreTeamBranch[]
+  cashiers: StoreTeamCashier[]
+}

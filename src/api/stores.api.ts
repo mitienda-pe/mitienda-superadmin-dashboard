@@ -5,7 +5,7 @@ import type {
   SubscriptionHistory, TopProduct, StoreFlag,
   StoreConfigUpdate, StorePlanConfigUpdate,
   AvailablePlan, CreateStorePayload, CreateStoreResult,
-  PlanChangesResult, PlanPaymentUpdate
+  PlanChangesResult, PlanPaymentUpdate, StoreTeam
 } from '@/types/store.types'
 
 export async function getStoresList(filters: Partial<StoreListFilters> = {}) {
@@ -69,6 +69,13 @@ export async function updatePlanPayment(storeId: number, planRowId: number, data
   const res = await api.put<{ success: boolean; message: string }>(
     `/superadmin/dashboard/stores/${storeId}/plans/${planRowId}/payment`,
     data
+  )
+  return res.data
+}
+
+export async function getStoreTeam(storeId: number) {
+  const res = await api.get<{ success: boolean; data: StoreTeam }>(
+    `/superadmin/dashboard/stores/${storeId}/team`
   )
   return res.data
 }

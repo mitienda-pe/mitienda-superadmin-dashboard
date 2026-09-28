@@ -54,6 +54,9 @@
             @changed="loadStore"
           />
         </TabPanel>
+        <TabPanel header="Usuarios y sucursales">
+          <StoreTeamPanel :store-id="storesStore.currentStore.id" />
+        </TabPanel>
         <TabPanel header="Productos">
           <TopProductsPanel :products="storesStore.topProducts" />
         </TabPanel>
@@ -84,6 +87,7 @@ import InvitationStatusPanel from '@/components/stores/InvitationStatusPanel.vue
 import SalesPanel from '@/components/stores/SalesPanel.vue'
 import SubscriptionPanel from '@/components/stores/SubscriptionPanel.vue'
 import TopProductsPanel from '@/components/stores/TopProductsPanel.vue'
+import StoreTeamPanel from '@/components/stores/StoreTeamPanel.vue'
 import StoreConfigPanel from '@/components/stores/StoreConfigPanel.vue'
 import { useStoresStore } from '@/stores/stores.store'
 
