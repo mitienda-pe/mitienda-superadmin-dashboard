@@ -110,6 +110,33 @@ export async function getLedgerReport(query: {
   return res.data.data
 }
 
+/**
+ * Etiqueta TODAS las lineas de un filtro, no solo una pagina. `expectedTotal` es
+ * el total que mostraba el listado: si ya no coincide, el API responde 409 y no
+ * toca nada. Sin `overwrite` solo completa las que no tienen esa dimension.
+ */
+export async function assignLedgerTagsByFilter(
+  filters: Partial<LedgerItemFilters>,
+  tags: Record<number, number | null>,
+  overwrite: boolean,
+  expectedTotal: number
+) {
+  const res = await api.put<{ data: { matched: number; affected: number } }>(`${BASE}/items/tags-by-filter`, {
+    filters: {
+      pending: !!filters.pending,
+      period: filters.period || null,
+      origin: filters.origin && filters.origin !== 'all' ? filters.origin : null,
+      value_id: filters.value_id || null,
+      code: filters.code ?? null,
+      search: filters.search || null
+    },
+    tags,
+    overwrite,
+    expected_total: expectedTotal
+  })
+  return res.data.data
+}
+
 /** Los errores de validacion de CI4 llegan en `messages.error`, no en `message`. */
 export function ledgerErrorMessage(e: any): string {
   return e?.response?.data?.messages?.error || e?.response?.data?.message || e?.message || 'Error inesperado'

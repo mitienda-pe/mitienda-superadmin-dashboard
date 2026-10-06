@@ -73,7 +73,8 @@ export interface LedgerItemFilters {
 
 export interface LedgerItemsResponse {
   data: LedgerItem[]
-  summary: { pending_total: number }
+  /** `total_net`: suma sin IGV, en soles, de TODAS las lineas del filtro (no solo la pagina). */
+  summary: { pending_total: number; total_net: number }
   meta: { current_page: number; per_page: number; total: number; total_pages: number }
 }
 

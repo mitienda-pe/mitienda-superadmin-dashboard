@@ -119,6 +119,27 @@
         <Button label="Etiquetar seleccionadas" icon="pi pi-tags" size="small" @click="openAssign(selectedIds)" />
       </div>
 
+      <!-- Todo el filtro, no solo la pagina: para clasificar por lo que la linea
+           dice (una busqueda, un cliente) cuando el codigo no agrupa bien. -->
+      <div
+        v-else-if="canTagAll"
+        class="flex flex-wrap items-center gap-4 border-b border-gray-200 px-4 py-3"
+      >
+        <span class="text-sm text-gray-600">
+          <strong class="font-semibold text-gray-800">{{ formatNumber(meta.total) }}</strong>
+          {{ meta.total === 1 ? 'línea cumple' : 'líneas cumplen' }} este filtro
+          · {{ formatCurrency(totalNet, 2) }} sin IGV
+        </span>
+        <div class="flex-1"></div>
+        <Button
+          label="Etiquetar todos los resultados"
+          icon="pi pi-tags"
+          size="small"
+          outlined
+          @click="openAssignAll"
+        />
+      </div>
+
       <DataTable :value="items" :loading="loading" dataKey="id" responsiveLayout="scroll" class="p-datatable-sm">
         <Column headerStyle="width: 3rem">
           <template #header>
@@ -218,7 +239,13 @@
 
     <!-- Etiquetar -->
     <Dialog v-model:visible="assignVisible" header="Etiquetar líneas" modal :style="{ width: '32rem' }">
-      <p class="text-sm text-gray-600 mb-4">
+      <p v-if="assignScope === 'filter'" class="text-sm text-gray-600 mb-4">
+        Se etiquetan <strong>las {{ formatNumber(assignAllTotal) }} líneas del filtro</strong>
+        ({{ formatCurrency(totalNet, 2) }} sin IGV), no solo las de esta página:
+        <span class="text-gray-800">{{ filterSummary }}</span>.
+        Las dimensiones que dejes en "No cambiar" quedan como están.
+      </p>
+      <p v-else class="text-sm text-gray-600 mb-4">
         {{ assignIds.length === 1 ? 'Se etiqueta 1 línea.' : `Se etiquetan ${assignIds.length} líneas.` }}
         Las dimensiones que dejes en "No cambiar" quedan como están.
       </p>
@@ -235,6 +262,12 @@
             optionValue="value"
             class="w-full"
           />
+        </div>
+        <div v-if="assignScope === 'filter'" class="flex items-start gap-2 rounded-lg bg-gray-50 p-3">
+          <Checkbox v-model="assignOverwrite" inputId="filterOverwrite" binary class="mt-0.5" />
+          <label for="filterOverwrite" class="text-sm text-gray-600">
+            Reemplazar también en las líneas que ya tienen etiqueta. Sin marcar, solo se completan las que no tienen.
+          </label>
         </div>
       </div>
       <template #footer>
@@ -257,7 +290,9 @@ import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useRoute } from 'vue-router'
 import { useFormatters } from '@/composables/useFormatters'
-import { getLedgerDimensions, getLedgerItems, assignLedgerTags, ledgerErrorMessage } from '@/api/ledger.api'
+import {
+  getLedgerDimensions, getLedgerItems, assignLedgerTags, assignLedgerTagsByFilter, ledgerErrorMessage
+} from '@/api/ledger.api'
 import type {
   LedgerItem, LedgerItemFilters, LedgerItemTag, LedgerOrigin, LedgerTagDimension
 } from '@/types/ledger.types'
@@ -274,6 +309,10 @@ const dimensions = ref<LedgerTagDimension[]>([])
 const items = ref<LedgerItem[]>([])
 const meta = ref({ current_page: 1, per_page: 50, total: 0, total_pages: 1 })
 const pendingTotal = ref(0)
+const totalNet = ref(0)
+// Los filtros con los que se cargo lo que esta en pantalla. Lo que se escribe en
+// el buscador no cuenta hasta buscar: "todos los resultados" son los que se ven.
+const appliedFilters = ref<LedgerItemFilters | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
@@ -331,10 +370,13 @@ async function load() {
   loading.value = true
   error.value = null
   try {
-    const res = await getLedgerItems(filters)
+    const requested = { ...filters }
+    const res = await getLedgerItems(requested)
     items.value = res.data
     meta.value = res.meta
     pendingTotal.value = res.summary.pending_total
+    totalNet.value = res.summary.total_net
+    appliedFilters.value = requested
     // La seleccion no sobrevive a un cambio de pagina o de filtro: etiquetar
     // lineas que ya no se ven seria etiquetar a ciegas.
     selectedIds.value = []
@@ -399,7 +441,50 @@ function assignOptions(dimension: LedgerTagDimension) {
 
 const assignHasChanges = computed(() => activeDimensions.value.some(d => assignChoice[d.id] !== KEEP))
 
+// "selection": las lineas marcadas. "filter": todas las del filtro aplicado.
+const assignScope = ref<'selection' | 'filter'>('selection')
+const assignOverwrite = ref(false)
+const assignAllTotal = ref(0)
+
+// Etiquetar todo solo se ofrece con el listado acotado: sin filtro serian todas
+// las lineas del libro, y "solo pendientes" por si solo no acota lo suficiente.
+const canTagAll = computed(() => {
+  const f = appliedFilters.value
+  if (!f || meta.value.total === 0) return false
+  return !!f.search.trim() || f.code !== null || !!f.period || f.origin !== 'all' || !!f.value_id
+})
+
+/** El filtro aplicado, en palabras, para confirmar a que se le va a poner la etiqueta. */
+const filterSummary = computed(() => {
+  const f = appliedFilters.value
+  if (!f) return ''
+
+  const parts: string[] = []
+  if (f.search.trim()) parts.push(`búsqueda "${f.search.trim()}"`)
+  if (f.code !== null) parts.push(`concepto ${f.code || 'sin código'}`)
+  if (f.period) parts.push(`periodo ${f.period}`)
+  if (f.origin !== 'all') parts.push(`origen ${originLabel(f.origin)}`)
+  if (f.value_id) {
+    const value = activeDimensions.value.flatMap(d => d.values).find(v => v.id === f.value_id)
+    if (value) parts.push(`con etiqueta ${value.name}`)
+  }
+  if (f.pending) parts.push('solo pendientes')
+
+  return parts.join(', ')
+})
+
+function openAssignAll() {
+  assignScope.value = 'filter'
+  assignOverwrite.value = false
+  assignAllTotal.value = meta.value.total
+  for (const dimension of activeDimensions.value) {
+    assignChoice[dimension.id] = KEEP
+  }
+  assignVisible.value = true
+}
+
 function openAssign(ids: number[]) {
+  assignScope.value = 'selection'
   assignIds.value = [...ids]
   const single = ids.length === 1 ? items.value.find(i => i.id === ids[0]) : undefined
 
@@ -424,17 +509,37 @@ async function saveAssign() {
 
   assigning.value = true
   try {
-    const affected = await assignLedgerTags(assignIds.value, tags)
-    assignVisible.value = false
-    toast.add({
-      severity: 'success',
-      summary: 'Etiquetas guardadas',
-      detail: affected === 1 ? '1 línea actualizada' : `${affected} líneas actualizadas`,
-      life: 4000
-    })
+    if (assignScope.value === 'filter' && appliedFilters.value) {
+      const result = await assignLedgerTagsByFilter(appliedFilters.value, tags, assignOverwrite.value, assignAllTotal.value)
+      assignVisible.value = false
+      toast.add({
+        severity: result.affected > 0 ? 'success' : 'info',
+        summary: result.affected > 0 ? 'Etiquetas guardadas' : 'Sin cambios',
+        detail:
+          result.affected > 0
+            ? `${result.affected} etiqueta${result.affected === 1 ? '' : 's'} en ${result.matched} línea${result.matched === 1 ? '' : 's'}`
+            : 'Todas las líneas ya tenían etiqueta en esas dimensiones. Marca "Reemplazar" para cambiarlas.',
+        life: 6000
+      })
+    } else {
+      const affected = await assignLedgerTags(assignIds.value, tags)
+      assignVisible.value = false
+      toast.add({
+        severity: 'success',
+        summary: 'Etiquetas guardadas',
+        detail: affected === 1 ? '1 línea actualizada' : `${affected} líneas actualizadas`,
+        life: 4000
+      })
+    }
     load()
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo guardar', detail: ledgerErrorMessage(e), life: 8000 })
+    // Si el API rechazo porque los resultados cambiaron, se recarga para que
+    // la persona vea el total actual antes de reintentar.
+    if (assignScope.value === 'filter') {
+      assignVisible.value = false
+      load()
+    }
   } finally {
     assigning.value = false
   }
