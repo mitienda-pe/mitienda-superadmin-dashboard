@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <SectionTabs :tabs="INVOICES_TABS" />
+
     <!-- Header -->
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Comprobantes</h1>
@@ -199,6 +201,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { INVOICES_TABS } from '@/config/sections.config'
 import { ref, computed, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'

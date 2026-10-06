@@ -84,39 +84,3 @@ export interface AlertsResponse {
   total: number
   alerts: Alert[]
 }
-
-// Phase 4: Investor types
-
-export interface InvestorMrrPoint {
-  month: string
-  mrr: number
-}
-
-export interface InvestorStoresPoint {
-  month: string
-  stores: number
-}
-
-export interface InvestorKpis {
-  mrr: number
-  arr: number
-  active_paid_stores: number
-  arpu: number
-  nrr: number
-  gross_churn: number
-  ltv: number
-  gmv_annual: number
-  gmv_growth_yoy: number
-  mrr_evolution: InvestorMrrPoint[]
-  stores_trend: InvestorStoresPoint[]
-  // Period comparison (vs previous month)
-  mrr_change: number
-  arr_change: number
-  active_paid_stores_change: number
-  arpu_change: number
-  nrr_change: number
-  gross_churn_change: number
-  ltv_change: number
-  gmv_monthly_current: number
-  gmv_monthly_change: number
-}

@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <SectionTabs :tabs="STORES_TABS" />
+
     <!-- Header -->
     <div class="flex items-center justify-between">
       <div>
@@ -163,6 +165,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { STORES_TABS } from '@/config/sections.config'
 import { ref, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'

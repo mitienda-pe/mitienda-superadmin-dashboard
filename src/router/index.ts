@@ -108,18 +108,6 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
-    path: '/investor',
-    component: DashboardLayout,
-    meta: { requiresAuth: true, requiresSuperAdmin: true },
-    children: [
-      {
-        path: '',
-        name: 'Investor',
-        component: () => import('@/views/investor/InvestorView.vue')
-      }
-    ]
-  },
-  {
     path: '/pipeline',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

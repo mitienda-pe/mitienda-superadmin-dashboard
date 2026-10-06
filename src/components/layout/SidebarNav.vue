@@ -33,11 +33,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { HOME_TABS, STORES_TABS, INVOICES_TABS, MRR_TABS, type SectionTab } from '@/config/sections.config'
 
 interface NavItem {
   path: string
   label: string
   icon: string
+  /** Rutas hermanas que se abren como pestañas dentro de esta entrada. */
+  also?: string[]
 }
 
 interface NavGroup {
@@ -49,22 +52,25 @@ interface NavGroup {
 
 const route = useRoute()
 
+/** Las pestañas de una seccion menos la primera, que es la ruta de la entrada. */
+function siblings(tabs: SectionTab[]): string[] {
+  return tabs.slice(1).map(tab => tab.to)
+}
+
 // El menu se agrupa por lo que la persona viene a hacer, no por el orden en
 // que se fueron agregando los modulos. Las rutas no cambian.
 const navGroups: NavGroup[] = [
   {
     id: 'home',
     items: [
-      { path: '/dashboard', label: 'Resumen', icon: 'pi pi-home' },
-      { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell' }
+      { path: '/dashboard', label: 'Resumen y alertas', icon: 'pi pi-home', also: siblings(HOME_TABS) }
     ]
   },
   {
     id: 'customers',
     label: 'Clientes',
     items: [
-      { path: '/stores', label: 'Tiendas', icon: 'pi pi-shop' },
-      { path: '/users', label: 'Usuarios', icon: 'pi pi-users' },
+      { path: '/stores', label: 'Tiendas y usuarios', icon: 'pi pi-shop', also: siblings(STORES_TABS) },
       { path: '/pipeline', label: 'Pipeline de trials', icon: 'pi pi-filter' },
       { path: '/complaints', label: 'Reclamos', icon: 'pi pi-flag' }
     ]
@@ -75,8 +81,7 @@ const navGroups: NavGroup[] = [
     items: [
       { path: '/billing/plan-sales', label: 'Ventas de planes', icon: 'pi pi-receipt' },
       { path: '/billing/commission-period', label: 'Cierre de comisiones', icon: 'pi pi-calendar-clock' },
-      { path: '/billing/commissions', label: 'Comisiones emitidas', icon: 'pi pi-percentage' },
-      { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit' },
+      { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit', also: siblings(INVOICES_TABS) },
       { path: '/billing/ledger', label: 'Líneas facturadas', icon: 'pi pi-list' },
       { path: '/billing/concepts', label: 'Conceptos facturados', icon: 'pi pi-th-large' },
       { path: '/billing/tags', label: 'Etiquetas', icon: 'pi pi-tags' }
@@ -87,10 +92,8 @@ const navGroups: NavGroup[] = [
     label: 'Reportes',
     items: [
       { path: '/billing/income', label: 'Ingresos facturados', icon: 'pi pi-chart-bar' },
-      { path: '/revenue', label: 'MRR y retención', icon: 'pi pi-dollar' },
-      { path: '/subscriptions/movement', label: 'Movimiento de suscripciones', icon: 'pi pi-chart-line' },
-      { path: '/store-sales', label: 'Ventas de tiendas', icon: 'pi pi-shopping-cart' },
-      { path: '/investor', label: 'Inversionistas', icon: 'pi pi-briefcase' }
+      { path: '/revenue', label: 'MRR y suscripciones', icon: 'pi pi-dollar', also: siblings(MRR_TABS) },
+      { path: '/store-sales', label: 'Ventas de tiendas', icon: 'pi pi-shopping-cart' }
     ]
   },
   {
@@ -116,6 +119,13 @@ const navItems = navGroups.flatMap(group => group.items)
 
 function isActive(path: string): boolean {
   if (route.path === path) return true
+
+  // Una ruta que es pestaña de otra entrada resalta a su dueña y a nadie mas:
+  // `/subscriptions/movement` vive bajo "MRR y suscripciones", no bajo
+  // "Suscripciones", aunque su path empiece igual.
+  const owner = navItems.find(item => item.also?.includes(route.path))
+  if (owner) return owner.path === path
+
   // Avoid parent path matching when a more specific nav item exists
   const hasMoreSpecificMatch = navItems.some(
     item => item.path !== path && item.path.startsWith(path + '/') && (route.path === item.path || route.path.startsWith(item.path + '/'))

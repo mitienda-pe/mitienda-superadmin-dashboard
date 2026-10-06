@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <SectionTabs :tabs="MRR_TABS" />
+
     <!-- Header with month picker -->
     <div class="flex items-center justify-between">
       <div>
@@ -297,6 +299,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { MRR_TABS } from '@/config/sections.config'
 import { ref, computed, onMounted } from 'vue'
 import { useSubscriptionMovementStore } from '@/stores/subscription-movement.store'
 import { useFormatters } from '@/composables/useFormatters'

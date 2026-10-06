@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <SectionTabs :tabs="HOME_TABS" />
+
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Alertas</h1>
       <p class="text-sm text-gray-500 mt-1">Sistema de alertas tempranas para riesgos de churn, caídas de venta y expiración de planes</p>
@@ -137,6 +139,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { HOME_TABS } from '@/config/sections.config'
 import { ref, computed, onMounted } from 'vue'
 import Button from 'primevue/button'
 import { useRevenueStore } from '@/stores/revenue.store'

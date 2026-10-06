@@ -1,5 +1,7 @@
 <template>
   <div>
+    <SectionTabs :tabs="HOME_TABS" class="mb-6" />
+
     <!-- Loading state -->
     <LoadingState v-if="!dashboardStore.kpis && !dashboardStore.error" />
 
@@ -119,6 +121,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { HOME_TABS } from '@/config/sections.config'
 import { onMounted, computed } from 'vue'
 import Button from 'primevue/button'
 import { useDashboardStore } from '@/stores/dashboard.store'

@@ -85,7 +85,6 @@ const pageTitle = computed(() => {
     PlansList: 'Lista de Planes',
     PlansPricing: 'Pricing Table',
     PlanDetail: 'Detalle de Plan',
-    Investor: 'Vista Inversionistas',
     SubscriptionsList: 'Suscripciones',
     SubscriptionMovement: 'Movimiento de suscripciones',
     SubscriptionDetail: 'Detalle de Suscripción',

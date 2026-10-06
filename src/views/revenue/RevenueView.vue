@@ -1,5 +1,7 @@
 <template>
   <div class="space-y-6">
+    <SectionTabs :tabs="MRR_TABS" />
+
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Revenue Intelligence</h1>
       <p class="text-sm text-gray-500 mt-1">Análisis profundo de ingresos, retención y unit economics</p>
@@ -145,6 +147,8 @@
 </template>
 
 <script setup lang="ts">
+import SectionTabs from '@/components/layout/SectionTabs.vue'
+import { MRR_TABS } from '@/config/sections.config'
 import { onMounted } from 'vue'
 import Button from 'primevue/button'
 import TabView from 'primevue/tabview'

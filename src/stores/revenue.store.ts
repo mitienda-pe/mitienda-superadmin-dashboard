@@ -2,11 +2,11 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type {
   MrrBreakdownMonth, CohortData, LtvByPlan,
-  ChurnByPlanMonth, GmvAnalysis, AlertsResponse, InvestorKpis
+  ChurnByPlanMonth, GmvAnalysis, AlertsResponse
 } from '@/types/revenue.types'
 import {
   getMrrBreakdown, getCohortAnalysis, getLtvByPlan,
-  getChurnByPlan, getGmvAnalysis, getAlerts, getInvestorKpis
+  getChurnByPlan, getGmvAnalysis, getAlerts
 } from '@/api/revenue.api'
 
 export const useRevenueStore = defineStore('revenue', () => {
@@ -23,11 +23,6 @@ export const useRevenueStore = defineStore('revenue', () => {
   const alertsData = ref<AlertsResponse | null>(null)
   const isAlertsLoading = ref(false)
   const alertsError = ref<string | null>(null)
-
-  // Investor state
-  const investorKpis = ref<InvestorKpis | null>(null)
-  const isInvestorLoading = ref(false)
-  const investorError = ref<string | null>(null)
 
   async function fetchRevenue() {
     isLoading.value = true
@@ -65,24 +60,10 @@ export const useRevenueStore = defineStore('revenue', () => {
     }
   }
 
-  async function fetchInvestorKpis() {
-    isInvestorLoading.value = true
-    investorError.value = null
-    try {
-      const res = await getInvestorKpis()
-      investorKpis.value = res.data
-    } catch (e: any) {
-      investorError.value = e.message || 'Error loading investor data'
-    } finally {
-      isInvestorLoading.value = false
-    }
-  }
-
   return {
     mrrBreakdown, cohorts, ltvData, churnByPlan, gmvAnalysis,
     isLoading, error,
     alertsData, isAlertsLoading, alertsError,
-    investorKpis, isInvestorLoading, investorError,
-    fetchRevenue, fetchAlerts, fetchInvestorKpis
+    fetchRevenue, fetchAlerts
   }
 })
