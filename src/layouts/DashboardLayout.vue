@@ -90,6 +90,7 @@ const pageTitle = computed(() => {
     SubscriptionDetail: 'Detalle de Suscripción',
     ComplaintsList: 'Libro de Reclamaciones',
     ComplaintDetail: 'Detalle del Reclamo',
+    BillingEmit: 'Emitir comprobante',
     BillingPlanSales: 'Ventas de planes',
     BillingCommissionPeriod: 'Cierre de comisiones',
     BillingCommissions: 'Comisiones emitidas',

@@ -130,7 +130,72 @@ export interface PlatformInvoiceStatus {
       factura: PlatformSerieState | null
       boleta: PlatformSerieState | null
     }
+    /** Formulario libre. En produccion comparte serie con el panel de Nubefact. */
+    manual?: {
+      factura: PlatformSerieState | null
+      boleta: PlatformSerieState | null
+    }
   }
+}
+
+// --- Emision manual ---
+
+export interface ManualInvoiceClient {
+  type: 'store' | 'external'
+  id: number
+  document_number: string
+  name: string
+  address: string
+  email: string
+  /** "Tienda: X" o "Cliente externo". */
+  hint: string
+  /** Con RUC puede recibir factura; con DNI, solo boleta. */
+  can_invoice: boolean
+}
+
+export interface ManualInvoiceLineInput {
+  code: string
+  description: string
+  quantity: number
+  unit_price: number
+  /** dimension_id -> value_id. */
+  tags: Record<number, number | null>
+}
+
+export interface ManualInvoiceInput {
+  document_type: 1 | 2
+  client: { type: 'store' | 'external'; id: number }
+  prices_include_tax: boolean
+  lines: ManualInvoiceLineInput[]
+  observations: string
+  credit_due_date: string | null
+}
+
+export interface ManualInvoicePreview {
+  environment: 'demo' | 'production'
+  is_production: boolean
+  document_type: number
+  serie: string | null
+  /** Orientativo: el definitivo sale al emitir. */
+  next_number: number | null
+  can_emit: boolean
+  blocked_reason: string | null
+  client: ManualInvoiceClient
+  currency: string
+  total_net: number
+  total_tax: number
+  total: number
+  credit_due_date: string | null
+}
+
+export interface ManualInvoiceResult {
+  success: boolean
+  message?: string
+  comprobante?: string
+  /** false en modo pruebas: el comprobante no queda en el libro. */
+  persisted: boolean
+  environment: 'demo' | 'production'
+  pdf_url?: string | null
 }
 
 export interface PlatformInvoicePreview {

@@ -6,7 +6,8 @@ import type {
   BillingFilters, BillingMeta,
   PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult,
   PlatformBatchResult,
-  CommissionPeriodResponse, CommissionInvoicePreview, CommissionBatchResult
+  CommissionPeriodResponse, CommissionInvoicePreview, CommissionBatchResult,
+  ManualInvoiceClient, ManualInvoiceInput, ManualInvoicePreview, ManualInvoiceResult
 } from '@/types/billing.types'
 
 interface CommissionsResponse {
@@ -172,6 +173,55 @@ export async function updateCommissionSettings(
 ) {
   const res = await api.put<{ message: string }>(
     `/superadmin/platform-invoices/commissions/${tiendaId}/settings`,
+    payload
+  )
+  return res.data
+}
+
+// --- Emision manual (formulario libre) ---
+
+export async function searchManualInvoiceClients(search: string) {
+  const res = await api.get<{ data: ManualInvoiceClient[] }>(
+    '/superadmin/platform-invoices/manual/clients',
+    { params: { search } }
+  )
+  return res.data.data
+}
+
+export async function createManualInvoiceClient(payload: {
+  document_number: string
+  name: string
+  address?: string
+  email?: string
+}) {
+  const res = await api.post<{ data: ManualInvoiceClient }>(
+    '/superadmin/platform-invoices/manual/clients',
+    payload
+  )
+  return res.data.data
+}
+
+/** Consulta un DNI o RUC para autocompletar el alta de un cliente. */
+export async function lookupManualInvoiceDocument(number: string) {
+  const res = await api.get<{ data: { status: string; data: Record<string, any> | null; message: string | null } }>(
+    '/superadmin/platform-invoices/manual/lookup',
+    { params: { number } }
+  )
+  return res.data.data
+}
+
+export async function previewManualInvoice(payload: ManualInvoiceInput) {
+  const res = await api.post<{ data: ManualInvoicePreview }>(
+    '/superadmin/platform-invoices/manual/preview',
+    payload
+  )
+  return res.data.data
+}
+
+/** Irreversible: consume correlativo y llega a SUNAT. */
+export async function emitManualInvoice(payload: ManualInvoiceInput) {
+  const res = await api.post<{ message: string; data: ManualInvoiceResult }>(
+    '/superadmin/platform-invoices/manual/emit',
     payload
   )
   return res.data

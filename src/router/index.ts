@@ -149,6 +149,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/billing/InvoicesListView.vue')
       },
       {
+        // Formulario libre: lo que no sale de una fila de plan o de comision.
+        path: 'emit',
+        name: 'BillingEmit',
+        component: () => import('@/views/billing/ManualEmitView.vue')
+      },
+      {
         path: 'plan-sales',
         name: 'BillingPlanSales',
         component: () => import('@/views/billing/PlanSalesListView.vue')
