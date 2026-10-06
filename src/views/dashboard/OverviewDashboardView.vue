@@ -67,6 +67,9 @@
         />
       </div>
 
+      <!-- Lo realmente facturado, incluido lo que el MRR no ve -->
+      <InvoicedIncomePanel />
+
       <!-- Charts Row 1: 3 columns -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <MrrEvolutionChart
@@ -122,6 +125,7 @@
 
 <script setup lang="ts">
 import SectionTabs from '@/components/layout/SectionTabs.vue'
+import InvoicedIncomePanel from '@/components/dashboard/InvoicedIncomePanel.vue'
 import { HOME_TABS } from '@/config/sections.config'
 import { onMounted, computed } from 'vue'
 import Button from 'primevue/button'

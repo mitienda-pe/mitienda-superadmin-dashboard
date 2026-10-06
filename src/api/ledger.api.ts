@@ -23,14 +23,14 @@ export async function updateLedgerDimension(
   return res.data.data
 }
 
-export async function createLedgerValue(dimensionId: number, name: string) {
-  const res = await api.post<{ data: LedgerTagValue }>(`${BASE}/dimensions/${dimensionId}/values`, { name })
+export async function createLedgerValue(dimensionId: number, name: string, recurrence?: string | null) {
+  const res = await api.post<{ data: LedgerTagValue }>(`${BASE}/dimensions/${dimensionId}/values`, { name, recurrence })
   return res.data.data
 }
 
 export async function updateLedgerValue(
   id: number,
-  payload: Partial<Pick<LedgerTagValue, 'name' | 'is_active' | 'sort_order'>>
+  payload: Partial<Pick<LedgerTagValue, 'name' | 'recurrence' | 'is_active' | 'sort_order'>>
 ) {
   const res = await api.put<{ data: LedgerTagValue }>(`${BASE}/values/${id}`, payload)
   return res.data.data

@@ -61,11 +61,18 @@
           <li v-for="value in dimension.values" :key="value.id" class="flex items-center gap-3 px-5 py-2.5">
             <span class="flex-1 text-sm" :class="value.is_active ? 'text-gray-700' : 'text-gray-400 line-through'">
               {{ value.name }}
+              <span
+                v-if="dimension.slug === 'fuente'"
+                class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium no-underline"
+                :class="value.recurrence ? 'bg-gray-100 text-gray-600' : 'bg-amber-50 text-amber-700'"
+              >
+                {{ recurrenceLabel(value.recurrence) }}
+              </span>
             </span>
             <span class="text-xs text-gray-400">
               {{ value.items_count === 0 ? 'sin uso' : formatNumber(value.items_count) + (value.items_count === 1 ? ' línea' : ' líneas') }}
             </span>
-            <Button icon="pi pi-pencil" text rounded size="small" v-tooltip.top="'Renombrar'" @click="openValueDialog(dimension, value)" />
+            <Button icon="pi pi-pencil" text rounded size="small" v-tooltip.top="'Editar'" @click="openValueDialog(dimension, value)" />
             <Button
               :icon="value.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"
               text
@@ -133,12 +140,34 @@
     <!-- Valor -->
     <Dialog
       v-model:visible="valueDialogVisible"
-      :header="valueForm.id ? 'Renombrar valor' : `Nuevo valor en ${valueForm.dimensionName}`"
+      :header="valueForm.id ? 'Editar valor' : `Nuevo valor en ${valueForm.dimensionName}`"
       modal
       :style="{ width: '26rem' }"
     >
       <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
       <InputText v-model="valueForm.name" class="w-full" maxlength="120" autofocus @keyup.enter="saveValue" />
+      <template v-if="valueForm.isSource">
+        <label class="block text-sm font-medium text-gray-700 mb-1 mt-4">Tipo de ingreso</label>
+        <Dropdown
+          v-model="valueForm.recurrence"
+          :options="RECURRENCE_OPTIONS"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Sin clasificar"
+          showClear
+          class="w-full"
+        >
+          <template #option="{ option }">
+            <div>
+              <div class="text-sm font-medium text-gray-800">{{ option.label }}</div>
+              <div class="text-xs text-gray-500">{{ option.hint }}</div>
+            </div>
+          </template>
+        </Dropdown>
+        <p class="text-xs text-gray-400 mt-2">
+          Decide en qué bloque del resumen aparece esta fuente. El MRR solo cuenta lo recurrente.
+        </p>
+      </template>
       <p v-if="valueForm.id" class="text-xs text-gray-400 mt-2">
         El cambio de nombre se refleja en todas las líneas que ya lo usan, también en reportes de periodos pasados.
       </p>
@@ -153,6 +182,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -163,6 +193,7 @@ import {
   getLedgerDimensions, createLedgerDimension, updateLedgerDimension,
   createLedgerValue, updateLedgerValue, deleteLedgerValue, ledgerErrorMessage
 } from '@/api/ledger.api'
+import { RECURRENCE_OPTIONS, recurrenceLabel } from '@/config/ledger.config'
 import type { LedgerTagDimension, LedgerTagValue } from '@/types/ledger.types'
 
 const toast = useToast()
@@ -227,13 +258,23 @@ async function saveDimension() {
 
 // --- Valor ---
 const valueDialogVisible = ref(false)
-const valueForm = reactive({ id: 0, dimensionId: 0, dimensionName: '', name: '' })
+const valueForm = reactive({
+  id: 0,
+  dimensionId: 0,
+  dimensionName: '',
+  name: '',
+  // El tipo de ingreso solo existe en la dimension "fuente".
+  isSource: false,
+  recurrence: null as string | null
+})
 
 function openValueDialog(dimension: LedgerTagDimension, value?: LedgerTagValue) {
   valueForm.id = value?.id ?? 0
   valueForm.dimensionId = dimension.id
   valueForm.dimensionName = dimension.name
   valueForm.name = value?.name ?? ''
+  valueForm.isSource = dimension.slug === 'fuente'
+  valueForm.recurrence = value?.recurrence ?? null
   valueDialogVisible.value = true
 }
 
@@ -244,9 +285,9 @@ async function saveValue() {
   saving.value = true
   try {
     if (valueForm.id) {
-      await updateLedgerValue(valueForm.id, { name })
+      await updateLedgerValue(valueForm.id, valueForm.isSource ? { name, recurrence: valueForm.recurrence } : { name })
     } else {
-      await createLedgerValue(valueForm.dimensionId, name)
+      await createLedgerValue(valueForm.dimensionId, name, valueForm.isSource ? valueForm.recurrence : undefined)
     }
     valueDialogVisible.value = false
     await load()

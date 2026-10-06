@@ -5,6 +5,8 @@ export interface LedgerTagValue {
   dimension_id: number
   slug: string
   name: string
+  /** Solo en la dimension `fuente`: recurrente | variable | extraordinario. */
+  recurrence: string | null
   is_active: boolean
   sort_order: number
   /** Lineas que usan el valor. Con mas de cero no se puede borrar, solo desactivar. */

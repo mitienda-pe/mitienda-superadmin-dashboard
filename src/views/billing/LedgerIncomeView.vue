@@ -107,7 +107,7 @@
           <div class="text-sm text-gray-500">Sin etiquetar</div>
           <div class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(report.summary.untagged) }}</div>
           <div class="text-xs mt-1" :class="untaggedShare > 0 ? 'text-amber-600' : 'text-gray-400'">
-            <template v-if="!isDimensionGroup">No aplica a esta agrupación</template>
+            <template v-if="!hasUntaggedBucket">No aplica a esta agrupación</template>
             <template v-else-if="untaggedShare > 0">
               {{ formatPercent(untaggedShare) }} del ingreso ·
               <router-link :to="{ name: 'BillingConcepts' }" class="underline">etiquetar conceptos</router-link>
@@ -199,6 +199,7 @@ import Button from 'primevue/button'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useFormatters } from '@/composables/useFormatters'
 import { getLedgerDimensions, getLedgerReport, ledgerErrorMessage } from '@/api/ledger.api'
+import { RECURRENCE_ORDER } from '@/config/ledger.config'
 import type { LedgerReport, LedgerReportGroup, LedgerTagDimension } from '@/types/ledger.types'
 
 use([BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
@@ -240,6 +241,7 @@ const granularityOptions = [
 const activeDimensions = computed(() => dimensions.value.filter(d => d.is_active))
 
 const groupOptions = computed(() => [
+  { label: 'Tipo de ingreso', value: 'recurrence' },
   ...activeDimensions.value.map(d => ({ label: d.name, value: d.slug })),
   { label: 'Origen del comprobante', value: 'origin' },
   { label: 'Cliente', value: 'customer' }
@@ -247,7 +249,8 @@ const groupOptions = computed(() => [
 
 const groupLabel = computed(() => groupOptions.value.find(o => o.value === groupBy.value)?.label ?? '')
 const groupDimension = computed(() => activeDimensions.value.find(d => d.slug === groupBy.value))
-const isDimensionGroup = computed(() => !!groupDimension.value)
+// Por tipo de ingreso tambien hay lineas sin clasificar (sin fuente).
+const hasUntaggedBucket = computed(() => !!groupDimension.value || groupBy.value === 'recurrence')
 
 // Se puede filtrar por cualquier dimension menos la que ya agrupa.
 const filterDimensions = computed(() => activeDimensions.value.filter(d => d.slug !== groupBy.value))
@@ -294,7 +297,9 @@ const colorIndex = computed<Record<string, number>>(() => {
     ? groupDimension.value.values.map(v => v.slug)
     : groupBy.value === 'origin'
       ? ORIGIN_ORDER
-      : (report.value?.groups ?? []).map(g => g.key)
+      : groupBy.value === 'recurrence'
+        ? RECURRENCE_ORDER
+        : (report.value?.groups ?? []).map(g => g.key)
 
   return Object.fromEntries(order.map((key, i) => [key, i]))
 })
