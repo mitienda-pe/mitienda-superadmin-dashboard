@@ -60,15 +60,10 @@
       </div>
 
       <DataTable :value="concepts" :loading="loading" dataKey="code" responsiveLayout="scroll" class="p-datatable-sm">
-        <!-- La accion va primero: con cuatro columnas de dimensiones la tabla no
-             cabe en una laptop y una ultima columna queda fuera de la vista. -->
-        <Column header="Concepto" style="min-width: 320px">
+        <Column header="Concepto" style="min-width: 300px">
           <template #body="{ data: row }">
-            <div class="flex items-center gap-3">
-              <span class="text-sm font-semibold text-gray-800 font-mono">{{ row.code || '(sin código)' }}</span>
-              <Button label="Etiquetar" icon="pi pi-tags" outlined size="small" @click="openAssign(row)" />
-            </div>
-            <div v-for="(sample, i) in row.samples" :key="i" class="mt-1 text-xs text-gray-500 truncate max-w-md">
+            <div class="text-sm font-semibold text-gray-800 font-mono">{{ row.code || '(sin código)' }}</div>
+            <div v-for="(sample, i) in row.samples" :key="i" class="text-xs text-gray-500 truncate max-w-md">
               {{ sample }}
             </div>
           </template>
@@ -115,6 +110,12 @@
             </template>
             <span v-else-if="dimension.is_required" class="text-xs font-medium text-amber-600">Falta</span>
             <span v-else class="text-sm text-gray-300">-</span>
+          </template>
+        </Column>
+
+        <Column headerStyle="width: 7rem">
+          <template #body="{ data: row }">
+            <Button label="Etiquetar" icon="pi pi-tags" text size="small" @click="openAssign(row)" />
           </template>
         </Column>
       </DataTable>
