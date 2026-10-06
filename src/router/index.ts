@@ -171,6 +171,18 @@ const routes: RouteRecordRaw[] = [
         path: 'commission-period',
         name: 'BillingCommissionPeriod',
         component: () => import('@/views/billing/CommissionPeriodView.vue')
+      },
+      {
+        // Libro de comprobantes: lineas facturadas con sus etiquetas. Es donde
+        // se clasifica lo que la sincronizacion no pudo etiquetar sola.
+        path: 'ledger',
+        name: 'BillingLedger',
+        component: () => import('@/views/billing/LedgerItemsView.vue')
+      },
+      {
+        path: 'tags',
+        name: 'BillingTags',
+        component: () => import('@/views/billing/LedgerTagsView.vue')
       }
     ]
   },

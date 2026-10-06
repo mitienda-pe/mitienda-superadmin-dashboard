@@ -86,7 +86,9 @@ const pageTitle = computed(() => {
     SubscriptionsList: 'Suscripciones',
     SubscriptionDetail: 'Detalle de Suscripción',
     ComplaintsList: 'Libro de Reclamaciones',
-    ComplaintDetail: 'Detalle del Reclamo'
+    ComplaintDetail: 'Detalle del Reclamo',
+    BillingLedger: 'Líneas facturadas',
+    BillingTags: 'Etiquetas de ingresos'
   }
   return titles[route.name as string] || 'Dashboard'
 })
