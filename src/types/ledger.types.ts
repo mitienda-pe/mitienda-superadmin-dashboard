@@ -62,6 +62,8 @@ export interface LedgerItemFilters {
   period: string
   origin: LedgerOrigin | 'all'
   value_id: number | null
+  /** Codigo de producto; cadena vacia = lineas sin codigo. null = no filtrar. */
+  code: string | null
   search: string
   page: number
   per_page: number
@@ -71,4 +73,25 @@ export interface LedgerItemsResponse {
   data: LedgerItem[]
   summary: { pending_total: number }
   meta: { current_page: number; per_page: number; total: number; total_pages: number }
+}
+
+export interface LedgerConceptTagUsage {
+  value_id: number
+  value_name: string
+  lines: number
+}
+
+/** Lineas agrupadas por codigo de producto. `code` vacio = lineas sin codigo. */
+export interface LedgerConcept {
+  code: string
+  lines: number
+  pending_lines: number
+  customers: number
+  first_date: string
+  last_date: string
+  /** Sin IGV, en soles, solo vigentes y con las notas de credito restando. */
+  net_pen: number
+  samples: string[]
+  /** dimension_id -> valores en uso, del mas frecuente al menos. */
+  tags: Record<number, LedgerConceptTagUsage[]>
 }

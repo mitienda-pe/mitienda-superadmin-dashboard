@@ -1,6 +1,6 @@
 import api from './axios'
 import type {
-  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse
+  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept
 } from '@/types/ledger.types'
 
 const BASE = '/superadmin/platform-ledger'
@@ -47,6 +47,7 @@ export async function getLedgerItems(filters: Partial<LedgerItemFilters> = {}) {
   if (filters.period) params.period = filters.period
   if (filters.origin && filters.origin !== 'all') params.origin = filters.origin
   if (filters.value_id) params.value_id = filters.value_id
+  if (filters.code !== null && filters.code !== undefined) params.code = filters.code
   if (filters.search) params.search = filters.search
   if (filters.page) params.page = filters.page
   if (filters.per_page) params.per_page = filters.per_page
@@ -61,6 +62,28 @@ export async function getLedgerItems(filters: Partial<LedgerItemFilters> = {}) {
  */
 export async function assignLedgerTags(itemIds: number[], tags: Record<number, number | null>) {
   const res = await api.put<{ data: { affected: number } }>(`${BASE}/items/tags`, { item_ids: itemIds, tags })
+  return res.data.data.affected
+}
+
+export async function getLedgerConcepts(filters: { pending?: boolean; search?: string } = {}) {
+  const params: Record<string, string | number> = {}
+  if (filters.pending) params.pending = 1
+  if (filters.search) params.search = filters.search
+
+  const res = await api.get<{ data: LedgerConcept[] }>(`${BASE}/concepts`, { params })
+  return res.data.data
+}
+
+/**
+ * Etiqueta todas las lineas de un codigo. Sin `overwrite` solo completa las que
+ * no tienen esa dimension, asi las excepciones puestas a mano se conservan.
+ */
+export async function assignLedgerConceptTags(
+  code: string,
+  tags: Record<number, number | null>,
+  overwrite = false
+) {
+  const res = await api.put<{ data: { affected: number } }>(`${BASE}/concepts/tags`, { code, tags, overwrite })
   return res.data.data.affected
 }
 

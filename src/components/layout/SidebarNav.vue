@@ -40,6 +40,7 @@ const navItems = [
   { path: '/subscriptions/movement', label: 'Mov. Suscripciones', icon: 'pi pi-chart-line' },
   { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit' },
   { path: '/billing/ledger', label: 'Líneas facturadas', icon: 'pi pi-list' },
+  { path: '/billing/concepts', label: 'Conceptos facturados', icon: 'pi pi-th-large' },
   { path: '/billing/tags', label: 'Etiquetas', icon: 'pi pi-tags' },
   { path: '/alerts', label: 'Alertas', icon: 'pi pi-bell', badge: '' },
   { path: '/plans', label: 'Planes', icon: 'pi pi-credit-card' },

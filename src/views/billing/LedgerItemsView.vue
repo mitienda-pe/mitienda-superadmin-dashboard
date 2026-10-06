@@ -66,6 +66,13 @@
           class="w-56"
           @change="reload"
         />
+        <span
+          v-if="filters.code !== null"
+          class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700"
+        >
+          Concepto: <strong>{{ filters.code || 'sin código' }}</strong>
+          <i class="pi pi-times cursor-pointer text-xs text-gray-400 hover:text-gray-600" @click="clearCode"></i>
+        </span>
         <div class="flex items-center gap-2">
           <Checkbox :modelValue="filters.pending" inputId="onlyPending" binary @update:modelValue="setPending" />
           <label for="onlyPending" class="text-sm text-gray-600">Solo pendientes</label>
@@ -248,6 +255,7 @@ import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
+import { useRoute } from 'vue-router'
 import { useFormatters } from '@/composables/useFormatters'
 import { getLedgerDimensions, getLedgerItems, assignLedgerTags, ledgerErrorMessage } from '@/api/ledger.api'
 import type {
@@ -255,6 +263,7 @@ import type {
 } from '@/types/ledger.types'
 
 const toast = useToast()
+const route = useRoute()
 const { formatCurrency, formatDate, formatNumber } = useFormatters()
 
 // Valores centinela del dialogo: no cambiar la dimension, o quitarle la etiqueta.
@@ -275,6 +284,7 @@ const filters = reactive<LedgerItemFilters>({
   period: '',
   origin: 'all',
   value_id: null,
+  code: null,
   search: '',
   page: 1,
   per_page: 50
@@ -342,6 +352,11 @@ function reload() {
 
 function setPending(value: boolean) {
   filters.pending = value
+  reload()
+}
+
+function clearCode() {
+  filters.code = null
   reload()
 }
 
@@ -426,6 +441,13 @@ async function saveAssign() {
 }
 
 onMounted(async () => {
+  // Desde "Conceptos" se llega con ?code=XXX (vacio = lineas sin codigo). Ahi
+  // interesa ver todo el concepto, no solo lo pendiente.
+  if (typeof route.query.code === 'string') {
+    filters.code = route.query.code
+    filters.pending = route.query.pending === '1'
+  }
+
   try {
     dimensions.value = await getLedgerDimensions()
   } catch (e) {

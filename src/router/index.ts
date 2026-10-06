@@ -180,6 +180,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/billing/LedgerItemsView.vue')
       },
       {
+        // Lineas agrupadas por codigo de producto: se etiqueta el concepto y
+        // aplica a todas sus lineas.
+        path: 'concepts',
+        name: 'BillingConcepts',
+        component: () => import('@/views/billing/LedgerConceptsView.vue')
+      },
+      {
         path: 'tags',
         name: 'BillingTags',
         component: () => import('@/views/billing/LedgerTagsView.vue')
