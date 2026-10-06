@@ -70,13 +70,16 @@ const authStore = useAuthStore()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
-    Overview: 'Dashboard Overview',
+    Overview: 'Resumen',
     Stores: 'Tiendas',
+    CreateStore: 'Crear tienda',
     StoreDetail: 'Detalle de Tienda',
+    Users: 'Usuarios',
     PipelineDashboard: 'Pipeline de Trials',
     PipelineLeads: 'Pipeline - Leads',
     PipelineDetail: 'Detalle de Lead',
-    Revenue: 'Revenue Intelligence',
+    Revenue: 'MRR y retención',
+    StoreSales: 'Ventas de tiendas',
     Alerts: 'Alertas',
     PlansMatrix: 'Matriz de Planes',
     PlansList: 'Lista de Planes',
@@ -84,13 +87,21 @@ const pageTitle = computed(() => {
     PlanDetail: 'Detalle de Plan',
     Investor: 'Vista Inversionistas',
     SubscriptionsList: 'Suscripciones',
+    SubscriptionMovement: 'Movimiento de suscripciones',
     SubscriptionDetail: 'Detalle de Suscripción',
     ComplaintsList: 'Libro de Reclamaciones',
     ComplaintDetail: 'Detalle del Reclamo',
+    BillingPlanSales: 'Ventas de planes',
+    BillingCommissionPeriod: 'Cierre de comisiones',
+    BillingCommissions: 'Comisiones emitidas',
+    BillingInvoices: 'Comprobantes',
     BillingLedger: 'Líneas facturadas',
     BillingIncome: 'Ingresos facturados',
     BillingConcepts: 'Conceptos facturados',
-    BillingTags: 'Etiquetas de ingresos'
+    BillingTags: 'Etiquetas de ingresos',
+    Broadcasts: 'Avisos a comercios',
+    Plugins: 'Plugins',
+    McpTokens: 'MCP Tokens'
   }
   return titles[route.name as string] || 'Dashboard'
 })
