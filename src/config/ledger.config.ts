@@ -1,6 +1,15 @@
 // Tipo de recurrencia de una fuente de ingreso. Lo define el API
 // (LedgerTagService::RECURRENCES); aca van los textos y el orden de presentacion.
 
+/** Alcance del resumen: todo el negocio o una sola linea. */
+export type IncomeScope = 'all' | 'b2c' | 'b2b'
+
+export const INCOME_SCOPE_OPTIONS: { value: IncomeScope; label: string }[] = [
+  { value: 'all', label: 'Combinado' },
+  { value: 'b2c', label: 'B2C' },
+  { value: 'b2b', label: 'B2B' }
+]
+
 export type LedgerRecurrence = 'recurrente' | 'variable' | 'extraordinario'
 
 export interface RecurrenceOption {

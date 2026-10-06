@@ -116,9 +116,14 @@ export interface LedgerReport {
   periods: string[]
   groups: LedgerReportGroup[]
   totals: Record<string, number>
+  /** IGV por periodo: el total con IGV es `totals + tax_totals`. */
+  tax_totals: Record<string, number>
   summary: {
-    /** Facturado menos notas de credito. */
+    /** Facturado menos notas de credito, sin IGV. */
     net: number
+    tax: number
+    /** Neto con IGV. */
+    gross: number
     invoiced: number
     credit_notes: number
     invoices: number

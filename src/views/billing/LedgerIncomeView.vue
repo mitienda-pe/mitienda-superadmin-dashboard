@@ -89,7 +89,9 @@
         <div class="bg-white rounded-xl border border-gray-200 p-5">
           <div class="text-sm text-gray-500">Ingreso neto</div>
           <div class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(report.summary.net) }}</div>
-          <div class="text-xs text-gray-400 mt-1">Facturado menos notas de crédito</div>
+          <div class="text-xs text-gray-400 mt-1">
+            Sin IGV · IGV {{ formatCurrency(report.summary.tax) }} · con IGV {{ formatCurrency(report.summary.gross) }}
+          </div>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-5">
           <div class="text-sm text-gray-500">Facturado</div>

@@ -1,9 +1,31 @@
 <template>
   <div>
-    <SectionTabs :tabs="HOME_TABS" class="mb-6" />
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <SectionTabs :tabs="HOME_TABS" />
+      <SelectButton
+        v-model="scope"
+        :options="INCOME_SCOPE_OPTIONS"
+        optionLabel="label"
+        optionValue="value"
+        :allowEmpty="false"
+        aria-label="Línea de negocio"
+      />
+    </div>
+
+    <!-- Lo realmente facturado, incluido lo que el MRR no ve -->
+    <InvoicedIncomePanel :scope="scope" class="mb-6" />
+
+    <!-- B2B no tiene planes en el sistema: no hay MRR, churn ni GMV que mostrar -->
+    <div v-if="scope === 'b2b'" class="bg-white rounded-xl border border-gray-200 p-6 text-sm text-gray-600">
+      <p class="font-medium text-gray-800">Las métricas de planes no aplican a B2B</p>
+      <p class="mt-1">
+        MRR, churn, tiendas activas y GMV salen de los planes de mitienda.pe. Lo de mitiendab2b.com se factura por
+        fuera del sistema de planes, así que su resumen es el ingreso facturado de arriba.
+      </p>
+    </div>
 
     <!-- Loading state -->
-    <LoadingState v-if="!dashboardStore.kpis && !dashboardStore.error" />
+    <LoadingState v-else-if="!dashboardStore.kpis && !dashboardStore.error" />
 
     <!-- Error state -->
     <div v-else-if="dashboardStore.error && !dashboardStore.kpis" class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
@@ -14,6 +36,13 @@
 
     <!-- Dashboard content -->
     <div v-else-if="kpis" class="space-y-6">
+      <div>
+        <h3 class="text-base font-semibold text-gray-800">Planes de mitienda.pe (B2C)</h3>
+        <p class="text-sm text-gray-500 mt-0.5">
+          Proyección desde los planes activos, sin IGV. No incluye B2B ni lo facturado a mano.
+        </p>
+      </div>
+
       <!-- KPI Cards Row -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <KpiCard
@@ -22,7 +51,7 @@
           format="currency"
           :change="kpis.mrr.change"
           :sparkline="kpis.mrr.sparkline"
-          subtitle="Monthly Recurring Revenue"
+          subtitle="Recurrente mensual, sin IGV"
         />
         <KpiCard
           title="Tiendas Activas"
@@ -55,7 +84,7 @@
           format="currency"
           :change="kpis.arpu.change"
           :sparkline="kpis.arpu.sparkline"
-          subtitle="Avg Revenue Per User"
+          subtitle="MRR por tienda, sin IGV"
         />
         <KpiCard
           title="NRR"
@@ -66,9 +95,6 @@
           subtitle="Net Revenue Retention"
         />
       </div>
-
-      <!-- Lo realmente facturado, incluido lo que el MRR no ve -->
-      <InvoicedIncomePanel />
 
       <!-- Charts Row 1: 3 columns -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -127,8 +153,10 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import InvoicedIncomePanel from '@/components/dashboard/InvoicedIncomePanel.vue'
 import { HOME_TABS } from '@/config/sections.config'
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref, watch } from 'vue'
 import Button from 'primevue/button'
+import SelectButton from 'primevue/selectbutton'
+import { INCOME_SCOPE_OPTIONS, type IncomeScope } from '@/config/ledger.config'
 import { useDashboardStore } from '@/stores/dashboard.store'
 import KpiCard from '@/components/ui/KpiCard.vue'
 import LoadingState from '@/components/ui/LoadingState.vue'
@@ -143,6 +171,29 @@ import CommissionsMonthlyChart from '@/components/charts/CommissionsMonthlyChart
 import ActivityTable from '@/components/dashboard/ActivityTable.vue'
 
 const dashboardStore = useDashboardStore()
+
+// La linea de negocio elegida se recuerda entre visitas. Es una comodidad: sin
+// almacenamiento el resumen abre en "Combinado".
+const SCOPE_KEY = 'superadmin.overview.scope'
+
+function readScope(): IncomeScope {
+  try {
+    const saved = localStorage.getItem(SCOPE_KEY)
+    return saved === 'b2c' || saved === 'b2b' ? saved : 'all'
+  } catch {
+    return 'all'
+  }
+}
+
+const scope = ref<IncomeScope>(readScope())
+
+watch(scope, value => {
+  try {
+    localStorage.setItem(SCOPE_KEY, value)
+  } catch {
+    // Sin almacenamiento la eleccion dura lo que dura la pagina.
+  }
+})
 const kpis = computed(() => dashboardStore.kpis)
 
 function loadData() {

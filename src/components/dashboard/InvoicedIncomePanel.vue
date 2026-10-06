@@ -2,12 +2,12 @@
   <div class="bg-white rounded-xl border border-gray-200 p-5">
     <div class="flex flex-wrap items-start justify-between gap-3 mb-5">
       <div>
-        <h3 class="text-base font-semibold text-gray-800">Ingreso facturado</h3>
+        <h3 class="text-base font-semibold text-gray-800">Ingreso facturado · {{ scopeLabel }}</h3>
         <p class="text-sm text-gray-500 mt-0.5">
           Lo que se emitió, sin IGV. Incluye lo que el MRR no cuenta: comisiones e ingresos extraordinarios.
         </p>
       </div>
-      <router-link :to="{ name: 'BillingIncome' }" class="text-sm font-medium text-primary-600 hover:underline">
+      <router-link :to="{ name: 'BillingIncome' }" class="text-sm font-medium text-primary-600 hover:underline shrink-0">
         Ver reporte completo
       </router-link>
     </div>
@@ -16,6 +16,12 @@
     <p v-if="error" class="text-sm text-red-600">
       No se pudo cargar el ingreso facturado: {{ error }}
       <button class="underline" @click="load">Reintentar</button>
+    </p>
+
+    <!-- Loading -->
+    <p v-else-if="scopeMissing" class="text-sm text-gray-600">
+      No existe el valor de línea de negocio para este resumen. Revísalo en
+      <router-link :to="{ name: 'BillingTags' }" class="underline">Etiquetas</router-link>.
     </p>
 
     <!-- Loading -->
@@ -28,10 +34,13 @@
 
     <template v-else>
       <!-- Ultimo mes cerrado -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-4" :class="{ 'opacity-60': loading }">
         <div>
-          <p class="text-sm text-gray-500 font-medium">Total de {{ monthName }}</p>
+          <p class="text-sm text-gray-500 font-medium">Total de {{ monthName }}, sin IGV</p>
           <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(monthTotal) }}</p>
+          <p class="text-xs text-gray-400 mt-1">
+            IGV {{ formatCurrency(monthTax) }} · con IGV {{ formatCurrency(monthTotal + monthTax) }}
+          </p>
           <p v-if="change !== null" class="text-xs mt-1" :class="change >= 0 ? 'text-green-600' : 'text-red-600'">
             <i class="pi text-[10px]" :class="change >= 0 ? 'pi-arrow-up' : 'pi-arrow-down'"></i>
             {{ Math.abs(change).toFixed(1) }}% frente al mes anterior
@@ -48,6 +57,17 @@
         </div>
       </div>
 
+      <!-- Reparto por linea de negocio: solo tiene sentido viendo todo junto -->
+      <p v-if="scope === 'all' && split" class="mt-4 text-sm text-gray-600">
+        Por línea en {{ monthName }}:
+        <strong class="font-semibold text-gray-800">B2C {{ formatCurrency(split.b2c) }}</strong> ·
+        <strong class="font-semibold text-gray-800">B2B {{ formatCurrency(split.b2b) }}</strong>
+        <template v-if="split.other !== 0"> · otras líneas {{ formatCurrency(split.other) }}</template>
+        <template v-if="split.untagged !== 0">
+          · <span class="text-amber-700">sin línea de negocio {{ formatCurrency(split.untagged) }}</span>
+        </template>
+      </p>
+
       <p v-if="untaggedMonth > 0" class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
         Además hay {{ formatCurrency(untaggedMonth) }} de {{ monthName }} sin clasificar, que no entra en ninguno de los
         tres tipos.
@@ -55,7 +75,24 @@
       </p>
 
       <!-- 12 meses -->
-      <v-chart :option="chartOption" :autoresize="true" class="chart-container mt-5" />
+      <div class="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-6" :class="{ 'opacity-60': loading }">
+        <v-chart :option="chartOption" :autoresize="true" class="chart-container xl:col-span-2" />
+
+        <!-- Concentracion: de quien viene el ingreso -->
+        <div v-if="customers.length > 0">
+          <p class="text-sm font-medium text-gray-700 mb-2">Mayores clientes, 12 meses</p>
+          <table class="w-full text-sm">
+            <tbody>
+              <tr v-for="customer in customers" :key="customer.key" class="border-b border-gray-100 last:border-0">
+                <td class="py-1.5 pr-3 text-gray-700 truncate max-w-[12rem]">{{ customer.name || '(sin nombre)' }}</td>
+                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(customer.total) }}</td>
+                <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ customer.share }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="text-xs text-gray-400 mt-2">Juntos son el {{ topShare }} del ingreso del periodo.</p>
+        </div>
+      </div>
 
       <p class="text-xs text-gray-400 mt-2">
         Meses cerrados, hasta {{ monthName }}. Lo emitido directo en Nubefact aparece cuando se importa su reporte.
@@ -65,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { BarChart } from 'echarts/charts'
@@ -73,9 +110,9 @@ import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/compon
 import { CanvasRenderer } from 'echarts/renderers'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useFormatters } from '@/composables/useFormatters'
-import { getLedgerReport, ledgerErrorMessage } from '@/api/ledger.api'
-import { RECURRENCE_OPTIONS } from '@/config/ledger.config'
-import type { LedgerReport } from '@/types/ledger.types'
+import { getLedgerDimensions, getLedgerReport, ledgerErrorMessage } from '@/api/ledger.api'
+import { INCOME_SCOPE_OPTIONS, RECURRENCE_OPTIONS, type IncomeScope } from '@/config/ledger.config'
+import type { LedgerReport, LedgerReportGroup, LedgerTagDimension } from '@/types/ledger.types'
 
 use([BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
@@ -84,8 +121,17 @@ const { formatCurrency, formatShortMonth, formatMonthYear } = useFormatters()
 
 const UNTAGGED = 'untagged'
 
+const props = withDefaults(defineProps<{ scope?: IncomeScope }>(), { scope: 'all' })
+
 const report = ref<LedgerReport | null>(null)
+const byLine = ref<LedgerReport | null>(null)
+const byCustomer = ref<LedgerReport | null>(null)
+const lineDimension = ref<LedgerTagDimension | null>(null)
 const error = ref<string | null>(null)
+const loading = ref(false)
+const scopeMissing = ref(false)
+
+const scopeLabel = computed(() => INCOME_SCOPE_OPTIONS.find(o => o.value === props.scope)?.label ?? '')
 
 function monthsAgo(n: number): string {
   const now = new Date()
@@ -104,6 +150,35 @@ function amountOf(key: string, period: string): number {
 }
 
 const monthTotal = computed(() => report.value?.totals[lastMonth] ?? 0)
+const monthTax = computed(() => report.value?.tax_totals[lastMonth] ?? 0)
+
+// Reparto del mes por linea de negocio (solo en la vista combinada).
+const split = computed(() => {
+  if (!byLine.value) return null
+  const of = (key: string) => byLine.value!.groups.find(g => g.key === key)?.values[lastMonth] ?? 0
+  const b2c = of('b2c')
+  const b2b = of('b2b')
+  const untagged = of(UNTAGGED)
+  const total = byLine.value.totals[lastMonth] ?? 0
+  return { b2c, b2b, untagged, other: Math.round((total - b2c - b2b - untagged) * 100) / 100 }
+})
+
+// Cinco mayores clientes de los 12 meses y cuanto pesan juntos.
+const TOP_CUSTOMERS = 5
+
+const customers = computed(() => {
+  const net = byCustomer.value?.summary.net ?? 0
+  return (byCustomer.value?.groups ?? []).slice(0, TOP_CUSTOMERS).map((g: LedgerReportGroup) => ({
+    ...g,
+    share: net > 0 ? `${((g.total / net) * 100).toFixed(0)}%` : '-'
+  }))
+})
+
+const topShare = computed(() => {
+  const net = byCustomer.value?.summary.net ?? 0
+  const top = customers.value.reduce((sum, c) => sum + c.total, 0)
+  return net > 0 ? `${((top / net) * 100).toFixed(0)}%` : '-'
+})
 const untaggedMonth = computed(() => amountOf(UNTAGGED, lastMonth))
 
 const change = computed(() => {
@@ -186,18 +261,45 @@ const chartOption = computed(() => {
 
 async function load() {
   error.value = null
+  scopeMissing.value = false
+  loading.value = true
+
   try {
-    report.value = await getLedgerReport({
-      from: monthsAgo(12),
-      to: lastMonth,
-      group_by: 'recurrence',
-      granularity: 'month'
-    })
+    if (!lineDimension.value) {
+      lineDimension.value = (await getLedgerDimensions()).find(d => d.slug === 'linea_negocio') ?? null
+    }
+
+    // B2C y B2B son valores de la dimension "linea de negocio": el resumen de
+    // una linea es el mismo reporte, filtrado por ese valor.
+    let valueIds: number[] = []
+    if (props.scope !== 'all') {
+      const value = lineDimension.value?.values.find(v => v.slug === props.scope)
+      if (!value) {
+        scopeMissing.value = true
+        report.value = null
+        return
+      }
+      valueIds = [value.id]
+    }
+
+    const range = { from: monthsAgo(12), to: lastMonth, granularity: 'month' as const, valueIds }
+    const [main, customersReport, lineReport] = await Promise.all([
+      getLedgerReport({ ...range, group_by: 'recurrence' }),
+      getLedgerReport({ ...range, group_by: 'customer' }),
+      props.scope === 'all' ? getLedgerReport({ ...range, group_by: 'linea_negocio' }) : Promise.resolve(null)
+    ])
+
+    report.value = main
+    byCustomer.value = customersReport
+    byLine.value = lineReport
   } catch (e) {
     error.value = ledgerErrorMessage(e)
+  } finally {
+    loading.value = false
   }
 }
 
+watch(() => props.scope, load)
 onMounted(load)
 </script>
 
