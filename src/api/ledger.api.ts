@@ -1,6 +1,6 @@
 import api from './axios'
 import type {
-  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept
+  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept, LedgerReport
 } from '@/types/ledger.types'
 
 const BASE = '/superadmin/platform-ledger'
@@ -85,6 +85,29 @@ export async function assignLedgerConceptTags(
 ) {
   const res = await api.put<{ data: { affected: number } }>(`${BASE}/concepts/tags`, { code, tags, overwrite })
   return res.data.data.affected
+}
+
+/**
+ * Ingresos facturados sin IGV, en soles, por fecha de emision. `valueIds`
+ * filtra: la linea debe tener todos esos valores.
+ */
+export async function getLedgerReport(query: {
+  from: string
+  to: string
+  group_by: string
+  granularity: 'month' | 'year'
+  valueIds?: number[]
+}) {
+  const params: Record<string, string> = {
+    from: query.from,
+    to: query.to,
+    group_by: query.group_by,
+    granularity: query.granularity
+  }
+  if (query.valueIds?.length) params.value_ids = query.valueIds.join(',')
+
+  const res = await api.get<{ data: LedgerReport }>(`${BASE}/report`, { params })
+  return res.data.data
 }
 
 /** Los errores de validacion de CI4 llegan en `messages.error`, no en `message`. */

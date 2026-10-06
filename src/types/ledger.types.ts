@@ -95,3 +95,33 @@ export interface LedgerConcept {
   /** dimension_id -> valores en uso, del mas frecuente al menos. */
   tags: Record<number, LedgerConceptTagUsage[]>
 }
+
+export interface LedgerReportGroup {
+  /** Slug del valor, origen o documento del cliente. `untagged` = sin etiqueta en esa dimension. */
+  key: string
+  name: string
+  total: number
+  lines: number
+  /** periodo -> importe sin IGV en soles. */
+  values: Record<string, number>
+}
+
+export interface LedgerReport {
+  from: string
+  to: string
+  granularity: 'month' | 'year'
+  group_by: string
+  periods: string[]
+  groups: LedgerReportGroup[]
+  totals: Record<string, number>
+  summary: {
+    /** Facturado menos notas de credito. */
+    net: number
+    invoiced: number
+    credit_notes: number
+    invoices: number
+    credit_note_count: number
+    customers: number
+    untagged: number
+  }
+}

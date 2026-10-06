@@ -88,6 +88,7 @@ const pageTitle = computed(() => {
     ComplaintsList: 'Libro de Reclamaciones',
     ComplaintDetail: 'Detalle del Reclamo',
     BillingLedger: 'Líneas facturadas',
+    BillingIncome: 'Ingresos facturados',
     BillingConcepts: 'Conceptos facturados',
     BillingTags: 'Etiquetas de ingresos'
   }

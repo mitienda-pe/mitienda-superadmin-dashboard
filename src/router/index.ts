@@ -180,6 +180,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/billing/LedgerItemsView.vue')
       },
       {
+        // Ingresos facturados: lo realmente emitido, leido del libro de
+        // comprobantes. No es el MRR, que proyecta desde los planes activos.
+        path: 'income',
+        name: 'BillingIncome',
+        component: () => import('@/views/billing/LedgerIncomeView.vue')
+      },
+      {
         // Lineas agrupadas por codigo de producto: se etiqueta el concepto y
         // aplica a todas sus lineas.
         path: 'concepts',
