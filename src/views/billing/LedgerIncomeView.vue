@@ -56,7 +56,7 @@
           <label class="block text-xs font-medium text-gray-500 mb-1">{{ dimension.name }}</label>
           <Dropdown
             v-model="valueFilters[dimension.id]"
-            :options="dimension.values.map(v => ({ label: v.name, value: v.id }))"
+            :options="orderedValues(dimension).map(v => ({ label: v.name, value: v.id }))"
             optionLabel="label"
             optionValue="value"
             placeholder="Todos"
@@ -201,7 +201,7 @@ import Button from 'primevue/button'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useFormatters } from '@/composables/useFormatters'
 import { getLedgerDimensions, getLedgerReport, ledgerErrorMessage } from '@/api/ledger.api'
-import { RECURRENCE_ORDER } from '@/config/ledger.config'
+import { RECURRENCE_ORDER, orderedValues } from '@/config/ledger.config'
 import type { LedgerReport, LedgerReportGroup, LedgerTagDimension } from '@/types/ledger.types'
 
 use([BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])

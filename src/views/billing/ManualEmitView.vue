@@ -162,7 +162,7 @@
             </label>
             <Dropdown
               v-model="line.tags[dimension.id]"
-              :options="dimension.values.filter(v => v.is_active).map(v => ({ label: v.name, value: v.id }))"
+              :options="orderedValues(dimension).filter(v => v.is_active).map(v => ({ label: v.name, value: v.id }))"
               optionLabel="label"
               optionValue="value"
               placeholder="Sin etiqueta"
@@ -348,6 +348,7 @@ import { getLedgerDimensions, getLedgerConcepts, ledgerErrorMessage } from '@/ap
 import type {
   PlatformInvoiceStatus, ManualInvoiceClient, ManualInvoiceInput, ManualInvoicePreview, ManualInvoiceResult
 } from '@/types/billing.types'
+import { orderedValues } from '@/config/ledger.config'
 import type { LedgerConcept, LedgerTagDimension } from '@/types/ledger.types'
 
 const toast = useToast()

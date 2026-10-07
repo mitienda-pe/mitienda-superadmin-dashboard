@@ -293,6 +293,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import {
   getLedgerDimensions, getLedgerItems, assignLedgerTags, assignLedgerTagsByFilter, ledgerErrorMessage
 } from '@/api/ledger.api'
+import { orderedValues } from '@/config/ledger.config'
 import type {
   LedgerItem, LedgerItemFilters, LedgerItemTag, LedgerOrigin, LedgerTagDimension
 } from '@/types/ledger.types'
@@ -358,7 +359,7 @@ const requiredNames = computed(() =>
 const valueFilterOptions = computed(() =>
   activeDimensions.value.map(d => ({
     label: d.name,
-    items: d.values.map(v => ({ label: v.name, value: v.id }))
+    items: orderedValues(d).map(v => ({ label: v.name, value: v.id }))
   }))
 )
 
@@ -434,7 +435,7 @@ const assignChoice = reactive<Record<number, number>>({})
 function assignOptions(dimension: LedgerTagDimension) {
   return [
     { label: 'No cambiar', value: KEEP },
-    ...dimension.values.filter(v => v.is_active).map(v => ({ label: v.name, value: v.id })),
+    ...orderedValues(dimension).filter(v => v.is_active).map(v => ({ label: v.name, value: v.id })),
     { label: 'Quitar etiqueta', value: CLEAR }
   ]
 }

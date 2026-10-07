@@ -32,3 +32,18 @@ export const RECURRENCE_ORDER: string[] = RECURRENCE_OPTIONS.map(o => o.value)
 export function recurrenceLabel(value: string | null | undefined): string {
   return RECURRENCE_OPTIONS.find(o => o.value === value)?.label ?? 'Sin clasificar'
 }
+
+// Dimensiones cuyo orden propio significa algo y no se alfabetiza: los planes
+// van de menor a mayor, no de la L a la S.
+const KEEP_OWN_ORDER = ['plan']
+
+/**
+ * Valores de una dimension en el orden en que se ofrecen para elegir:
+ * alfabetico, que es como se busca una opcion en una lista larga. El orden
+ * propio de la dimension se conserva para los colores de los graficos, que
+ * siguen a cada valor y no deben moverse cuando se agrega uno nuevo.
+ */
+export function orderedValues<T extends { name: string }>(dimension: { slug: string; values: T[] }): T[] {
+  if (KEEP_OWN_ORDER.includes(dimension.slug)) return dimension.values
+  return [...dimension.values].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }))
+}

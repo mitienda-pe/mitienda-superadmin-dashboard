@@ -58,7 +58,7 @@
         </div>
 
         <ul class="divide-y divide-gray-100">
-          <li v-for="value in dimension.values" :key="value.id" class="flex items-center gap-3 px-5 py-2.5">
+          <li v-for="value in orderedValues(dimension)" :key="value.id" class="flex items-center gap-3 px-5 py-2.5">
             <span class="flex-1 text-sm" :class="value.is_active ? 'text-gray-700' : 'text-gray-400 line-through'">
               {{ value.name }}
               <span
@@ -193,7 +193,7 @@ import {
   getLedgerDimensions, createLedgerDimension, updateLedgerDimension,
   createLedgerValue, updateLedgerValue, deleteLedgerValue, ledgerErrorMessage
 } from '@/api/ledger.api'
-import { RECURRENCE_OPTIONS, recurrenceLabel } from '@/config/ledger.config'
+import { RECURRENCE_OPTIONS, orderedValues, recurrenceLabel } from '@/config/ledger.config'
 import type { LedgerTagDimension, LedgerTagValue } from '@/types/ledger.types'
 
 const toast = useToast()

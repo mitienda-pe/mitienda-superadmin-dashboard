@@ -175,6 +175,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import {
   getLedgerDimensions, getLedgerConcepts, assignLedgerConceptTags, ledgerErrorMessage
 } from '@/api/ledger.api'
+import { orderedValues } from '@/config/ledger.config'
 import type { LedgerConcept, LedgerConceptTagUsage, LedgerTagDimension } from '@/types/ledger.types'
 
 const toast = useToast()
@@ -226,7 +227,7 @@ const assignChoice = reactive<Record<number, number>>({})
 function assignOptions(dimension: LedgerTagDimension) {
   return [
     { label: 'No cambiar', value: KEEP },
-    ...dimension.values.filter(v => v.is_active).map(v => ({ label: v.name, value: v.id })),
+    ...orderedValues(dimension).filter(v => v.is_active).map(v => ({ label: v.name, value: v.id })),
     { label: 'Quitar etiqueta', value: CLEAR }
   ]
 }
