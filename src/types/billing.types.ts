@@ -70,6 +70,38 @@ export interface PlanSaleItem {
   pdf_url: string | null
 }
 
+/** Tienda cuyo plan vigente venció hace poco o está por vencer. */
+export interface PlanRenewalItem {
+  tienda_id: number
+  tienda_nombre: string
+  plan: string
+  frequency: 'monthly' | 'annual'
+  precio: number
+  is_trial: boolean
+  fecha_final: string
+  /** Negativo = días de vencido. */
+  days_left: number
+  documento: string
+  razon_social: string
+  /** El último período lo cobró Culqi a la tarjeta: se renueva solo. */
+  auto_charge: boolean
+}
+
+export interface PlanRenewalSummary {
+  count: number
+  expired: number
+  upcoming: number
+  amount: number
+}
+
+export interface PlanRenewalFilters {
+  scope: 'all' | 'expired' | 'upcoming'
+  type: 'paid' | 'trial' | 'all'
+  days: number
+  search: string
+  page: number
+}
+
 export interface PlanSaleSummary {
   total_ventas: number
   total_facturado: number

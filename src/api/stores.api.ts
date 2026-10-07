@@ -127,6 +127,36 @@ export interface RenewStorePlanPayload {
    * activa hasta la fecha límite y se factura a crédito.
    */
   payment: PlanPaymentUpdate
+  /** Receptor del comprobante. Si no viene, se hereda el de la fila vigente. */
+  billing?: PlanBillingData
+}
+
+export interface PlanBillingData {
+  document_number: string
+  business_name: string
+  first_name: string
+  last_name: string
+  email: string
+}
+
+/** Fila vigente de la tienda: de dónde parte el diálogo de renovación. */
+export interface RenewalContext {
+  store_id: number
+  store_name: string
+  plan_id: number
+  plan: string
+  frequency: 'monthly' | 'annual'
+  price: number
+  is_trial: boolean
+  expires_at: string | null
+  billing: PlanBillingData
+}
+
+export async function getRenewalContext(storeId: number) {
+  const res = await api.get<{ success: boolean; data: RenewalContext }>(
+    `/superadmin/dashboard/stores/${storeId}/renewal-context`
+  )
+  return res.data
 }
 
 export interface RenewStorePlanResult {

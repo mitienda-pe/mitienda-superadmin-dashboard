@@ -26,6 +26,21 @@
       </div>
     </div>
 
+    <!--
+      Dos colas distintas: lo ya vendido (y su comprobante) y lo que falta
+      vender. Renovar en la segunda crea la fila que aparece en la primera.
+    -->
+    <SelectButton
+      v-model="activeTab"
+      :options="tabOptions"
+      optionLabel="label"
+      optionValue="value"
+      :allowEmpty="false"
+    />
+
+    <PlanRenewalsPanel v-if="activeTab === 'renewals'" @renewed="onRenewed" />
+
+    <template v-else>
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="bg-white rounded-xl border border-gray-200 p-5">
@@ -302,6 +317,8 @@
       </div>
     </div>
 
+    </template>
+
     <!--
       Confirmacion con el detalle real del comprobante. Emitir es irreversible
       (consume correlativo y llega a SUNAT), asi que el superadmin ve tipo de
@@ -482,6 +499,9 @@ import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Checkbox from 'primevue/checkbox'
+import SelectButton from 'primevue/selectbutton'
+import PlanRenewalsPanel from '@/components/billing/PlanRenewalsPanel.vue'
+import type { RenewStorePlanResult } from '@/api/stores.api'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useBillingStore } from '@/stores/billing.store'
@@ -519,7 +539,24 @@ const detractionAmount = computed(() =>
   preview.value ? (preview.value.total_with_tax * (Number(detractionPercentage.value) || 0)) / 100 : 0
 )
 
-async function openEmitDialog(row: PlanSaleItem) {
+// --- Pestañas ---
+const activeTab = ref<'sales' | 'renewals'>('sales')
+const tabOptions = [
+  { label: 'Ventas registradas', value: 'sales' },
+  { label: 'Por renovar', value: 'renewals' }
+]
+
+// Recién renovada: la venta ya existe, se pasa directo a la vista previa del
+// comprobante. Si se cancela ahí, queda pendiente en "Ventas registradas".
+function onRenewed(result: RenewStorePlanResult) {
+  // La venta nueva tiene fecha de hoy: el filtro por defecto (mes anterior) la escondería.
+  const now = new Date()
+  periodFilter.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  applyFilters()
+  openEmitDialog({ id: result.tiendaplan_id })
+}
+
+async function openEmitDialog(row: Pick<PlanSaleItem, 'id'>) {
   previewingId.value = row.id
   preview.value = null
   try {

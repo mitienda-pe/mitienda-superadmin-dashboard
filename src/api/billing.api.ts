@@ -3,6 +3,7 @@ import type {
   CommissionItem, CommissionSummary,
   InvoiceItem, InvoiceSummary, InvoiceFilters,
   PlanSaleItem, PlanSaleSummary, PlanSaleFilters,
+  PlanRenewalItem, PlanRenewalSummary, PlanRenewalFilters,
   BillingFilters, BillingMeta,
   PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult,
   PlatformBatchResult,
@@ -73,6 +74,22 @@ export async function getPlanSales(filters: Partial<PlanSaleFilters> = {}) {
 
   const res = await api.get<PlanSalesResponse>(
     '/superadmin/dashboard/plan-sales',
+    { params }
+  )
+  return res.data
+}
+
+export async function getPlanRenewals(filters: PlanRenewalFilters) {
+  const params: Record<string, string | number> = {
+    scope: filters.scope,
+    type: filters.type,
+    days: filters.days,
+    page: filters.page
+  }
+  if (filters.search) params.search = filters.search
+
+  const res = await api.get<{ data: PlanRenewalItem[]; summary: PlanRenewalSummary; meta: BillingMeta }>(
+    '/superadmin/dashboard/plan-renewals',
     { params }
   )
   return res.data

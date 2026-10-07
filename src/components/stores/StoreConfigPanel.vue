@@ -332,124 +332,12 @@
       </div>
     </div>
 
-    <!-- Renovar plan dialog -->
-    <Dialog
+    <RenewPlanDialog
       v-model:visible="renewDialogVisible"
-      modal
-      header="Renovar plan"
-      :style="{ width: '30rem' }"
-    >
-      <div class="space-y-4">
-        <p class="text-sm text-gray-500">
-          Registra una renovación manual: se crea un período nuevo extendiendo desde el
-          vencimiento vigente y se preservan los módulos/add-ons (POS) de la tienda.
-        </p>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Plan</label>
-          <Dropdown
-            v-model="renewForm.plan_id"
-            :options="renewPlans"
-            optionLabel="plan_titulo"
-            optionValue="plan_id"
-            placeholder="Seleccionar plan"
-            class="w-full"
-            :loading="loadingRenewPlans"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Frecuencia</label>
-          <SelectButton
-            v-model="renewForm.frequency"
-            :options="frequencyOptions"
-            optionLabel="label"
-            optionValue="value"
-            :allowEmpty="false"
-          />
-          <p v-if="selectedRenewPlan && !selectedRenewDetail" class="text-xs text-amber-600 mt-1">
-            Este plan no tiene precio {{ renewForm.frequency === 'annual' ? 'anual' : 'mensual' }} publicado.
-          </p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Precio (PEN)</label>
-          <InputNumber
-            v-model="renewForm.price"
-            mode="currency"
-            currency="PEN"
-            locale="es-PE"
-            :minFractionDigits="2"
-            class="w-full"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Nota de pago</label>
-          <Textarea
-            v-model="renewForm.payment_note"
-            rows="2"
-            class="w-full"
-            placeholder="Ej: Transferencia BCP op. 12345 — 2026-07-10"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Cobro *</label>
-          <SelectButton
-            v-model="renewForm.payment_status"
-            :options="paymentStatusOptions"
-            optionLabel="label"
-            optionValue="value"
-            :allowEmpty="false"
-          />
-        </div>
-        <template v-if="renewForm.payment_status === 'cobrado'">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">Fecha del abono *</label>
-              <Calendar v-model="renewForm.payment_date" dateFormat="yy-mm-dd" :maxDate="new Date()" showIcon class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">Medio *</label>
-              <Dropdown
-                v-model="renewForm.payment_method"
-                :options="PLAN_PAYMENT_METHODS"
-                editable
-                placeholder="BCP, Yape…"
-                class="w-full"
-              />
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-600 mb-1">N.º de operación</label>
-            <InputText v-model="renewForm.payment_reference" maxlength="100" class="w-full" />
-          </div>
-        </template>
-        <div v-else-if="renewForm.payment_status === 'pendiente'">
-          <label class="block text-sm font-medium text-gray-600 mb-1">Fecha límite de pago *</label>
-          <Calendar v-model="renewForm.due_date" dateFormat="yy-mm-dd" :minDate="new Date()" showIcon class="w-full" />
-          <p class="text-xs text-gray-500 mt-1">
-            La tienda sigue activa hasta esa fecha. Si es factura, sale a crédito con esa fecha de vencimiento.
-          </p>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-3 text-sm">
-          <div class="flex justify-between text-gray-500">
-            <span>Vence hoy</span>
-            <span class="font-medium text-gray-700">{{ currentExpiryLabel }}</span>
-          </div>
-          <div class="flex justify-between text-gray-500 mt-1">
-            <span>Nuevo vencimiento</span>
-            <span class="font-semibold text-primary-700">{{ previewExpiryLabel }}</span>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <Button label="Cancelar" text severity="secondary" @click="renewDialogVisible = false" />
-        <Button
-          label="Renovar"
-          icon="pi pi-check"
-          :loading="renewing"
-          :disabled="!selectedRenewDetail"
-          @click="submitRenewal"
-        />
-      </template>
-    </Dialog>
+      :store-id="storeId"
+      :store-name="storeName"
+      @renewed="emit('renewed')"
+    />
 
     <!-- Dar de baja dialog -->
     <Dialog
@@ -502,17 +390,16 @@ import Calendar from 'primevue/calendar'
 import Textarea from 'primevue/textarea'
 import Checkbox from 'primevue/checkbox'
 import Dialog from 'primevue/dialog'
-import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
-import type { StoreConfig, StorePlan, AvailablePlan, PlanPaymentUpdate } from '@/types/store.types'
+import type { StoreConfig, StorePlan } from '@/types/store.types'
 import type { StoreModule } from '@/types/plans.types'
 import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
 import { plansApi } from '@/api/plans.api'
-import { getAvailablePlans, renewStorePlan, expireStorePlan } from '@/api/stores.api'
+import { expireStorePlan } from '@/api/stores.api'
+import RenewPlanDialog from '@/components/stores/RenewPlanDialog.vue'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 import { parseLocalDate, toIsoDate } from '@/utils/dates'
-import { PLAN_PAYMENT_METHODS, CREDIT_DAYS_DEFAULT } from '@/config/plan-payment.config'
 
 const props = defineProps<{
   config: StoreConfig
@@ -847,167 +734,9 @@ async function savePlan() {
 
 // ── Renovar plan (renovación manual: inserta período nuevo) ──────────────
 const renewDialogVisible = ref(false)
-const renewing = ref(false)
-const loadingRenewPlans = ref(false)
-const renewPlans = ref<AvailablePlan[]>([])
-const frequencyOptions = [
-  { label: 'Mensual', value: 'monthly' as const },
-  { label: 'Anual', value: 'annual' as const }
-]
-const paymentStatusOptions = [
-  { label: 'Cobrado', value: 'cobrado' as const },
-  { label: 'Pendiente de cobro', value: 'pendiente' as const }
-]
-const renewForm = reactive({
-  plan_id: null as number | null,
-  frequency: 'monthly' as 'monthly' | 'annual',
-  price: 0,
-  // Sin valor inicial a propósito: hay que declarar si se cobró.
-  payment_status: null as 'cobrado' | 'pendiente' | null,
-  payment_date: new Date() as Date | null,
-  payment_method: '',
-  payment_reference: '',
-  due_date: null as Date | null,
-  payment_note: ''
-})
 
-const selectedRenewPlan = computed<AvailablePlan | null>(
-  () => renewPlans.value.find(p => p.plan_id === renewForm.plan_id) ?? null
-)
-const selectedRenewDetail = computed(() => {
-  const p = selectedRenewPlan.value
-  if (!p) return null
-  return renewForm.frequency === 'annual' ? p.annual : p.monthly
-})
-
-function formatDateLabel(d: Date): string {
-  return d.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-const currentExpiryDate = computed<Date | null>(
-  () => props.plan?.expires_at ? parseLocalDate(props.plan.expires_at) : null
-)
-const currentExpiryLabel = computed(
-  () => currentExpiryDate.value ? formatDateLabel(currentExpiryDate.value) : '—'
-)
-
-// Preview del nuevo vencimiento: extiende desde el vencimiento vigente (o hoy si
-// ya venció) + 1 mes/año. Es indicativo; el backend calcula la fecha final real.
-// Inicio del período nuevo: el vencimiento vigente o hoy si ya venció.
-const renewalStart = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const cur = currentExpiryDate.value
-  return cur && cur.getTime() >= today.getTime() ? new Date(cur) : today
-})
-
-function defaultDueDate(): Date {
-  const d = new Date(renewalStart.value)
-  d.setDate(d.getDate() + CREDIT_DAYS_DEFAULT)
-  return d
-}
-
-const previewExpiryLabel = computed(() => {
-  const base = new Date(renewalStart.value)
-  if (renewForm.frequency === 'annual') base.setFullYear(base.getFullYear() + 1)
-  else base.setMonth(base.getMonth() + 1)
-  return formatDateLabel(base)
-})
-
-watch(selectedRenewDetail, (detail) => {
-  if (detail) renewForm.price = detail.precio
-})
-
-async function loadRenewPlans() {
-  if (renewPlans.value.length) return
-  loadingRenewPlans.value = true
-  try {
-    const res = await getAvailablePlans()
-    if (res.data) renewPlans.value = res.data
-  } catch {
-    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los planes', life: 5000 })
-  } finally {
-    loadingRenewPlans.value = false
-  }
-}
-
-async function openRenewDialog() {
-  renewForm.plan_id = props.plan?.plan_id ?? null
-  renewForm.frequency = 'monthly'
-  renewForm.payment_note = ''
-  renewForm.payment_status = null
-  renewForm.payment_date = new Date()
-  renewForm.payment_method = ''
-  renewForm.payment_reference = ''
-  renewForm.due_date = defaultDueDate()
+function openRenewDialog() {
   renewDialogVisible.value = true
-  await loadRenewPlans()
-  // Prefill price once plans are loaded (watcher covers plan/frequency changes)
-  if (selectedRenewDetail.value) renewForm.price = selectedRenewDetail.value.precio
-}
-
-function buildRenewPayment(): PlanPaymentUpdate | null {
-  const warn = (detail: string) => {
-    toast.add({ severity: 'warn', summary: 'Falta el cobro', detail, life: 5000 })
-    return null
-  }
-
-  if (renewForm.payment_status === 'cobrado') {
-    if (!renewForm.payment_date || !renewForm.payment_method.trim()) {
-      return warn('Indica la fecha del abono y el medio de pago')
-    }
-    return {
-      status: 'cobrado',
-      date: toIsoDate(renewForm.payment_date),
-      method: renewForm.payment_method.trim(),
-      reference: renewForm.payment_reference.trim() || undefined
-    }
-  }
-
-  if (renewForm.payment_status === 'pendiente') {
-    if (!renewForm.due_date) return warn('Indica la fecha límite de pago')
-    return { status: 'pendiente', due_date: toIsoDate(renewForm.due_date) }
-  }
-
-  return warn('Indica si la renovación está cobrada o pendiente de cobro')
-}
-
-async function submitRenewal() {
-  const detail = selectedRenewDetail.value
-  if (!detail) return
-
-  const payment = buildRenewPayment()
-  if (!payment) return
-
-  renewing.value = true
-  try {
-    const res = await renewStorePlan(props.storeId, {
-      plandetalle_id: detail.plandetalle_id,
-      price: renewForm.price,
-      payment_note: renewForm.payment_note || undefined,
-      payment
-    })
-    const cobro = res.data.payment_status === 'pendiente' && res.data.payment_due_date
-      ? ` · cobro pendiente hasta ${res.data.payment_due_date}`
-      : ''
-    toast.add({
-      severity: 'success',
-      summary: 'Plan renovado',
-      detail: `Nuevo vencimiento: ${res.data.tiendaplan_fechafinal}${cobro}`,
-      life: 5000
-    })
-    renewDialogVisible.value = false
-    emit('renewed')
-  } catch (e: any) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: e?.response?.data?.messages?.error || e?.response?.data?.message || 'No se pudo renovar el plan',
-      life: 5000
-    })
-  } finally {
-    renewing.value = false
-  }
 }
 
 // ── Dar de baja (expira el plan vigente) ─────────────────────────────────
