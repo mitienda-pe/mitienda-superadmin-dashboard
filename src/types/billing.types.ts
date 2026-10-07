@@ -136,6 +136,49 @@ export interface PlatformInvoiceStatus {
       boleta: PlatformSerieState | null
     }
   }
+  /** Lo que el emisor puede hacer hoy. Dolares, fecha y detraccion dependen del proxy de facturacion. */
+  features?: {
+    usd: boolean
+    issue_date: boolean
+    detraction: boolean
+    detraction_percentage: number
+    /** true = viaja el detalle (codigo y monto); false = solo la leyenda. */
+    detraction_detailed: boolean
+    credit_notes: boolean
+  }
+}
+
+// --- Notas de credito ---
+
+export interface CreditNotePreview {
+  environment: 'demo' | 'production'
+  is_production: boolean
+  invoice_id: number
+  comprobante: string
+  document_type: number
+  issue_date: string
+  customer_name: string | null
+  customer_document: string | null
+  currency: string
+  total_net: number
+  total_tax: number
+  total: number
+  lines: { description: string; quantity: number; total: number }[]
+  serie: string | null
+  next_number: number | null
+  can_emit: boolean
+  blocked_reason: string | null
+  /** Motivos que acreditan el comprobante completo. */
+  types: { id: number; name: string }[]
+}
+
+export interface CreditNoteResult {
+  success: boolean
+  message?: string
+  comprobante?: string
+  persisted: boolean
+  environment: 'demo' | 'production'
+  pdf_url?: string | null
 }
 
 // --- Emision manual ---
@@ -169,6 +212,12 @@ export interface ManualInvoiceInput {
   lines: ManualInvoiceLineInput[]
   observations: string
   credit_due_date: string | null
+  currency: 'PEN' | 'USD'
+  /** Obligatorio en dolares. */
+  exchange_rate: number | null
+  /** null = hoy. */
+  issue_date: string | null
+  detraction: { enabled: boolean; percentage: number }
 }
 
 export interface ManualInvoicePreview {
@@ -182,10 +231,14 @@ export interface ManualInvoicePreview {
   blocked_reason: string | null
   client: ManualInvoiceClient
   currency: string
+  exchange_rate: number | null
+  issue_date: string
   total_net: number
   total_tax: number
   total: number
   credit_due_date: string | null
+  /** `amount` siempre en soles. No cambia el total del comprobante. */
+  detraction: { percentage: number; amount: number; detailed: boolean } | null
 }
 
 export interface ManualInvoiceResult {

@@ -96,6 +96,44 @@
           <InputText v-model="creditDueDate" type="date" class="w-44" :disabled="!onCredit" :min="tomorrow" />
         </div>
       </div>
+
+      <!-- Opciones que dependen del proxy de facturacion actualizado -->
+      <div v-if="features?.usd" class="mt-4 flex flex-wrap items-end gap-6 border-t border-gray-100 pt-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Moneda</label>
+          <SelectButton
+            v-model="currency"
+            :options="currencyOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+          />
+        </div>
+        <div v-if="currency === 'USD'">
+          <label class="block text-xs font-medium text-gray-500 mb-1">Tipo de cambio del día</label>
+          <input v-model.number="exchangeRate" type="number" min="0" step="0.001" placeholder="3.750" class="p-inputtext p-component w-32" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-500 mb-1">Fecha de emisión</label>
+          <InputText v-model="issueDate" type="date" class="w-44" :min="oldestIssueDate" :max="today" />
+        </div>
+        <div v-if="documentType === 1" class="flex items-center gap-2 pb-2">
+          <Checkbox v-model="detractionEnabled" inputId="detraction" binary />
+          <label for="detraction" class="text-sm text-gray-600">Sujeta a detracción del</label>
+          <input v-model.number="detractionPercentage" type="number" min="0" max="30" step="0.5" :disabled="!detractionEnabled" class="p-inputtext p-component w-20" />
+          <span class="text-sm text-gray-600">%</span>
+        </div>
+      </div>
+      <p v-else-if="features" class="mt-4 border-t border-gray-100 pt-3 text-xs text-gray-400">
+        Dólares, fecha de emisión distinta de hoy y detracción todavía no están habilitados en este emisor.
+      </p>
+      <p v-if="detractionEnabled && documentType === 1" class="mt-3 text-sm text-gray-600">
+        La factura sale por el total. El cliente deposita
+        <strong>{{ formatCurrency(detractionAmount, 2) }}</strong> en la cuenta de detracciones y paga el resto.
+        <template v-if="!features?.detraction_detailed">
+          Se declara con la leyenda "Operación sujeta a detracción", igual que en el panel de Nubefact.
+        </template>
+      </p>
       <p v-if="client && !client.can_invoice" class="mt-3 text-sm text-amber-700">
         Este cliente tiene DNI: solo puede recibir boleta.
       </p>
@@ -139,7 +177,7 @@
           <div class="col-span-4 md:col-span-2 flex items-end justify-between gap-2">
             <div>
               <div class="text-xs font-medium text-gray-500 mb-1">Sin IGV</div>
-              <div class="py-2.5 text-sm font-semibold tabular-nums text-gray-800">{{ formatCurrency(lineNet(line), 2) }}</div>
+              <div class="py-2.5 text-sm font-semibold tabular-nums text-gray-800">{{ money(lineNet(line)) }}</div>
             </div>
             <Button
               icon="pi pi-trash"
@@ -183,15 +221,15 @@
           <tbody>
             <tr>
               <td class="pr-6 text-gray-500">Subtotal sin IGV</td>
-              <td class="text-right tabular-nums text-gray-800">{{ formatCurrency(totals.net, 2) }}</td>
+              <td class="text-right tabular-nums text-gray-800">{{ money(totals.net) }}</td>
             </tr>
             <tr>
               <td class="pr-6 text-gray-500">IGV</td>
-              <td class="text-right tabular-nums text-gray-800">{{ formatCurrency(totals.tax, 2) }}</td>
+              <td class="text-right tabular-nums text-gray-800">{{ money(totals.tax) }}</td>
             </tr>
             <tr class="font-semibold">
               <td class="pr-6 pt-1 text-gray-900">Total</td>
-              <td class="pt-1 text-right tabular-nums text-gray-900">{{ formatCurrency(totals.total, 2) }}</td>
+              <td class="pt-1 text-right tabular-nums text-gray-900">{{ money(totals.total) }}</td>
             </tr>
           </tbody>
         </table>
@@ -240,12 +278,28 @@
           <dd class="col-span-2 text-gray-700">
             {{ preview.credit_due_date ? `Crédito, vence el ${formatDate(preview.credit_due_date)}` : 'Contado' }}
           </dd>
+          <dt class="text-gray-500">Fecha de emisión</dt>
+          <dd class="col-span-2 text-gray-700">{{ formatDate(preview.issue_date) }}</dd>
           <dt class="text-gray-500">Subtotal</dt>
-          <dd class="col-span-2 tabular-nums text-gray-700">{{ formatCurrency(preview.total_net, 2) }}</dd>
+          <dd class="col-span-2 tabular-nums text-gray-700">{{ money(preview.total_net, preview.currency) }}</dd>
           <dt class="text-gray-500">IGV</dt>
-          <dd class="col-span-2 tabular-nums text-gray-700">{{ formatCurrency(preview.total_tax, 2) }}</dd>
+          <dd class="col-span-2 tabular-nums text-gray-700">{{ money(preview.total_tax, preview.currency) }}</dd>
           <dt class="font-semibold text-gray-900">Total</dt>
-          <dd class="col-span-2 tabular-nums font-semibold text-gray-900">{{ formatCurrency(preview.total, 2) }}</dd>
+          <dd class="col-span-2 tabular-nums font-semibold text-gray-900">
+            {{ money(preview.total, preview.currency) }}
+            <span v-if="preview.exchange_rate" class="block text-xs font-normal text-gray-400">
+              Tipo de cambio {{ preview.exchange_rate.toFixed(3) }}
+            </span>
+          </dd>
+          <template v-if="preview.detraction">
+            <dt class="text-gray-500">Detracción {{ preview.detraction.percentage }}%</dt>
+            <dd class="col-span-2 tabular-nums text-gray-700">
+              {{ formatCurrency(preview.detraction.amount, 2) }}
+              <span class="block text-xs text-gray-400">
+                No se resta del total: el cliente la deposita en la cuenta de detracciones.
+              </span>
+            </dd>
+          </template>
         </dl>
 
         <p v-if="preview.blocked_reason" class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -422,6 +476,36 @@ const onCredit = ref(false)
 const creditDueDate = ref('')
 const observations = ref('')
 
+// --- Moneda, fecha y detraccion (solo si el emisor los tiene habilitados) ---
+const features = computed(() => status.value?.features)
+
+function isoDate(daysAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const today = isoDate(0)
+// SUNAT no acepta un comprobante informado con mas de 3 dias de atraso.
+const oldestIssueDate = isoDate(3)
+
+const currency = ref<'PEN' | 'USD'>('PEN')
+const currencyOptions = [
+  { label: 'Soles', value: 'PEN' },
+  { label: 'Dólares', value: 'USD' }
+]
+const exchangeRate = ref<number | null>(null)
+const issueDate = ref(today)
+const detractionEnabled = ref(false)
+const detractionPercentage = ref(12)
+
+/** Importe en la moneda del comprobante: el formateador comun asume soles. */
+function money(value: number, code: string = currency.value): string {
+  return code === 'USD'
+    ? `US$ ${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : formatCurrency(value, 2)
+}
+
 const documentTypeOptions = computed(() => [
   { label: 'Factura', value: 1, disabled: !!client.value && !client.value.can_invoice },
   { label: 'Boleta', value: 2, disabled: false }
@@ -479,6 +563,12 @@ const totals = computed(() => {
   return { net, tax: net * IGV, total: net * (1 + IGV) }
 })
 
+// La detraccion se calcula sobre el total con IGV y se deposita en soles.
+const detractionAmount = computed(() => {
+  const inSoles = totals.value.total * (currency.value === 'USD' ? Number(exchangeRate.value) || 0 : 1)
+  return (inSoles * (Number(detractionPercentage.value) || 0)) / 100
+})
+
 /** Lo primero que falta para poder emitir, o null si esta todo. */
 const blocker = computed<string | null>(() => {
   if (!client.value) return 'Elige a quién se le factura.'
@@ -493,6 +583,10 @@ const blocker = computed<string | null>(() => {
   }
 
   if (documentType.value === 1 && onCredit.value && !creditDueDate.value) return 'Indica la fecha límite de pago.'
+  if (currency.value === 'USD' && !(Number(exchangeRate.value) > 0)) return 'Indica el tipo de cambio del día.'
+  if (documentType.value === 1 && detractionEnabled.value && !(Number(detractionPercentage.value) > 0)) {
+    return 'Indica el porcentaje de detracción.'
+  }
 
   return null
 })
@@ -510,7 +604,14 @@ function payload(): ManualInvoiceInput {
       tags: line.tags
     })),
     observations: observations.value.trim(),
-    credit_due_date: documentType.value === 1 && onCredit.value ? creditDueDate.value : null
+    credit_due_date: documentType.value === 1 && onCredit.value ? creditDueDate.value : null,
+    currency: currency.value,
+    exchange_rate: currency.value === 'USD' ? Number(exchangeRate.value) : null,
+    issue_date: issueDate.value && issueDate.value !== today ? issueDate.value : null,
+    detraction: {
+      enabled: documentType.value === 1 && detractionEnabled.value,
+      percentage: Number(detractionPercentage.value) || 0
+    }
   }
 }
 
@@ -558,6 +659,10 @@ function reset() {
   observations.value = ''
   onCredit.value = false
   creditDueDate.value = ''
+  currency.value = 'PEN'
+  exchangeRate.value = null
+  issueDate.value = today
+  detractionEnabled.value = false
 }
 
 // --- Nuevo cliente ---
@@ -624,6 +729,7 @@ onMounted(async () => {
     const [platformStatus, tagDimensions] = await Promise.all([getPlatformInvoiceStatus(), getLedgerDimensions()])
     status.value = platformStatus
     dimensions.value = tagDimensions
+    detractionPercentage.value = platformStatus.features?.detraction_percentage ?? 12
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo cargar', detail: ledgerErrorMessage(e), life: 8000 })
   }

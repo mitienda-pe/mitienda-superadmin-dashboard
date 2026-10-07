@@ -7,7 +7,8 @@ import type {
   PlatformInvoiceStatus, PlatformInvoicePreview, PlatformInvoiceResult,
   PlatformBatchResult,
   CommissionPeriodResponse, CommissionInvoicePreview, CommissionBatchResult,
-  ManualInvoiceClient, ManualInvoiceInput, ManualInvoicePreview, ManualInvoiceResult
+  ManualInvoiceClient, ManualInvoiceInput, ManualInvoicePreview, ManualInvoiceResult,
+  CreditNotePreview, CreditNoteResult
 } from '@/types/billing.types'
 
 interface CommissionsResponse {
@@ -223,6 +224,25 @@ export async function emitManualInvoice(payload: ManualInvoiceInput) {
   const res = await api.post<{ message: string; data: ManualInvoiceResult }>(
     '/superadmin/platform-invoices/manual/emit',
     payload
+  )
+  return res.data
+}
+
+// --- Notas de credito ---
+
+/** Que se acreditaria de un comprobante del libro, sin reservar numero. */
+export async function previewCreditNote(invoiceId: number) {
+  const res = await api.get<{ data: CreditNotePreview }>(
+    `/superadmin/platform-invoices/credit-notes/${invoiceId}/preview`
+  )
+  return res.data.data
+}
+
+/** Acredita el comprobante por su total. Irreversible: llega a SUNAT. */
+export async function emitCreditNote(invoiceId: number, type: number, reason: string) {
+  const res = await api.post<{ message: string; data: CreditNoteResult }>(
+    `/superadmin/platform-invoices/credit-notes/${invoiceId}/emit`,
+    { type, reason }
   )
   return res.data
 }

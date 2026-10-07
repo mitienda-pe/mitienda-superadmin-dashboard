@@ -204,9 +204,22 @@
           </template>
         </Column>
 
-        <Column headerStyle="width: 3rem">
+        <Column headerStyle="width: 6rem">
           <template #body="{ data: row }">
-            <Button icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
+            <div class="flex items-center justify-end">
+              <Button icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
+              <!-- Una nota de credito acredita el comprobante entero, no la linea. -->
+              <Button
+                v-if="row.document_type === 1 || row.document_type === 2"
+                icon="pi pi-undo"
+                text
+                rounded
+                size="small"
+                severity="secondary"
+                v-tooltip.left="'Nota de crédito del comprobante'"
+                @click="openCreditNote(row)"
+              />
+            </div>
           </template>
         </Column>
       </DataTable>
@@ -236,6 +249,72 @@
         </div>
       </div>
     </div>
+
+    <!-- Nota de credito -->
+    <Dialog v-model:visible="creditVisible" header="Nota de crédito" modal :style="{ width: '34rem' }">
+      <div v-if="creditLoading" class="py-6 text-center text-sm text-gray-500">Cargando el comprobante…</div>
+      <template v-else-if="creditPreview">
+        <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
+          <dt class="text-gray-500">Comprobante</dt>
+          <dd class="col-span-2 font-medium text-gray-900">
+            {{ creditPreview.document_type === 1 ? 'Factura' : 'Boleta' }} {{ creditPreview.comprobante }}
+            <span class="font-normal text-gray-500">· {{ formatDate(creditPreview.issue_date) }}</span>
+          </dd>
+          <dt class="text-gray-500">Cliente</dt>
+          <dd class="col-span-2 text-gray-900">
+            {{ creditPreview.customer_name }}
+            <span class="block font-mono text-gray-500">{{ creditPreview.customer_document }}</span>
+          </dd>
+          <dt class="text-gray-500">Se acredita</dt>
+          <dd class="col-span-2 text-gray-900">
+            <span class="font-semibold tabular-nums">{{ creditMoney(creditPreview.total) }}</span>
+            <span class="text-gray-500"> · el total, {{ creditPreview.lines.length }} línea{{ creditPreview.lines.length === 1 ? '' : 's' }}</span>
+          </dd>
+          <dt class="text-gray-500">Nota</dt>
+          <dd class="col-span-2 text-gray-700">
+            {{ creditPreview.serie }}-{{ creditPreview.next_number }}
+            <span class="block text-xs text-gray-400">El número se confirma con Nubefact al emitir.</span>
+          </dd>
+        </dl>
+
+        <p v-if="creditPreview.blocked_reason" class="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+          {{ creditPreview.blocked_reason }}
+        </p>
+        <div v-else class="mt-4 space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+            <Dropdown
+              v-model="creditType"
+              :options="creditPreview.types"
+              optionLabel="name"
+              optionValue="id"
+              class="w-full"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Explicación (se imprime en la nota)</label>
+            <InputText v-model="creditReason" class="w-full" maxlength="250" placeholder="Ej. Comprobante duplicado por error" />
+          </div>
+          <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <template v-if="creditPreview.is_production">
+              Emitir es irreversible: la nota llega a SUNAT y deja este comprobante sin efecto por su total.
+            </template>
+            <template v-else>Modo PRUEBAS: se emite en el ambiente demo y no queda en el libro.</template>
+          </p>
+        </div>
+      </template>
+      <template #footer>
+        <Button label="Cancelar" severity="secondary" text :disabled="creditEmitting" @click="creditVisible = false" />
+        <Button
+          label="Emitir nota de crédito"
+          icon="pi pi-undo"
+          severity="danger"
+          :loading="creditEmitting"
+          :disabled="!creditPreview?.can_emit || creditReason.trim().length < 5"
+          @click="submitCreditNote"
+        />
+      </template>
+    </Dialog>
 
     <!-- Etiquetar -->
     <Dialog v-model:visible="assignVisible" header="Etiquetar líneas" modal :style="{ width: '32rem' }">
@@ -294,6 +373,8 @@ import {
   getLedgerDimensions, getLedgerItems, assignLedgerTags, assignLedgerTagsByFilter, ledgerErrorMessage
 } from '@/api/ledger.api'
 import { orderedValues } from '@/config/ledger.config'
+import { previewCreditNote, emitCreditNote } from '@/api/billing.api'
+import type { CreditNotePreview } from '@/types/billing.types'
 import type {
   LedgerItem, LedgerItemFilters, LedgerItemTag, LedgerOrigin, LedgerTagDimension
 } from '@/types/ledger.types'
@@ -543,6 +624,53 @@ async function saveAssign() {
     }
   } finally {
     assigning.value = false
+  }
+}
+
+// --- Nota de credito ---
+const creditVisible = ref(false)
+const creditLoading = ref(false)
+const creditEmitting = ref(false)
+const creditPreview = ref<CreditNotePreview | null>(null)
+const creditType = ref(1)
+const creditReason = ref('')
+
+function creditMoney(value: number): string {
+  return creditPreview.value?.currency === 'USD'
+    ? `US$ ${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : formatCurrency(value, 2)
+}
+
+async function openCreditNote(row: LedgerItem) {
+  creditPreview.value = null
+  creditType.value = 1
+  creditReason.value = ''
+  creditVisible.value = true
+  creditLoading.value = true
+  try {
+    creditPreview.value = await previewCreditNote(row.invoice_id)
+  } catch (e) {
+    creditVisible.value = false
+    toast.add({ severity: 'error', summary: 'No se pudo cargar', detail: ledgerErrorMessage(e), life: 8000 })
+  } finally {
+    creditLoading.value = false
+  }
+}
+
+async function submitCreditNote() {
+  if (!creditPreview.value) return
+
+  creditEmitting.value = true
+  try {
+    const res = await emitCreditNote(creditPreview.value.invoice_id, creditType.value, creditReason.value.trim())
+    creditVisible.value = false
+    toast.add({ severity: 'success', summary: 'Nota de crédito emitida', detail: res.message, life: 10000 })
+    load()
+  } catch (e) {
+    // El dialogo se conserva: tras un rechazo se corrige y se reintenta.
+    toast.add({ severity: 'error', summary: 'No se emitió', detail: ledgerErrorMessage(e), life: 12000 })
+  } finally {
+    creditEmitting.value = false
   }
 }
 
