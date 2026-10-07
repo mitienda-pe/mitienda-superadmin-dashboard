@@ -367,6 +367,30 @@
           </div>
         </dl>
 
+        <!-- Detraccion: la factura sale por el precio completo. Lo que NO hay
+             que hacer es bajar el precio del plan para facturar el neto. -->
+        <div v-if="preview.detraction?.available" class="rounded-lg bg-gray-50 p-3">
+          <div class="flex flex-wrap items-center gap-2">
+            <Checkbox v-model="detractionEnabled" inputId="planDetraction" binary />
+            <label for="planDetraction" class="text-sm text-gray-700">Sujeta a detracción del</label>
+            <input
+              v-model.number="detractionPercentage"
+              type="number"
+              min="0"
+              max="30"
+              step="0.5"
+              :disabled="!detractionEnabled"
+              class="p-inputtext p-component w-20"
+            />
+            <span class="text-sm text-gray-700">%</span>
+          </div>
+          <p v-if="detractionEnabled" class="mt-2 text-sm text-gray-600">
+            La factura sale por {{ formatCurrency(preview.total_with_tax, 2) }}. El cliente deposita
+            <strong>{{ formatCurrency(detractionAmount, 2) }}</strong> en la cuenta de detracciones y transfiere
+            <strong>{{ formatCurrency(preview.total_with_tax - detractionAmount, 2) }}</strong>.
+          </p>
+        </div>
+
         <p v-if="preview.environment !== 'production'" class="text-xs text-amber-700">
           Entorno de pruebas: se emitira contra el demo de Nubefact y la suscripcion
           NO quedara marcada como facturada.
@@ -488,6 +512,13 @@ const preview = ref<PlatformInvoicePreview | null>(null)
 const previewingId = ref<number | null>(null)
 const emitting = ref(false)
 
+// --- Detraccion ---
+const detractionEnabled = ref(false)
+const detractionPercentage = ref(12)
+const detractionAmount = computed(() =>
+  preview.value ? (preview.value.total_with_tax * (Number(detractionPercentage.value) || 0)) / 100 : 0
+)
+
 async function openEmitDialog(row: PlanSaleItem) {
   previewingId.value = row.id
   preview.value = null
@@ -495,6 +526,8 @@ async function openEmitDialog(row: PlanSaleItem) {
     // Se pide el preview ANTES de abrir para no mostrar un dialogo vacio si el
     // backend ya sabe que esa fila no se puede facturar.
     preview.value = await previewPlanSaleInvoice(row.id)
+    detractionEnabled.value = false
+    detractionPercentage.value = preview.value.detraction?.percentage ?? 12
     emitDialogVisible.value = true
   } catch (e: any) {
     toast.add({
@@ -593,7 +626,10 @@ async function confirmEmit() {
 
   emitting.value = true
   try {
-    const res = await emitPlanSaleInvoice(preview.value.tiendaplan_id)
+    const res = await emitPlanSaleInvoice(
+      preview.value.tiendaplan_id,
+      detractionEnabled.value && preview.value.detraction?.available ? Number(detractionPercentage.value) : undefined
+    )
     emitDialogVisible.value = false
 
     toast.add({

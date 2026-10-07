@@ -94,9 +94,14 @@ export async function previewPlanSaleInvoice(tiendaPlanId: number) {
   return res.data.data
 }
 
-export async function emitPlanSaleInvoice(tiendaPlanId: number) {
+/**
+ * `detractionPercentage`: la factura sale por el precio completo del plan y la
+ * detraccion se declara aparte. Sin el, sin detraccion.
+ */
+export async function emitPlanSaleInvoice(tiendaPlanId: number, detractionPercentage?: number) {
   const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
-    `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/emit`
+    `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/emit`,
+    detractionPercentage ? { detraction_percentage: detractionPercentage } : {}
   )
   return res.data
 }

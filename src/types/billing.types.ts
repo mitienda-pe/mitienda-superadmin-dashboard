@@ -272,6 +272,8 @@ export interface PlatformInvoicePreview {
   /** 'Crédito' si el cobro está pendiente: una cuota que vence en credit_due_date */
   payment_condition: 'Contado' | 'Crédito'
   credit_due_date: string | null
+  /** `available`: factura en soles y emisor con detraccion habilitada. */
+  detraction?: { available: boolean; percentage: number }
 }
 
 export interface PlatformInvoiceResult {
