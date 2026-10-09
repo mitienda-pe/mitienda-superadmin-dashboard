@@ -30,7 +30,10 @@ export interface MrrEvolutionMonth {
 // Churn vs New — backend uses 'new' and 'churned'
 export interface ChurnVsNewMonth {
   month: string
+  /** Primer pago de la tienda. */
   new: number
+  /** Ya pagaban antes y volvieron a estar activas (renovación tardía o reactivación). */
+  returned?: number
   churned: number
   net: number
 }

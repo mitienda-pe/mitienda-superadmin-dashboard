@@ -3,7 +3,9 @@
     <div class="flex items-start justify-between gap-3 mb-4">
       <div>
         <h3 class="text-base font-semibold text-gray-800">Churn vs Nuevas Tiendas</h3>
-        <p class="text-xs text-gray-400">Nuevas = primer pago de la tienda. Clic en un mes para ver cuáles.</p>
+        <p class="text-xs text-gray-400">
+          Nuevas = primer pago de la tienda; "Vuelven" ya eran clientes. Clic en un mes para ver cuáles.
+        </p>
       </div>
       <router-link :to="{ name: 'SubscriptionMovement' }" class="text-sm font-medium text-primary-600 hover:underline shrink-0">
         Ver tiendas
@@ -71,8 +73,18 @@ const chartOption = computed(() => ({
     {
       name: 'Nuevas',
       type: 'bar',
+      stack: 'gained',
       data: props.data.map(d => d.new),
       color: colors.success,
+      barMaxWidth: 20
+    },
+    {
+      // Apiladas sobre las nuevas: juntas son todo lo ganado en el mes.
+      name: 'Vuelven',
+      type: 'bar',
+      stack: 'gained',
+      data: props.data.map(d => d.returned ?? 0),
+      color: '#86efac',
       barMaxWidth: 20,
       itemStyle: { borderRadius: [4, 4, 0, 0] }
     },
