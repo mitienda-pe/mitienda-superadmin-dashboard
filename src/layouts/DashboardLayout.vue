@@ -45,6 +45,14 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-sm text-gray-500">{{ currentDate }}</span>
+          <button
+            type="button"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary-500 hover:text-primary-700 transition-colors"
+            @click="assistantOpen = true"
+          >
+            <i class="pi pi-sparkles text-sm"></i>
+            Asistente
+          </button>
         </div>
       </header>
 
@@ -53,20 +61,40 @@
         <router-view />
       </div>
     </main>
+
+    <!-- Asistente: se abre encima de cualquier pantalla, sin sacar a nadie de donde está -->
+    <Sidebar
+      v-model:visible="assistantOpen"
+      position="right"
+      header="Asistente"
+      class="!w-full md:!w-[36rem]"
+      :pt="{
+        header: { class: '!px-5 !py-3 border-b border-gray-200' },
+        content: { class: '!px-5 !pt-2 !pb-4' }
+      }"
+    >
+      <AssistantPanel />
+    </Sidebar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAuthStore } from '@/stores/auth.store'
+import Sidebar from 'primevue/sidebar'
 import SidebarNav from '@/components/layout/SidebarNav.vue'
+import AssistantPanel from '@/components/assistant/AssistantPanel.vue'
+import { useAssistant } from '@/composables/useAssistant'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+const assistantOpen = ref(false)
+const { reset: resetAssistant } = useAssistant()
 
 const pageTitle = computed(() => {
   const titles: Record<string, string> = {
@@ -116,6 +144,8 @@ const currentDate = computed(() => {
 })
 
 async function handleLogout() {
+  // La conversación vive fuera del componente: sin esto la vería quien entre después.
+  resetAssistant()
   await authStore.logout()
   router.push('/login')
 }
