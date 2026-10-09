@@ -1,6 +1,10 @@
 <template>
   <div class="bg-white rounded-xl border border-gray-200 p-5">
-    <h3 class="text-base font-semibold text-gray-800 mb-4">MRR Breakdown (12 meses)</h3>
+    <h3 class="text-base font-semibold text-gray-800">Movimiento del MRR (12 meses)</h3>
+    <p class="text-xs text-gray-400 mb-4">
+      Sin IGV. Cada mes: lo que entra (clientes nuevos, los que vuelven, los que suben de plan) menos lo que sale
+      (los que bajan de plan y los que se van). La suma es la variación del MRR total.
+    </p>
     <v-chart :option="chartOption" :autoresize="true" class="chart-container" />
   </div>
 </template>
@@ -56,7 +60,7 @@ const chartOption = computed(() => ({
   },
   series: [
     {
-      name: 'New MRR',
+      name: 'Nuevos',
       type: 'bar',
       stack: 'mrr',
       data: props.data.map(d => d.new_mrr),
@@ -64,7 +68,15 @@ const chartOption = computed(() => ({
       barMaxWidth: 20
     },
     {
-      name: 'Expansion',
+      name: 'Vuelven',
+      type: 'bar',
+      stack: 'mrr',
+      data: props.data.map(d => d.reactivation_mrr ?? 0),
+      color: '#86efac',
+      barMaxWidth: 20
+    },
+    {
+      name: 'Suben de plan',
       type: 'bar',
       stack: 'mrr',
       data: props.data.map(d => d.expansion_mrr),
@@ -72,7 +84,15 @@ const chartOption = computed(() => ({
       barMaxWidth: 20
     },
     {
-      name: 'Churned MRR',
+      name: 'Bajan de plan',
+      type: 'bar',
+      stack: 'mrr',
+      data: props.data.map(d => -(d.contraction_mrr ?? 0)),
+      color: '#fca5a5',
+      barMaxWidth: 20
+    },
+    {
+      name: 'Se van',
       type: 'bar',
       stack: 'mrr',
       data: props.data.map(d => -d.churned_mrr),
@@ -80,7 +100,7 @@ const chartOption = computed(() => ({
       barMaxWidth: 20
     },
     {
-      name: 'Total MRR',
+      name: 'MRR total',
       type: 'line',
       data: props.data.map(d => d.total_mrr),
       color: colors.primary,

@@ -34,6 +34,10 @@
             <div v-if="store.ltvData.length" class="bg-white rounded-xl border border-gray-200">
               <div class="p-5 border-b border-gray-100">
                 <h3 class="text-base font-semibold text-gray-800">LTV por Plan</h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  Sin IGV. La vida promedio y lo pagado cuentan a todos los clientes que alguna vez pagaron, agrupados
+                  por su último plan. LTV estimado = ARPU de hoy × vida promedio.
+                </p>
               </div>
               <DataTable :value="store.ltvData" stripedRows class="p-datatable-sm">
                 <Column field="plan" header="Plan">
@@ -41,9 +45,14 @@
                     <span class="font-medium text-gray-800">{{ row.plan }}</span>
                   </template>
                 </Column>
-                <Column field="stores" header="Tiendas">
+                <Column field="stores" header="Activas hoy">
                   <template #body="{ data: row }">
                     <span class="text-sm text-gray-600">{{ row.stores }}</span>
+                  </template>
+                </Column>
+                <Column field="customers" header="Clientes históricos">
+                  <template #body="{ data: row }">
+                    <span class="text-sm text-gray-600">{{ row.customers ?? '-' }}</span>
                   </template>
                 </Column>
                 <Column field="arpu" header="ARPU">
@@ -56,9 +65,17 @@
                     <span class="text-sm text-gray-600">{{ row.avg_lifetime_months }} meses</span>
                   </template>
                 </Column>
-                <Column field="ltv" header="LTV">
+                <Column field="avg_paid" header="Pagado promedio">
                   <template #body="{ data: row }">
-                    <span class="text-sm font-bold text-primary-600">{{ formatCurrency(row.ltv) }}</span>
+                    <span class="text-sm font-semibold text-gray-800">
+                      {{ row.avg_paid != null ? formatCurrency(row.avg_paid) : '-' }}
+                    </span>
+                  </template>
+                </Column>
+                <Column field="ltv" header="LTV estimado">
+                  <template #body="{ data: row }">
+                    <span v-if="row.stores > 0" class="text-sm font-bold text-primary-600">{{ formatCurrency(row.ltv) }}</span>
+                    <span v-else class="text-sm text-gray-300" v-tooltip.top="'Sin tiendas activas no hay ARPU para proyectar'">-</span>
                   </template>
                 </Column>
                 <Column field="mrr" header="MRR">

@@ -2,9 +2,15 @@
 
 export interface MrrBreakdownMonth {
   month: string
+  /** MRR de tiendas que pagan por primera vez. */
   new_mrr: number
+  /** MRR de tiendas que ya habían pagado y volvieron. */
+  reactivation_mrr?: number
   churned_mrr: number
+  /** Tiendas activas en ambos cierres que ahora pagan más. */
   expansion_mrr: number
+  /** Tiendas activas en ambos cierres que ahora pagan menos. */
+  contraction_mrr?: number
   net_new_mrr: number
   total_mrr: number
 }
@@ -17,10 +23,16 @@ export interface CohortData {
 
 export interface LtvByPlan {
   plan: string
+  /** Tiendas activas hoy en el plan. */
   stores: number
+  /** Clientes que alguna vez pagaron y terminaron en este plan. */
+  customers?: number
   arpu: number
   avg_lifetime_months: number
+  /** Proyección: ARPU de hoy por la vida promedio. */
   ltv: number
+  /** Lo que pagó de verdad cada cliente en promedio, sin IGV. */
+  avg_paid?: number
   mrr: number
 }
 
@@ -38,6 +50,9 @@ export interface ChurnByPlanMonth {
   micro_start: number
   micro_churned: number
   micro_rate: number
+  other_start?: number
+  other_churned?: number
+  other_rate?: number
 }
 
 export interface GmvTopStore {
