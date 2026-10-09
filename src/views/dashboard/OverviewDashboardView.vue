@@ -96,30 +96,34 @@
         />
       </div>
 
-      <!-- Charts Row 2: 2 columns -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <GmvMonthlyChart
-          v-if="dashboardStore.gmvMonthly.length"
-          :data="dashboardStore.gmvMonthly"
-        />
+      <!-- Charts Row 2: por plan — cuántas tiendas, cuánto MRR y cuánta comisión -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <PlanDistributionChart
           v-if="dashboardStore.planDistribution.length"
           :data="dashboardStore.planDistribution"
         />
-      </div>
-
-      <!-- Charts Row 3: Commissions -->
-      <div v-if="dashboardStore.commissionsOverview" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <RevenueBreakdownChart
-          v-if="dashboardStore.commissionsOverview.monthly?.length"
-          :data="dashboardStore.commissionsOverview.monthly"
+        <PlanIncomeChart
+          v-if="dashboardStore.planDistribution.length"
+          :data="dashboardStore.planDistribution"
         />
         <CommissionsByPlanChart
-          v-if="dashboardStore.commissionsOverview.by_plan?.length"
+          v-if="dashboardStore.commissionsOverview?.by_plan?.length"
           :data="dashboardStore.commissionsOverview.by_plan"
         />
+      </div>
+
+      <!-- Charts Row 3: GMV y comisiones en el tiempo -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <GmvMonthlyChart
+          v-if="dashboardStore.gmvMonthly.length"
+          :data="dashboardStore.gmvMonthly"
+        />
+        <RevenueBreakdownChart
+          v-if="dashboardStore.commissionsOverview?.monthly?.length"
+          :data="dashboardStore.commissionsOverview.monthly"
+        />
         <CommissionsMonthlyChart
-          v-if="dashboardStore.commissionsOverview.monthly?.length"
+          v-if="dashboardStore.commissionsOverview?.monthly?.length"
           :data="dashboardStore.commissionsOverview.monthly"
         />
       </div>
@@ -147,6 +151,7 @@ import ActiveStoresChart from '@/components/charts/ActiveStoresChart.vue'
 import ChurnVsNewChart from '@/components/charts/ChurnVsNewChart.vue'
 import GmvMonthlyChart from '@/components/charts/GmvMonthlyChart.vue'
 import PlanDistributionChart from '@/components/charts/PlanDistributionChart.vue'
+import PlanIncomeChart from '@/components/charts/PlanIncomeChart.vue'
 import RevenueBreakdownChart from '@/components/charts/RevenueBreakdownChart.vue'
 import CommissionsByPlanChart from '@/components/charts/CommissionsByPlanChart.vue'
 import CommissionsMonthlyChart from '@/components/charts/CommissionsMonthlyChart.vue'

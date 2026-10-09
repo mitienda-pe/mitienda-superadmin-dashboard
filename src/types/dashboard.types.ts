@@ -22,6 +22,8 @@ export interface MrrEvolutionMonth {
   medium: number
   small: number
   micro: number
+  /** Planes fuera del catálogo principal (PDV y otros). */
+  other?: number
   total: number
 }
 

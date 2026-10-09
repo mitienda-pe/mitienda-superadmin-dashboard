@@ -98,6 +98,16 @@ const chartOption = computed(() => ({
       color: palette[3],
       smooth: true,
       symbol: 'none'
+    },
+    {
+      name: 'Otros',
+      type: 'line',
+      stack: 'total',
+      areaStyle: { opacity: 0.6 },
+      data: props.data.map(d => d.other ?? 0),
+      color: palette[4],
+      smooth: true,
+      symbol: 'none'
     }
   ]
 }))

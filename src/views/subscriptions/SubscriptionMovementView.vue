@@ -81,12 +81,24 @@
         <div class="bg-white rounded-xl border border-green-200 p-5 bg-green-50/30">
           <p class="text-sm text-green-700 font-medium">Ganadas</p>
           <p class="text-2xl font-bold text-green-700 mt-1">+{{ formatNumber(kpis.ganadas) }}</p>
+          <p class="text-xs text-green-800 mt-1">
+            <strong>{{ formatNumber(kpis.nuevas) }} clientes nuevos</strong>
+            <template v-if="kpis.ganadas - kpis.nuevas > 0">
+              · {{ formatNumber(kpis.ganadas - kpis.nuevas) }} ya eran clientes
+            </template>
+          </p>
         </div>
 
         <!-- Perdidas -->
         <div class="bg-white rounded-xl border border-red-200 p-5 bg-red-50/30">
           <p class="text-sm text-red-700 font-medium">Perdidas</p>
           <p class="text-2xl font-bold text-red-700 mt-1">-{{ formatNumber(kpis.perdidas) }}</p>
+          <p class="text-xs text-red-800 mt-1">
+            <strong>{{ formatNumber(kpis.perdidas_definitivas) }} siguen fuera</strong>
+            <template v-if="kpis.perdidas_volvieron > 0">
+              · {{ formatNumber(kpis.perdidas_volvieron) }} volvieron
+            </template>
+          </p>
         </div>
 
         <!-- Variación neta -->
@@ -162,18 +174,33 @@
       <div class="space-y-6">
         <!-- Ganadas table -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-            <i class="pi pi-arrow-up-right text-green-600"></i>
-            <h2 class="text-lg font-semibold text-gray-900">
-              Ganadas
-              <span class="text-sm font-normal text-gray-500">({{ store.data.ganadas.length }})</span>
-            </h2>
+          <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <i class="pi pi-arrow-up-right text-green-600"></i>
+                <h2 class="text-lg font-semibold text-gray-900">
+                  Ganadas
+                  <span class="text-sm font-normal text-gray-500">({{ gainedRows.length }})</span>
+                </h2>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">
+                Activas al cierre que no lo estaban al inicio. Solo el primer pago de una tienda es un cliente nuevo;
+                las demás ya pagaban y volvieron: con hasta 30 días de retraso (renovación tardía) o después (reactivación).
+              </p>
+            </div>
+            <SelectButton
+              v-model="gainedFilter"
+              :options="gainedFilterOptions"
+              optionLabel="label"
+              optionValue="value"
+              :allowEmpty="false"
+            />
           </div>
           <DataTable
-            :value="store.data.ganadas"
+            :value="gainedRows"
             stripedRows
             class="p-datatable-sm"
-            :paginator="store.data.ganadas.length > 10"
+            :paginator="gainedRows.length > 10"
             :rows="10"
           >
             <Column header="Tienda" style="min-width: 180px">
@@ -191,7 +218,11 @@
                 <span class="text-gray-500 text-sm">{{ row.url }}</span>
               </template>
             </Column>
-            <Column field="plan" header="Plan" style="min-width: 100px" />
+            <Column header="Plan" style="min-width: 120px">
+              <template #body="{ data: row }">
+                {{ row.plan }} <span class="text-xs text-gray-400">{{ row.frecuencia }}</span>
+              </template>
+            </Column>
             <Column header="Precio" style="min-width: 80px">
               <template #body="{ data: row }">
                 {{ formatCurrency(row.precio) }}
@@ -204,13 +235,22 @@
                 </span>
               </template>
             </Column>
-            <Column header="Tipo" style="min-width: 120px">
+            <Column header="Tipo" style="min-width: 150px">
               <template #body="{ data: row }">
                 <span
                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium"
                   :class="tipoBadgeClass(row.tipo)"
                 >
                   {{ tipoLabel(row.tipo) }}
+                </span>
+              </template>
+            </Column>
+            <Column header="Sin plan" style="min-width: 150px">
+              <template #body="{ data: row }">
+                <span v-if="row.dias_inactiva === null" class="text-sm text-gray-300">-</span>
+                <span v-else class="text-sm text-gray-600">
+                  {{ row.dias_inactiva }} {{ row.dias_inactiva === 1 ? 'día' : 'días' }}
+                  <span class="text-xs text-gray-400">· venció {{ formatDate(row.vencio_antes) }}</span>
                 </span>
               </template>
             </Column>
@@ -229,18 +269,37 @@
               <i class="pi pi-arrow-down-right text-red-600"></i>
               <h2 class="text-lg font-semibold text-gray-900">
                 Perdidas
-                <span class="text-sm font-normal text-gray-500">({{ store.data.perdidas.length }})</span>
+                <span class="text-sm font-normal text-gray-500">({{ lostRows.length }})</span>
               </h2>
             </div>
-            <div v-if="totalLtvLost > 0" class="text-sm text-gray-500">
-              LTV total perdido: <span class="font-semibold text-red-600">{{ formatCurrency(totalLtvLost) }}</span>
+            <div class="flex flex-wrap items-center gap-4">
+              <div v-if="totalLtvLost > 0" class="text-sm text-gray-500">
+                LTV de la lista: <span class="font-semibold text-red-600">{{ formatCurrency(totalLtvLost) }}</span>
+              </div>
+              <SelectButton
+                v-model="lostFilter"
+                :options="lostFilterOptions"
+                optionLabel="label"
+                optionValue="value"
+                :allowEmpty="false"
+              />
             </div>
           </div>
+          <p class="px-5 py-3 text-xs text-gray-500 border-b border-gray-100">
+            Activas al inicio que no lo estaban al cierre.
+            <template v-if="singlePaymentLost > 0">
+              <strong class="text-gray-700">{{ singlePaymentLost }} de {{ store.data.perdidas.length }}</strong>
+              se fueron tras un solo pago: no pasaron del primer período.
+            </template>
+            <template v-if="noRecentSalesLost > 0">
+              <strong class="text-gray-700">{{ noRecentSalesLost }}</strong> llevaban más de 90 días sin vender (o nunca vendieron).
+            </template>
+          </p>
           <DataTable
-            :value="store.data.perdidas"
+            :value="lostRows"
             stripedRows
             class="p-datatable-sm"
-            :paginator="store.data.perdidas.length > 10"
+            :paginator="lostRows.length > 10"
             :rows="10"
             sortField="ltv"
             :sortOrder="-1"
@@ -260,7 +319,11 @@
                 <span class="text-gray-500 text-sm">{{ row.url }}</span>
               </template>
             </Column>
-            <Column field="plan" header="Plan" style="min-width: 100px" />
+            <Column header="Plan" style="min-width: 120px">
+              <template #body="{ data: row }">
+                {{ row.plan }} <span class="text-xs text-gray-400">{{ row.frecuencia }}</span>
+              </template>
+            </Column>
             <Column header="Precio" style="min-width: 80px">
               <template #body="{ data: row }">
                 {{ formatCurrency(row.precio) }}
@@ -276,6 +339,21 @@
                 <span class="text-sm text-gray-600">
                   {{ row.antiguedad != null ? row.antiguedad + ' a.' : '-' }}
                 </span>
+              </template>
+            </Column>
+            <Column header="Ultima venta" style="min-width: 110px">
+              <template #body="{ data: row }">
+                <span v-if="row.ultima_venta" class="text-sm text-gray-600">{{ formatDate(row.ultima_venta) }}</span>
+                <span v-else class="text-sm text-gray-400">Nunca vendió</span>
+              </template>
+            </Column>
+            <Column header="Después" style="min-width: 170px">
+              <template #body="{ data: row }">
+                <span v-if="row.volvio" class="text-sm text-green-700">
+                  Volvió el {{ formatDate(row.volvio) }}
+                  <span class="text-xs text-gray-400">· {{ row.dias_fuera }} días fuera</span>
+                </span>
+                <span v-else class="text-sm text-red-600">Sigue fuera</span>
               </template>
             </Column>
             <Column field="ltv" header="LTV" :sortable="true" style="min-width: 110px">
@@ -302,6 +380,8 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { MRR_TABS } from '@/config/sections.config'
 import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import SelectButton from 'primevue/selectbutton'
 import { useSubscriptionMovementStore } from '@/stores/subscription-movement.store'
 import { useFormatters } from '@/composables/useFormatters'
 import DataTable from 'primevue/datatable'
@@ -329,21 +409,69 @@ function buildMonthOptions() {
 }
 
 const monthOptions = buildMonthOptions()
-const selectedMonth = ref(monthOptions[0].value)
+
+// El gráfico de churn del resumen enlaza acá con ?month=. El mes en curso no
+// está en la lista (no ha cerrado): cae al último mes cerrado.
+const route = useRoute()
+const requestedMonth = typeof route.query.month === 'string' ? route.query.month : ''
+const selectedMonth = ref(
+  monthOptions.some(o => o.value === requestedMonth) ? requestedMonth : monthOptions[0].value
+)
+
+// --- Filtros de las listas ---
+const gainedFilter = ref<'all' | 'new' | 'returning'>('all')
+const gainedFilterOptions = [
+  { label: 'Todas', value: 'all' },
+  { label: 'Clientes nuevos', value: 'new' },
+  { label: 'Ya eran clientes', value: 'returning' }
+]
+const gainedRows = computed(() => {
+  const rows = store.data?.ganadas ?? []
+  if (gainedFilter.value === 'new') return rows.filter(r => r.es_nueva)
+  if (gainedFilter.value === 'returning') return rows.filter(r => !r.es_nueva)
+  return rows
+})
+
+const lostFilter = ref<'all' | 'gone' | 'returned'>('all')
+const lostFilterOptions = [
+  { label: 'Todas', value: 'all' },
+  { label: 'Siguen fuera', value: 'gone' },
+  { label: 'Volvieron', value: 'returned' }
+]
+const lostRows = computed(() => {
+  const rows = store.data?.perdidas ?? []
+  if (lostFilter.value === 'gone') return rows.filter(r => !r.volvio)
+  if (lostFilter.value === 'returned') return rows.filter(r => !!r.volvio)
+  return rows
+})
+
+// Dos lecturas rápidas del churn del mes: cuántas no pasaron del primer pago y
+// cuántas ya no vendían cuando se fueron.
+const singlePaymentLost = computed(() => (store.data?.perdidas ?? []).filter(r => r.pagos <= 1).length)
+const noRecentSalesLost = computed(() =>
+  (store.data?.perdidas ?? []).filter(r => {
+    if (!r.ultima_venta) return true
+    const days = (new Date(r.fecha_fin).getTime() - new Date(r.ultima_venta.replace(' ', 'T')).getTime()) / 86_400_000
+    return days > 90
+  }).length
+)
 
 const isCurrentOrFutureMonth = computed(() => {
   return selectedMonth.value === monthOptions[0].value
 })
 
-const totalLtvLost = computed(() =>
-  (store.data?.perdidas ?? []).reduce((sum, s) => sum + (s.ltv || 0), 0)
-)
+const totalLtvLost = computed(() => lostRows.value.reduce((sum, s) => sum + (s.ltv || 0), 0))
 
 const kpis = computed(() => store.data?.kpis ?? {
   activas_inicio: 0,
   activas_cierre: 0,
   ganadas: 0,
+  nuevas: 0,
+  renovaciones_tardias: 0,
+  reactivadas: 0,
   perdidas: 0,
+  perdidas_volvieron: 0,
+  perdidas_definitivas: 0,
   variacion: 0,
   por_renovar: 0,
   renovadas: 0
@@ -376,16 +504,18 @@ function loadData() {
 function tipoLabel(tipo: GainedStoreType): string {
   const labels: Record<GainedStoreType, string> = {
     nueva: 'Nueva',
-    conversion: 'Conversion',
-    reactivacion: 'Reactivacion'
+    conversion: 'Nueva (venía de prueba)',
+    renovacion_tardia: 'Renovación tardía',
+    reactivacion: 'Reactivación'
   }
   return labels[tipo] || tipo
 }
 
 function tipoBadgeClass(tipo: GainedStoreType): string {
   const classes: Record<GainedStoreType, string> = {
-    nueva: 'bg-blue-100 text-blue-700',
-    conversion: 'bg-amber-100 text-amber-700',
+    nueva: 'bg-green-100 text-green-700',
+    conversion: 'bg-green-100 text-green-700',
+    renovacion_tardia: 'bg-gray-100 text-gray-700',
     reactivacion: 'bg-purple-100 text-purple-700'
   }
   return classes[tipo] || 'bg-gray-100 text-gray-700'
