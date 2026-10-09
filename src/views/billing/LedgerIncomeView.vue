@@ -119,14 +119,8 @@
         </div>
       </div>
 
-      <!-- Empty -->
-      <div v-if="report.groups.length === 0" class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-        <i class="pi pi-chart-bar text-4xl text-gray-300 mb-3"></i>
-        <p class="text-gray-500 font-medium">Sin facturación en este rango</p>
-        <p class="text-sm text-gray-400 mt-1">Prueba con otras fechas o quita filtros</p>
-      </div>
-
-      <!-- B2C, B2B y Otros: siempre a la vista, agrupe como agrupe la tabla -->
+      <!-- B2C, B2B y Otros: siempre a la vista, agrupe como agrupe la tabla.
+           Va antes del v-if de abajo: en medio le robaria el v-else al grafico y la tabla. -->
       <BusinessLineDonut
         v-if="lineDimension"
         :from="from"
@@ -134,6 +128,13 @@
         :dimension="lineDimension"
         :value-ids="lineValueIds"
       />
+
+      <!-- Empty -->
+      <div v-if="report.groups.length === 0" class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+        <i class="pi pi-chart-bar text-4xl text-gray-300 mb-3"></i>
+        <p class="text-gray-500 font-medium">Sin facturación en este rango</p>
+        <p class="text-sm text-gray-400 mt-1">Prueba con otras fechas o quita filtros</p>
+      </div>
 
       <template v-else>
         <!-- Chart -->
