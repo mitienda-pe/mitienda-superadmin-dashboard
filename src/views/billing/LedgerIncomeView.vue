@@ -126,6 +126,15 @@
         <p class="text-sm text-gray-400 mt-1">Prueba con otras fechas o quita filtros</p>
       </div>
 
+      <!-- B2C, B2B y Otros: siempre a la vista, agrupe como agrupe la tabla -->
+      <BusinessLineDonut
+        v-if="lineDimension"
+        :from="from"
+        :to="to"
+        :dimension="lineDimension"
+        :value-ids="lineValueIds"
+      />
+
       <template v-else>
         <!-- Chart -->
         <div class="bg-white rounded-xl border border-gray-200 p-5" :class="{ 'opacity-60': loading }">
@@ -189,6 +198,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import BusinessLineDonut from '@/components/billing/BusinessLineDonut.vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { BarChart } from 'echarts/charts'
@@ -256,6 +266,16 @@ const hasUntaggedBucket = computed(() => !!groupDimension.value || groupBy.value
 
 // Se puede filtrar por cualquier dimension menos la que ya agrupa.
 const filterDimensions = computed(() => activeDimensions.value.filter(d => d.slug !== groupBy.value))
+
+// El reparto por línea respeta los filtros de las otras dimensiones, pero no el
+// de la propia línea: filtrarla dejaría una sola porción.
+const lineDimension = computed(() => activeDimensions.value.find(d => d.slug === 'linea_negocio') ?? null)
+const lineValueIds = computed(() =>
+  activeDimensions.value
+    .filter(d => d.slug !== 'linea_negocio')
+    .map(d => valueFilters[d.id])
+    .filter((id): id is number => typeof id === 'number')
+)
 
 const untaggedShare = computed(() =>
   report.value && report.value.summary.net > 0 ? (report.value.summary.untagged / report.value.summary.net) * 100 : 0
