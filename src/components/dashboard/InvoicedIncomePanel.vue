@@ -58,15 +58,39 @@
       </div>
 
       <!-- Reparto por linea de negocio: solo tiene sentido viendo todo junto -->
-      <p v-if="scope === 'all' && split" class="mt-4 text-sm text-gray-600">
-        Por línea en {{ monthName }}:
-        <strong class="font-semibold text-gray-800">B2C {{ formatCurrency(split.b2c) }}</strong> ·
-        <strong class="font-semibold text-gray-800">B2B {{ formatCurrency(split.b2b) }}</strong>
-        <template v-if="split.other !== 0"> · otras líneas {{ formatCurrency(split.other) }}</template>
-        <template v-if="split.untagged !== 0">
-          · <span class="text-amber-700">sin línea de negocio {{ formatCurrency(split.untagged) }}</span>
-        </template>
-      </p>
+      <div
+        v-if="scope === 'all' && lineSegments.length > 0"
+        class="mt-5 border-t border-gray-100 pt-5"
+        :class="{ 'opacity-60': loading }"
+      >
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <p class="text-sm font-medium text-gray-700">Por línea de negocio, sin IGV</p>
+          <SelectButton
+            v-model="linePeriod"
+            :options="linePeriodOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+          />
+        </div>
+        <div class="flex flex-wrap items-center gap-6">
+          <v-chart :option="lineChartOption" :autoresize="true" class="donut-chart" />
+          <table class="flex-1 min-w-[16rem] text-sm">
+            <tbody>
+              <tr v-for="segment in lineSegments" :key="segment.key" class="border-b border-gray-100 last:border-0">
+                <td class="py-1.5 pr-3">
+                  <span class="inline-flex items-center gap-2" :class="segment.untagged ? 'text-amber-700' : 'text-gray-700'">
+                    <span class="inline-block h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: segment.color }"></span>
+                    {{ segment.name }}
+                  </span>
+                </td>
+                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(segment.amount) }}</td>
+                <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ segment.share }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <p v-if="untaggedMonth > 0" class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
         Además hay {{ formatCurrency(untaggedMonth) }} de {{ monthName }} sin clasificar, que no entra en ninguno de los
@@ -105,16 +129,17 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
-import { BarChart } from 'echarts/charts'
+import { BarChart, PieChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
+import SelectButton from 'primevue/selectbutton'
 import { useChartTheme } from '@/composables/useChartTheme'
 import { useFormatters } from '@/composables/useFormatters'
 import { getLedgerDimensions, getLedgerReport, ledgerErrorMessage } from '@/api/ledger.api'
 import { INCOME_SCOPE_OPTIONS, RECURRENCE_OPTIONS, type IncomeScope } from '@/config/ledger.config'
 import type { LedgerReport, LedgerReportGroup, LedgerTagDimension } from '@/types/ledger.types'
 
-use([BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
+use([BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const { colors } = useChartTheme()
 const { formatCurrency, formatShortMonth, formatMonthYear } = useFormatters()
@@ -152,16 +177,77 @@ function amountOf(key: string, period: string): number {
 const monthTotal = computed(() => report.value?.totals[lastMonth] ?? 0)
 const monthTax = computed(() => report.value?.tax_totals[lastMonth] ?? 0)
 
-// Reparto del mes por linea de negocio (solo en la vista combinada).
-const split = computed(() => {
-  if (!byLine.value) return null
-  const of = (key: string) => byLine.value!.groups.find(g => g.key === key)?.values[lastMonth] ?? 0
-  const b2c = of('b2c')
-  const b2b = of('b2b')
-  const untagged = of(UNTAGGED)
-  const total = byLine.value.totals[lastMonth] ?? 0
-  return { b2c, b2b, untagged, other: Math.round((total - b2c - b2b - untagged) * 100) / 100 }
+// Reparto por linea de negocio (solo en la vista combinada): B2C, B2B y Otros,
+// mas lo que quedo sin linea. Colores propios, distintos de los de tipo de
+// ingreso que usa el resto del bloque.
+const LINE_COLORS: Record<string, string> = { b2c: '#8b5cf6', b2b: '#ec4899', extraordinario: '#64748b' }
+const LINE_ORDER = ['b2c', 'b2b', 'extraordinario']
+
+const linePeriod = ref<'month' | 'year'>('month')
+const linePeriodOptions = computed(() => [
+  { label: monthName.value, value: 'month' as const },
+  { label: '12 meses', value: 'year' as const }
+])
+
+const lineSegments = computed(() => {
+  const groups = byLine.value?.groups ?? []
+  const amountFor = (g: LedgerReportGroup) => (linePeriod.value === 'month' ? g.values[lastMonth] ?? 0 : g.total)
+  const rank = (key: string) => {
+    if (key === UNTAGGED) return LINE_ORDER.length + 1
+    const index = LINE_ORDER.indexOf(key)
+    return index === -1 ? LINE_ORDER.length : index
+  }
+
+  // Las tres lineas se comparan siempre, aunque alguna no haya facturado en
+  // el periodo; cualquier otra (o lo sin linea) solo si tiene importe.
+  const known = LINE_ORDER.flatMap(slug => {
+    const group = groups.find(g => g.key === slug)
+    const name = group?.name ?? lineDimension.value?.values.find(v => v.slug === slug)?.name
+    return name ? [{ key: slug, name, amount: group ? amountFor(group) : 0 }] : []
+  })
+  const rest = groups
+    .filter(g => !LINE_ORDER.includes(g.key))
+    .map(g => ({ key: g.key, name: g.key === UNTAGGED ? 'Sin línea de negocio' : g.name, amount: amountFor(g) }))
+    .filter(row => Math.round(row.amount) !== 0)
+
+  const rows = [...known, ...rest].sort((a, b) => rank(a.key) - rank(b.key))
+
+  const total = rows.reduce((sum, row) => sum + row.amount, 0)
+
+  return rows.map(row => ({
+    ...row,
+    untagged: row.key === UNTAGGED,
+    color: row.key === UNTAGGED ? colors.gray[300] : LINE_COLORS[row.key] ?? colors.gray[500],
+    share: total > 0 ? `${((row.amount / total) * 100).toFixed(0)}%` : '-'
+  }))
 })
+
+const lineChartOption = computed(() => ({
+  tooltip: {
+    trigger: 'item',
+    backgroundColor: '#fff',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    textStyle: { color: '#374151', fontSize: 13 },
+    formatter: (params: any) =>
+      `<div class="font-medium">${params.name}</div>
+       <div class="text-sm">${formatCurrency(params.value)} (${params.percent}%)</div>`
+  },
+  series: [
+    {
+      type: 'pie',
+      radius: ['55%', '85%'],
+      label: { show: false },
+      itemStyle: { borderColor: '#fff', borderWidth: 2 },
+      // Una linea con mas notas de credito que facturas no puede dibujarse como porcion.
+      data: lineSegments.value.map(segment => ({
+        name: segment.name,
+        value: Math.max(0, Math.round(segment.amount)),
+        itemStyle: { color: segment.color }
+      }))
+    }
+  ]
+}))
 
 // Cinco mayores clientes de los 12 meses y cuanto pesan juntos.
 const TOP_CUSTOMERS = 5
@@ -307,5 +393,11 @@ onMounted(load)
 .chart-container {
   width: 100%;
   height: 280px;
+}
+
+.donut-chart {
+  width: 180px;
+  height: 180px;
+  flex-shrink: 0;
 }
 </style>
