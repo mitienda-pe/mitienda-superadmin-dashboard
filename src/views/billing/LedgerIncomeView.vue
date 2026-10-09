@@ -24,11 +24,11 @@
       <div class="flex flex-wrap items-end gap-3">
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">Desde</label>
-          <InputText v-model="from" type="month" class="w-40" @change="load" />
+          <InputText v-model="from" type="month" class="w-40" />
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
-          <InputText v-model="to" type="month" class="w-40" @change="load" />
+          <InputText v-model="to" type="month" class="w-40" />
         </div>
         <div>
           <label class="block text-xs font-medium text-gray-500 mb-1">Periodo</label>
@@ -250,7 +250,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import BusinessLineDonut from '@/components/billing/BusinessLineDonut.vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
@@ -406,9 +406,14 @@ function signedCurrency(value: number): string {
   return `${value > 0 ? '+' : ''}${formatCurrency(value)}`
 }
 
+// Cada carga lleva su numero: si el rango cambia dos veces seguidas, la
+// respuesta vieja puede llegar despues y no debe pisar a la nueva.
+let loadSeq = 0
+
 async function load() {
   if (!from.value || !to.value) return
 
+  const seq = ++loadSeq
   loading.value = true
   error.value = null
   try {
@@ -423,15 +428,20 @@ async function load() {
       getLedgerReport({ ...query, from: shiftMonth(from.value, delta), to: shiftMonth(to.value, delta) })
 
     const [main, previous, yearAgo] = await Promise.all([fetchShifted(0), fetchShifted(-span.value), fetchShifted(-12)])
+    if (seq !== loadSeq) return
     report.value = main
     previousReport.value = previous
     yearAgoReport.value = yearAgo
   } catch (e) {
-    error.value = ledgerErrorMessage(e)
+    if (seq === loadSeq) error.value = ledgerErrorMessage(e)
   } finally {
-    loading.value = false
+    if (seq === loadSeq) loading.value = false
   }
 }
+
+// El rango recarga por watch y no por @change del input: los titulos de la
+// comparacion salen de `from`/`to`, y no pueden quedar adelantados a los datos.
+watch([from, to], load)
 
 // --- Color: sigue a la entidad, no a su posicion en el ranking ---
 // Para una dimension el color sale del orden fijo de sus valores, asi un filtro
