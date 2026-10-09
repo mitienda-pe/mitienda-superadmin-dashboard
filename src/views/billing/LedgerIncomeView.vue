@@ -217,7 +217,7 @@
                 </td>
               </tr>
               <tr v-if="hiddenGroups > 0" class="border-b border-gray-100">
-                <td class="sticky left-0 bg-white px-5 py-2.5 text-gray-500" :colspan="report.periods.length + 5">
+                <td class="sticky left-0 bg-white px-5 py-2.5 text-gray-500" :colspan="report.periods.length + 3 + comparisons.length">
                   y {{ formatNumber(hiddenGroups) }} más.
                   <button class="text-primary-600 hover:underline" @click="showAll = true">Ver todos</button>
                   (el CSV los trae completos)
@@ -376,7 +376,7 @@ const comparisons = computed(() => {
     byKey: Object.fromEntries((source?.groups ?? []).map(g => [g.key, g.total])) as Record<string, number>
   })
 
-  return [
+  const all = [
     build('previous', single ? 'Mes anterior' : 'Período anterior', single ? 'vs. mes ant.' : 'vs. per. ant.', -span.value, previousReport.value),
     build(
       'year',
@@ -386,6 +386,9 @@ const comparisons = computed(() => {
       yearAgoReport.value
     )
   ]
+
+  // Con un rango de 12 meses el periodo anterior ES el ano anterior: una sola comparacion.
+  return span.value === 12 ? all.slice(1) : all
 })
 
 function deltaLabel(current: number, base: number): string {
