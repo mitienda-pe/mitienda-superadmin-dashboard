@@ -119,6 +119,33 @@
         </div>
       </div>
 
+      <!-- Comparacion contra el periodo anterior y el mismo periodo del ano pasado -->
+      <div class="bg-white rounded-xl border border-gray-200 p-5" :class="{ 'opacity-60': loading }">
+        <h3 class="text-base font-semibold text-gray-800">Comparación del ingreso neto</h3>
+        <p class="text-sm text-gray-500 mt-0.5">
+          {{ rangeLabel(from, to) }}, con los mismos filtros.
+          <span v-if="includesCurrentMonth" class="text-amber-700">
+            Incluye el mes en curso, que está incompleto: la comparación sale a la baja.
+          </span>
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mt-4">
+          <div v-for="item in comparisons" :key="item.key">
+            <p class="text-sm text-gray-500 font-medium">{{ item.label }}</p>
+            <p class="text-xs text-gray-400">{{ rangeLabel(item.from, item.to) }}</p>
+            <p class="text-2xl font-bold text-gray-900 mt-1">{{ formatCurrency(item.net) }}</p>
+            <p class="text-sm mt-1" :class="deltaClass(report.summary.net, item.net)">
+              <i
+                v-if="item.net !== 0 && report.summary.net !== item.net"
+                class="pi text-[10px]"
+                :class="report.summary.net > item.net ? 'pi-arrow-up' : 'pi-arrow-down'"
+              ></i>
+              {{ deltaLabel(report.summary.net, item.net) }}
+              <span class="text-gray-400">· {{ signedCurrency(report.summary.net - item.net) }}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- B2C, B2B y Otros: siempre a la vista, agrupe como agrupe la tabla.
            Va antes del v-if de abajo: en medio le robaria el v-else al grafico y la tabla. -->
       <BusinessLineDonut
@@ -155,7 +182,15 @@
                   {{ periodLabel(period) }}
                 </th>
                 <th class="px-3 py-3 text-right">Total</th>
-                <th class="px-5 py-3 text-right">%</th>
+                <th class="px-3 py-3 text-right">%</th>
+                <th
+                  v-for="item in comparisons"
+                  :key="item.key"
+                  class="px-3 py-3 text-right whitespace-nowrap last:pr-5"
+                  v-tooltip.top="`${item.label}: ${rangeLabel(item.from, item.to)}`"
+                >
+                  {{ item.short }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -170,10 +205,19 @@
                   {{ group.values[period] ? formatAmount(group.values[period]) : '-' }}
                 </td>
                 <td class="px-3 py-2.5 text-right tabular-nums font-semibold text-gray-800">{{ formatAmount(group.total) }}</td>
-                <td class="px-5 py-2.5 text-right tabular-nums text-gray-500">{{ share(group.total) }}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-gray-500">{{ share(group.total) }}</td>
+                <td
+                  v-for="item in comparisons"
+                  :key="item.key"
+                  class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap last:pr-5"
+                  :class="deltaClass(group.total, item.byKey[group.key] ?? 0)"
+                  v-tooltip.top="`Antes: ${formatCurrency(item.byKey[group.key] ?? 0)}`"
+                >
+                  {{ deltaLabel(group.total, item.byKey[group.key] ?? 0) }}
+                </td>
               </tr>
               <tr v-if="hiddenGroups > 0" class="border-b border-gray-100">
-                <td class="sticky left-0 bg-white px-5 py-2.5 text-gray-500" :colspan="report.periods.length + 3">
+                <td class="sticky left-0 bg-white px-5 py-2.5 text-gray-500" :colspan="report.periods.length + 5">
                   y {{ formatNumber(hiddenGroups) }} más.
                   <button class="text-primary-600 hover:underline" @click="showAll = true">Ver todos</button>
                   (el CSV los trae completos)
@@ -187,7 +231,15 @@
                   {{ formatAmount(report.totals[period] ?? 0) }}
                 </td>
                 <td class="px-3 py-3 text-right tabular-nums">{{ formatAmount(report.summary.net) }}</td>
-                <td class="px-5 py-3 text-right">100%</td>
+                <td class="px-3 py-3 text-right">100%</td>
+                <td
+                  v-for="item in comparisons"
+                  :key="item.key"
+                  class="px-3 py-3 text-right tabular-nums whitespace-nowrap last:pr-5"
+                  :class="deltaClass(report.summary.net, item.net)"
+                >
+                  {{ deltaLabel(report.summary.net, item.net) }}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -218,7 +270,7 @@ import type { LedgerReport, LedgerReportGroup, LedgerTagDimension } from '@/type
 use([BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
 const { colors, palette } = useChartTheme()
-const { formatCurrency, formatNumber, formatPercent, formatShortMonth } = useFormatters()
+const { formatCurrency, formatNumber, formatPercent, formatShortMonth, formatMonthYear } = useFormatters()
 
 const UNTAGGED = 'untagged'
 const OTHERS = '__others__'
@@ -236,6 +288,9 @@ function monthsAgo(n: number): string {
 
 const dimensions = ref<LedgerTagDimension[]>([])
 const report = ref<LedgerReport | null>(null)
+// Mismo reporte, corrido al periodo inmediatamente anterior y un ano atras.
+const previousReport = ref<LedgerReport | null>(null)
+const yearAgoReport = ref<LedgerReport | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const showAll = ref(false)
@@ -289,21 +344,85 @@ function onGroupChange() {
   load()
 }
 
+// --- Comparacion de periodos ---
+function shiftMonth(month: string, delta: number): string {
+  const [year, m] = month.split('-').map(Number)
+  const d = new Date(year, m - 1 + delta, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+/** Meses que abarca el rango, contando ambos extremos. */
+const span = computed(() => {
+  const [fy, fm] = from.value.split('-').map(Number)
+  const [ty, tm] = to.value.split('-').map(Number)
+  return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1)
+})
+
+const includesCurrentMonth = computed(() => to.value >= monthsAgo(0))
+
+function rangeLabel(start: string, end: string): string {
+  return start === end ? formatMonthYear(start) : `${formatMonthYear(start)} a ${formatMonthYear(end)}`
+}
+
+const comparisons = computed(() => {
+  const single = span.value === 1
+  const build = (key: string, label: string, short: string, delta: number, source: LedgerReport | null) => ({
+    key,
+    label,
+    short,
+    from: shiftMonth(from.value, delta),
+    to: shiftMonth(to.value, delta),
+    net: source?.summary.net ?? 0,
+    byKey: Object.fromEntries((source?.groups ?? []).map(g => [g.key, g.total])) as Record<string, number>
+  })
+
+  return [
+    build('previous', single ? 'Mes anterior' : 'Período anterior', single ? 'vs. mes ant.' : 'vs. per. ant.', -span.value, previousReport.value),
+    build(
+      'year',
+      single ? 'Mismo mes del año anterior' : 'Mismo período del año anterior',
+      'vs. año ant.',
+      -12,
+      yearAgoReport.value
+    )
+  ]
+})
+
+function deltaLabel(current: number, base: number): string {
+  if (Math.round(base) === 0) return Math.round(current) === 0 ? '-' : 'nuevo'
+  const pct = ((current - base) / Math.abs(base)) * 100
+  return `${pct > 0 ? '+' : ''}${formatPercent(pct)}`
+}
+
+function deltaClass(current: number, base: number): string {
+  if (Math.round(base) === 0 || Math.round(current) === Math.round(base)) return 'text-gray-400'
+  return current > base ? 'text-green-600' : 'text-red-600'
+}
+
+function signedCurrency(value: number): string {
+  return `${value > 0 ? '+' : ''}${formatCurrency(value)}`
+}
+
 async function load() {
   if (!from.value || !to.value) return
 
   loading.value = true
   error.value = null
   try {
-    report.value = await getLedgerReport({
-      from: from.value,
-      to: to.value,
+    const query = {
       group_by: groupBy.value,
       granularity: granularity.value,
       valueIds: filterDimensions.value
         .map(d => valueFilters[d.id])
         .filter((id): id is number => typeof id === 'number')
-    })
+    }
+    const fetchShifted = (delta: number) =>
+      getLedgerReport({ ...query, from: shiftMonth(from.value, delta), to: shiftMonth(to.value, delta) })
+
+    const [main, previous, yearAgo] = await Promise.all([fetchShifted(0), fetchShifted(-span.value), fetchShifted(-12)])
+    report.value = main
+    previousReport.value = previous
+    yearAgoReport.value = yearAgo
   } catch (e) {
     error.value = ledgerErrorMessage(e)
   } finally {
@@ -446,9 +565,19 @@ function exportCsv() {
 
   const cell = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
   const rows = [
-    [groupLabel.value, ...report.value.periods, 'Total'],
-    ...report.value.groups.map(g => [g.name, ...report.value!.periods.map(p => g.values[p] ?? 0), g.total]),
-    ['Total', ...report.value.periods.map(p => report.value!.totals[p] ?? 0), report.value.summary.net]
+    [groupLabel.value, ...report.value.periods, 'Total', ...comparisons.value.map(c => `${c.label} (${c.from} a ${c.to})`)],
+    ...report.value.groups.map(g => [
+      g.name,
+      ...report.value!.periods.map(p => g.values[p] ?? 0),
+      g.total,
+      ...comparisons.value.map(c => c.byKey[g.key] ?? 0)
+    ]),
+    [
+      'Total',
+      ...report.value.periods.map(p => report.value!.totals[p] ?? 0),
+      report.value.summary.net,
+      ...comparisons.value.map(c => c.net)
+    ]
   ]
 
   // BOM para que Excel abra los acentos bien.
