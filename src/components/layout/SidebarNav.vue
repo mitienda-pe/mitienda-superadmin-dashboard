@@ -96,7 +96,14 @@ const navGroups: NavGroup[] = [
     id: 'accounting',
     label: 'Contabilidad',
     items: [
-      { path: '/accounting/expenses', label: 'Gastos', icon: 'pi pi-wallet', also: siblings(ACCOUNTING_TABS) }
+      // Gastos y Bancos tienen entrada propia; las otras pestañas cuelgan de Gastos.
+      {
+        path: '/accounting/expenses',
+        label: 'Gastos',
+        icon: 'pi pi-wallet',
+        also: siblings(ACCOUNTING_TABS).filter(path => path !== '/accounting/banks')
+      },
+      { path: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' }
     ]
   },
   {

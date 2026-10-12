@@ -121,6 +121,7 @@ const pageTitle = computed(() => {
     ComplaintsList: 'Libro de Reclamaciones',
     ComplaintDetail: 'Detalle del Reclamo',
     AccountingExpenses: 'Gastos',
+    AccountingBanks: 'Bancos',
     AccountingPayees: 'Proveedores y personal',
     AccountingCategories: 'Categorías de gasto',
     BillingEmit: 'Emitir comprobante',

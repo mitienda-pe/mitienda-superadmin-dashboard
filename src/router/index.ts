@@ -207,6 +207,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/accounting/ExpensesView.vue')
       },
       {
+        path: 'banks',
+        name: 'AccountingBanks',
+        component: () => import('@/views/accounting/BanksView.vue')
+      },
+      {
         path: 'payees',
         name: 'AccountingPayees',
         component: () => import('@/views/accounting/PayeesView.vue')

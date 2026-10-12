@@ -1,7 +1,8 @@
 import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
-  SireImportResult
+  SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
 
@@ -116,6 +117,78 @@ export async function addExpensePayment(expenseId: number, payload: InvoiceInsta
 
 export async function deleteExpensePayment(paymentId: number) {
   const res = await api.delete<{ message: string; data: ExpensePayments }>(`${BASE}/expense-payments/${paymentId}`)
+  return res.data
+}
+
+// --- Bancos ---
+
+export async function getBankAccounts() {
+  const res = await api.get<{ data: BankAccount[]; meta: { other_labels: Record<string, string> } }>(`${BASE}/bank-accounts`)
+  return res.data
+}
+
+export async function saveBankAccount(
+  id: number | null,
+  payload: { bank: string; name: string; number?: string; currency: 'PEN' | 'USD'; is_active?: boolean }
+) {
+  const res = id === null
+    ? await api.post<{ data: BankAccount[] }>(`${BASE}/bank-accounts`, payload)
+    : await api.put<{ data: BankAccount[] }>(`${BASE}/bank-accounts/${id}`, payload)
+  return res.data.data
+}
+
+/** Excel de movimientos de BBVA o BCP. Sin `execute` solo devuelve qué entraría. */
+export async function importBankFile(file: File, accountId: number | null, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  if (accountId) form.append('account_id', String(accountId))
+  if (execute) form.append('execute', '1')
+
+  const res = await api.post<{ message: string; data: BankImportResult }>(`${BASE}/bank-import`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data
+}
+
+export async function getBankMovements(filters: BankMovementFilters) {
+  const params: Record<string, string | number> = { status: filters.status, page: filters.page }
+  if (filters.account_id) params.account_id = filters.account_id
+  if (filters.period) params.period = filters.period
+  if (filters.direction) params.direction = filters.direction
+  if (filters.search) params.search = filters.search
+
+  const res = await api.get<{
+    data: BankMovement[]
+    summary: BankMovementSummary
+    meta: { current_page: number; per_page: number; total: number; total_pages: number }
+  }>(`${BASE}/bank-movements`, { params })
+  return res.data
+}
+
+export async function getBankSuggestions(movementId: number) {
+  const res = await api.get<{ data: { invoices: InvoiceSuggestion[]; expenses: ExpenseSuggestion[] } }>(
+    `${BASE}/bank-movements/${movementId}/suggestions`
+  )
+  return res.data.data
+}
+
+/** Conciliar crea el abono del comprobante o el pago del gasto. */
+export async function reconcileBankMovement(movementId: number, payload: ReconcileInput) {
+  const res = await api.post<{ message: string; data: BankMovement }>(`${BASE}/bank-movements/${movementId}/reconcile`, payload)
+  return res.data
+}
+
+export async function markBankMovements(movementIds: number[], label: string) {
+  const res = await api.post<{ message: string; data: { affected: number } }>(`${BASE}/bank-movements/mark`, {
+    movement_ids: movementIds,
+    label
+  })
+  return res.data
+}
+
+/** Deshace esa parte y quita el abono o pago que había creado. */
+export async function unlinkBankMovement(linkId: number) {
+  const res = await api.delete<{ message: string; data: BankMovement }>(`${BASE}/bank-links/${linkId}`)
   return res.data
 }
 

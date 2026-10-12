@@ -141,3 +141,125 @@ export interface ExpensePayments {
   expense: Expense
   payments: ExpensePayment[]
 }
+
+// --- Bancos ---
+
+export interface BankAccount {
+  id: number
+  bank: string
+  name: string
+  number: string
+  currency: 'PEN' | 'USD'
+  /** Último saldo que informó el banco en un archivo importado. */
+  balance: number | null
+  balance_at: string | null
+  is_active: boolean
+  movements: number
+  /** Movimientos sin conciliar del todo. */
+  pending: number
+  first_date: string | null
+  last_date: string | null
+}
+
+export interface BankMovementLink {
+  id: number
+  kind: 'cobro' | 'pago' | 'otro'
+  amount: number
+  label: string | null
+  /** Texto ya armado: "Cobro de F003-1916 · Cliente". */
+  text: string
+  note: string | null
+  invoice_id: number | null
+  expense_id: number | null
+}
+
+export interface BankMovement {
+  id: number
+  account_id: number
+  account_name: string
+  bank: string
+  currency: 'PEN' | 'USD'
+  op_date: string
+  description: string
+  /** Ingreso positivo, salida negativa. */
+  amount: number
+  itf: number
+  reference: string | null
+  status: 'pendiente' | 'parcial' | 'conciliado'
+  /** Lo que falta conciliar, sin signo. */
+  remaining: number
+  links: BankMovementLink[]
+}
+
+export interface BankMovementFilters {
+  account_id: number | null
+  period: string
+  status: 'all' | 'pending' | 'done'
+  direction: '' | 'in' | 'out'
+  search: string
+  page: number
+}
+
+export interface BankMovementSummary {
+  movements: number
+  pending: number
+  inflow: number
+  outflow: number
+  itf: number
+}
+
+export interface BankImportResult {
+  executed: boolean
+  bank: string
+  account_number: string | null
+  currency: 'PEN' | 'USD'
+  balance: number | null
+  account_id: number | null
+  account_name: string | null
+  will_create_account: boolean
+  /** El archivo no dice de qué cuenta es: hay que elegirla. */
+  needs_account: boolean
+  read: number
+  created: number
+  duplicates: number
+  from: string | null
+  to: string | null
+  inflow: number
+  outflow: number
+}
+
+export interface InvoiceSuggestion {
+  id: number
+  number: string
+  issue_date: string
+  customer_name: string
+  customer_document: string
+  total: number
+  open_amount: number
+  currency: string
+  same_amount: boolean
+  net_of_detraction: boolean
+  name_match: boolean
+  number_match: boolean
+}
+
+export interface ExpenseSuggestion {
+  id: number
+  payee_name: string
+  payee_kind: PayeeKind
+  category_name: string
+  document_number: string | null
+  issue_date: string
+  period: string
+  total: number
+  open_amount: number
+  currency: string
+  same_amount: boolean
+  name_match: boolean
+}
+
+export type ReconcileInput =
+  | { kind: 'cobro'; invoice_id: number; amount?: number }
+  | { kind: 'pago'; expense_id: number; amount?: number }
+  | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
+  | { kind: 'otro'; label: string; note?: string }
