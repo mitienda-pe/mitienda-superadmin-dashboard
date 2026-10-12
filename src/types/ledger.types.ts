@@ -133,3 +133,84 @@ export interface LedgerReport {
     untagged: number
   }
 }
+
+// --- Cobro de comprobantes ---
+
+export type InvoicePaymentStatus = 'pendiente' | 'cobrado' | 'incobrable' | 'sin_cargo' | 'por_confirmar'
+
+/** Filtro de cobro de la lista: los estados, más "open" (sin cobrar) y "vencido". */
+export type InvoicePaymentFilter = 'all' | 'open' | 'pendiente' | 'por_confirmar' | 'vencido' | 'cobrado' | 'incobrable'
+
+export interface LedgerInvoice {
+  id: number
+  /** 1 factura, 2 boleta, 3 nota de crédito. */
+  document_type: number
+  number: string
+  serie: string
+  issue_date: string
+  due_date: string | null
+  currency: 'PEN' | 'USD'
+  total: number
+  /** Notas de crédito vigentes sobre el comprobante. */
+  credited: number
+  /** Lo que falta cobrar; 0 si ya se cobró o no se cobra. */
+  balance: number
+  origin: string
+  /** 1 emitido, 2 anulado, 3 no aceptado. */
+  status: number
+  tienda_id: number | null
+  customer_document: string
+  customer_name: string
+  concept: string
+  line_count: number
+  pdf_url: string | null
+  /** null = no aplica (anulado o nota de crédito). */
+  payment_status: InvoicePaymentStatus | null
+  /** supuesto = se dio por cobrado sin dato; plan = lo dice la venta del plan. */
+  payment_source: 'supuesto' | 'plan' | 'comision' | 'manual' | null
+  payment_date: string | null
+  payment_method: string | null
+  payment_reference: string | null
+  paid_amount: number | null
+  payment_note: string | null
+  is_overdue: boolean
+  days_since_issue: number | null
+  plan_backed: boolean
+}
+
+export interface ReceivablesByCurrency {
+  invoices: number
+  invoiced: number
+  pending_count: number
+  pending: number
+  unconfirmed_count: number
+  unconfirmed: number
+  overdue_count: number
+  overdue: number
+  paid_count: number
+  paid: number
+}
+
+export interface ReceivablesSummary {
+  by_currency: Partial<Record<'PEN' | 'USD', ReceivablesByCurrency>>
+  debtors: { customer_document: string; customer_name: string; invoices: number; amount: number; oldest: string }[]
+}
+
+export interface LedgerInvoiceFilters {
+  payment: InvoicePaymentFilter
+  period: string
+  origin: string
+  search: string
+  page: number
+}
+
+export interface InvoicePaymentInput {
+  invoice_ids: number[]
+  status: 'cobrado' | 'pendiente' | 'incobrable' | 'por_confirmar'
+  date?: string
+  method?: string
+  reference?: string
+  paid_amount?: number
+  due_date?: string
+  note?: string
+}

@@ -1,6 +1,7 @@
 import api from './axios'
 import type {
-  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept, LedgerReport
+  LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept, LedgerReport,
+  LedgerInvoice, LedgerInvoiceFilters, ReceivablesSummary, InvoicePaymentInput
 } from '@/types/ledger.types'
 
 const BASE = '/superadmin/platform-ledger'
@@ -138,6 +139,33 @@ export async function assignLedgerTagsByFilter(
 }
 
 /** Los errores de validacion de CI4 llegan en `messages.error`, no en `message`. */
+// --- Cobro de comprobantes ---
+
+interface LedgerInvoicesResponse {
+  data: LedgerInvoice[]
+  summary: ReceivablesSummary
+  meta: { current_page: number; per_page: number; total: number; total_pages: number }
+}
+
+export async function getLedgerInvoices(filters: LedgerInvoiceFilters) {
+  const params: Record<string, string | number> = { payment: filters.payment, page: filters.page }
+  if (filters.period) params.period = filters.period
+  if (filters.origin) params.origin = filters.origin
+  if (filters.search) params.search = filters.search
+
+  const res = await api.get<LedgerInvoicesResponse>(`${BASE}/invoices`, { params })
+  return res.data
+}
+
+/** Si el comprobante es de un plan, el API escribe el cobro también en el plan. */
+export async function registerInvoicePayment(payload: InvoicePaymentInput) {
+  const res = await api.put<{
+    message: string
+    data: { updated: number; skipped: { id: number; reason: string }[] }
+  }>(`${BASE}/invoices/payment`, payload)
+  return res.data
+}
+
 export function ledgerErrorMessage(e: any): string {
   return e?.response?.data?.messages?.error || e?.response?.data?.message || e?.message || 'Error inesperado'
 }
