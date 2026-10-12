@@ -90,7 +90,7 @@
         />
         <InputText v-model="monthFilter" type="month" class="w-44" v-tooltip.top="'Un mes en particular'" @change="reload" />
         <Dropdown
-          v-model="filters.origin"
+          v-model="originFilter"
           :options="originOptions"
           optionLabel="label"
           optionValue="value"
@@ -417,10 +417,13 @@ const currentYear = String(new Date().getFullYear())
 const searchQuery = ref('')
 const yearFilter = ref(currentYear)
 const monthFilter = ref('')
+// El desplegable no pinta una opción de valor vacío: "todos" lleva su propio valor.
+const ALL = 'all'
+const originFilter = ref(ALL)
 const filters = reactive<LedgerInvoiceFilters>({ payment: 'all', period: currentYear, origin: '', search: '', page: 1 })
 
 const yearOptions = [
-  { label: 'Todos los años', value: '' },
+  { label: 'Todos los años', value: ALL },
   ...Array.from({ length: 6 }, (_, i) => {
     const year = String(Number(currentYear) - i)
     return { label: year, value: year }
@@ -445,7 +448,7 @@ const ORIGIN_LABELS: Record<string, string> = {
   otros: 'Otros'
 }
 const originOptions = [
-  { label: 'Todos los orígenes', value: '' },
+  { label: 'Todos los orígenes', value: ALL },
   ...Object.entries(ORIGIN_LABELS).map(([value, label]) => ({ label, value }))
 ]
 
@@ -454,7 +457,7 @@ function originLabel(origin: string): string {
 }
 
 const hasActiveFilters = computed(() =>
-  !!searchQuery.value || filters.payment !== 'all' || !!filters.origin || !!monthFilter.value || yearFilter.value !== currentYear
+  !!searchQuery.value || filters.payment !== 'all' || originFilter.value !== ALL || !!monthFilter.value || yearFilter.value !== currentYear
 )
 
 function money(amount: number, currency: string): string {
@@ -552,7 +555,8 @@ async function load() {
   const seq = ++loadSeq
   loading.value = true
   error.value = null
-  filters.period = monthFilter.value || yearFilter.value
+  filters.period = monthFilter.value || (yearFilter.value === ALL ? '' : yearFilter.value)
+  filters.origin = originFilter.value === ALL ? '' : originFilter.value
   try {
     const res = await getLedgerInvoices(filters)
     if (seq !== loadSeq) return
@@ -604,7 +608,7 @@ function clearFilters() {
   monthFilter.value = ''
   yearFilter.value = currentYear
   filters.search = ''
-  filters.origin = ''
+  originFilter.value = ALL
   filters.payment = 'all'
   reload()
 }
