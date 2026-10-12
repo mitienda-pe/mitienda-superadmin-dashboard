@@ -136,10 +136,11 @@ export interface LedgerReport {
 
 // --- Cobro de comprobantes ---
 
-export type InvoicePaymentStatus = 'pendiente' | 'cobrado' | 'incobrable' | 'sin_cargo' | 'por_confirmar'
+export type InvoicePaymentStatus = 'pendiente' | 'parcial' | 'cobrado' | 'incobrable' | 'sin_cargo' | 'por_confirmar'
 
 /** Filtro de cobro de la lista: los estados, más "open" (sin cobrar) y "vencido". */
-export type InvoicePaymentFilter = 'all' | 'open' | 'pendiente' | 'por_confirmar' | 'vencido' | 'cobrado' | 'incobrable'
+export type InvoicePaymentFilter =
+  | 'all' | 'open' | 'pendiente' | 'parcial' | 'por_confirmar' | 'vencido' | 'cobrado' | 'incobrable'
 
 export interface LedgerInvoice {
   id: number
@@ -171,6 +172,7 @@ export interface LedgerInvoice {
   payment_date: string | null
   payment_method: string | null
   payment_reference: string | null
+  /** Suma de los abonos detallados; null si no tiene ninguno. */
   paid_amount: number | null
   payment_note: string | null
   is_overdue: boolean
@@ -181,8 +183,10 @@ export interface LedgerInvoice {
 export interface ReceivablesByCurrency {
   invoices: number
   invoiced: number
+  /** Pendientes y con cobro parcial; el importe es el saldo. */
   pending_count: number
   pending: number
+  partial_count: number
   unconfirmed_count: number
   unconfirmed: number
   overdue_count: number
@@ -210,7 +214,42 @@ export interface InvoicePaymentInput {
   date?: string
   method?: string
   reference?: string
-  paid_amount?: number
   due_date?: string
+  note?: string
+}
+
+/** Un abono de un comprobante. */
+export interface InvoiceInstallment {
+  id: number
+  paid_at: string
+  amount: number
+  method: string
+  reference: string | null
+  note: string | null
+}
+
+export interface InvoiceInstallments {
+  invoice: {
+    id: number
+    number: string
+    currency: 'PEN' | 'USD'
+    total: number
+    credited: number
+    paid: number
+    balance: number
+    /** Lo que todavía admite abonos, aunque figure cobrado sin detalle. */
+    remaining: number
+    payment_status: InvoicePaymentStatus | null
+    payment_source: string | null
+    plan_backed: boolean
+  }
+  payments: InvoiceInstallment[]
+}
+
+export interface InvoiceInstallmentInput {
+  date: string
+  method: string
+  amount: number
+  reference?: string
   note?: string
 }

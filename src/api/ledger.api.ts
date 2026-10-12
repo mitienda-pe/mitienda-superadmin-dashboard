@@ -1,7 +1,8 @@
 import api from './axios'
 import type {
   LedgerTagDimension, LedgerTagValue, LedgerItemFilters, LedgerItemsResponse, LedgerConcept, LedgerReport,
-  LedgerInvoice, LedgerInvoiceFilters, ReceivablesSummary, InvoicePaymentInput
+  LedgerInvoice, LedgerInvoiceFilters, ReceivablesSummary, InvoicePaymentInput,
+  InvoiceInstallments, InvoiceInstallmentInput
 } from '@/types/ledger.types'
 
 const BASE = '/superadmin/platform-ledger'
@@ -163,6 +164,26 @@ export async function registerInvoicePayment(payload: InvoicePaymentInput) {
     message: string
     data: { updated: number; skipped: { id: number; reason: string }[] }
   }>(`${BASE}/invoices/payment`, payload)
+  return res.data
+}
+
+// --- Abonos: cobro por partes ---
+
+export async function getInvoiceInstallments(invoiceId: number) {
+  const res = await api.get<{ data: InvoiceInstallments }>(`${BASE}/invoices/${invoiceId}/payments`)
+  return res.data.data
+}
+
+export async function addInvoiceInstallment(invoiceId: number, payload: InvoiceInstallmentInput) {
+  const res = await api.post<{ message: string; data: InvoiceInstallments }>(
+    `${BASE}/invoices/${invoiceId}/payments`,
+    payload
+  )
+  return res.data
+}
+
+export async function deleteInvoiceInstallment(paymentId: number) {
+  const res = await api.delete<{ message: string; data: InvoiceInstallments }>(`${BASE}/invoice-payments/${paymentId}`)
   return res.data
 }
 

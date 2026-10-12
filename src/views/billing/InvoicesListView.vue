@@ -278,101 +278,188 @@
     <Dialog
       v-model:visible="paymentVisible"
       modal
-      :header="paymentTargets.length === 1 ? `Cobro de ${paymentTargets[0].number}` : `Cobro de ${paymentTargets.length} comprobantes`"
-      :style="{ width: '32rem' }"
+      :header="single ? `Cobro de ${single.number}` : `Cobro de ${paymentTargets.length} comprobantes`"
+      :style="{ width: '36rem' }"
     >
       <div class="space-y-4">
-        <div class="bg-gray-50 rounded-lg p-3 text-sm">
-          <template v-if="paymentTargets.length === 1">
-            <div class="text-gray-700">{{ paymentTargets[0].customer_name }}</div>
-            <div class="flex justify-between text-gray-500 mt-1">
+        <!-- Un comprobante: saldo y abonos -->
+        <template v-if="single">
+          <div class="bg-gray-50 rounded-lg p-3 text-sm">
+            <div class="text-gray-700">{{ single.customer_name }}</div>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-1 mt-2 text-gray-500">
               <span>Total del comprobante</span>
-              <span class="font-semibold text-gray-800">{{ money(paymentTargets[0].total, paymentTargets[0].currency) }}</span>
+              <span class="text-right tabular-nums text-gray-800">{{ money(single.total, single.currency) }}</span>
+              <template v-if="single.credited > 0">
+                <span>Notas de crédito</span>
+                <span class="text-right tabular-nums text-gray-800">− {{ money(single.credited, single.currency) }}</span>
+              </template>
+              <span>Abonado</span>
+              <span class="text-right tabular-nums text-gray-800">{{ money(installments?.invoice.paid ?? 0, single.currency) }}</span>
+              <span class="font-semibold text-gray-700">Saldo</span>
+              <span class="text-right tabular-nums font-semibold" :class="remaining > 0 ? 'text-orange-600' : 'text-green-600'">
+                {{ money(remaining, single.currency) }}
+              </span>
             </div>
-          </template>
-          <div v-else class="flex justify-between text-gray-500">
+            <p v-if="single.plan_backed" class="text-xs text-gray-500 mt-2">
+              Es de un plan: la suscripción de la tienda sigue pendiente hasta que el saldo llegue a cero.
+            </p>
+          </div>
+
+          <p v-if="loadingInstallments" class="text-sm text-gray-400">
+            <i class="pi pi-spin pi-spinner mr-2"></i>Cargando abonos…
+          </p>
+
+          <table v-else-if="installments && installments.payments.length > 0" class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                <th class="pb-1">Abonos</th>
+                <th class="pb-1">Medio</th>
+                <th class="pb-1 text-right">Monto</th>
+                <th class="pb-1 w-8"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="payment in installments.payments" :key="payment.id" class="border-t border-gray-100">
+                <td class="py-1.5 text-gray-600 whitespace-nowrap">{{ formatDate(payment.paid_at) }}</td>
+                <td class="py-1.5 text-gray-600">
+                  {{ payment.method }}
+                  <span v-if="payment.reference" class="text-xs text-gray-400">· op. {{ payment.reference }}</span>
+                  <div v-if="payment.note" class="text-xs text-gray-400">{{ payment.note }}</div>
+                </td>
+                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ money(payment.amount, single.currency) }}</td>
+                <td class="py-1.5 text-right">
+                  <Button
+                    icon="pi pi-trash"
+                    text
+                    rounded
+                    size="small"
+                    severity="danger"
+                    :loading="deletingId === payment.id"
+                    v-tooltip.top="'Quitar este abono'"
+                    @click="removeInstallment(payment.id)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p
+            v-else-if="installments && single.payment_status === 'cobrado'"
+            class="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"
+          >
+            Figura cobrado, pero sin abonos detallados
+            ({{ single.payment_source === 'supuesto' ? 'se dio por cobrado' : 'lo indica la venta del plan' }}). Si
+            agregas un abono menor al total, el comprobante se reabre y queda con saldo.
+          </p>
+        </template>
+
+        <!-- Varios: solo cambio de estado -->
+        <div v-else class="bg-gray-50 rounded-lg p-3 text-sm">
+          <div class="flex justify-between text-gray-500">
             <span>{{ paymentTargets.length }} comprobantes</span>
             <span class="font-semibold text-gray-800">{{ money(targetsTotal, 'PEN') }}</span>
           </div>
-          <p v-if="targetsFromPlans > 0" class="text-xs text-gray-500 mt-2">
-            {{ targetsFromPlans === paymentTargets.length ? 'Es' : `${targetsFromPlans} son` }} de un plan: el cobro
-            queda registrado también en la suscripción de la tienda.
+          <p class="text-xs text-gray-500 mt-2">
+            "Cobrado" salda el saldo completo de cada uno. Para un pago por partes, abre el comprobante solo.
+            <template v-if="targetsFromPlans > 0">
+              {{ targetsFromPlans }} son de un plan: el cobro queda también en la suscripción.
+            </template>
           </p>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Estado *</label>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Qué registrar</label>
           <SelectButton
-            v-model="paymentForm.status"
-            :options="statusOptions"
+            v-model="paymentForm.action"
+            :options="actionOptions"
             optionLabel="label"
             optionValue="value"
             :allowEmpty="false"
           />
         </div>
 
-        <template v-if="paymentForm.status === 'cobrado'">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">Fecha del abono *</label>
-              <Calendar v-model="paymentForm.date" dateFormat="yy-mm-dd" :maxDate="new Date()" showIcon class="w-full" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">Medio *</label>
-              <Dropdown
-                v-model="paymentForm.method"
-                :options="PLAN_PAYMENT_METHODS"
-                editable
-                placeholder="BCP, Yape…"
-                class="w-full"
-              />
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">N.º de operación</label>
-              <InputText v-model="paymentForm.reference" maxlength="100" class="w-full" />
-            </div>
-            <div v-if="paymentTargets.length === 1">
-              <label class="block text-sm font-medium text-gray-600 mb-1">Monto recibido</label>
-              <InputNumber
-                v-model="paymentForm.paid_amount"
-                :minFractionDigits="2"
-                :maxFractionDigits="2"
-                :max="paymentTargets[0].total"
-                :placeholder="paymentTargets[0].total.toFixed(2)"
-                class="w-full"
-              />
-            </div>
-          </div>
-          <p v-if="paymentTargets.length === 1" class="text-xs text-gray-500">
-            Deja el monto vacío si se recibió el total. Con detracción, anota lo que entró a la cuenta (el resto va al
-            Banco de la Nación).
+        <template v-if="paymentForm.action === 'abono' || paymentForm.action === 'cobrado'">
+          <p v-if="single && remaining <= 0" class="text-sm text-gray-500">
+            El comprobante no tiene saldo: no admite más abonos.
           </p>
+          <template v-else>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Fecha del abono *</label>
+                <Calendar v-model="paymentForm.date" dateFormat="yy-mm-dd" :maxDate="new Date()" showIcon class="w-full" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Medio *</label>
+                <Dropdown
+                  v-model="paymentForm.method"
+                  :options="INSTALLMENT_METHODS"
+                  editable
+                  placeholder="BCP, Yape…"
+                  class="w-full"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div v-if="single">
+                <label class="block text-sm font-medium text-gray-600 mb-1">Monto *</label>
+                <InputNumber
+                  v-model="paymentForm.amount"
+                  :minFractionDigits="2"
+                  :maxFractionDigits="2"
+                  :min="0"
+                  class="w-full"
+                />
+                <button
+                  v-if="paymentForm.amount !== remaining"
+                  type="button"
+                  class="text-xs text-primary-600 hover:underline mt-1"
+                  @click="paymentForm.amount = remaining"
+                >
+                  Poner todo el saldo ({{ money(remaining, single.currency) }})
+                </button>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">N.º de operación</label>
+                <InputText v-model="paymentForm.reference" maxlength="100" class="w-full" />
+              </div>
+            </div>
+            <p v-if="single" class="text-xs text-gray-500">
+              Un pago en partes es un abono por cada parte. Con detracción: un abono por lo que entró a la cuenta y otro,
+              con medio "Detracción (Banco de la Nación)", por el resto.
+            </p>
+          </template>
         </template>
 
-        <div v-else-if="paymentForm.status === 'pendiente'">
+        <div v-else-if="paymentForm.action === 'pendiente'">
           <label class="block text-sm font-medium text-gray-600 mb-1">Vence el</label>
           <Calendar v-model="paymentForm.due_date" dateFormat="yy-mm-dd" showIcon class="w-full" />
-          <p class="text-xs text-gray-500 mt-1">Vacío conserva el vencimiento que ya tenía.</p>
+          <p class="text-xs text-gray-500 mt-1">
+            Se sabe que no se ha cobrado. Vacío conserva el vencimiento que ya tenía.
+          </p>
         </div>
 
-        <div>
+        <div v-if="!(single && remaining <= 0 && paymentForm.action === 'abono')">
           <label class="block text-sm font-medium text-gray-600 mb-1">
-            Nota{{ paymentForm.status === 'incobrable' ? ' *' : '' }}
+            Nota{{ paymentForm.action === 'incobrable' ? ' *' : '' }}
           </label>
           <Textarea
             v-model="paymentForm.note"
             rows="2"
             maxlength="255"
             class="w-full"
-            :placeholder="paymentForm.status === 'incobrable' ? 'Por qué se da por incobrable' : 'Opcional'"
+            :placeholder="paymentForm.action === 'incobrable' ? 'Por qué se da por incobrable' : 'Opcional'"
           />
         </div>
       </div>
       <template #footer>
-        <Button label="Cancelar" text severity="secondary" @click="paymentVisible = false" />
-        <Button label="Guardar" icon="pi pi-check" :loading="saving" @click="savePayment" />
+        <Button label="Cerrar" text severity="secondary" @click="closePayment" />
+        <Button
+          :label="paymentForm.action === 'abono' ? 'Agregar abono' : 'Guardar'"
+          icon="pi pi-check"
+          :loading="saving"
+          :disabled="!!single && paymentForm.action === 'abono' && remaining <= 0"
+          @click="savePayment"
+        />
       </template>
     </Dialog>
   </div>
@@ -381,7 +468,7 @@
 <script setup lang="ts">
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { INVOICES_TABS } from '@/config/sections.config'
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
@@ -394,11 +481,15 @@ import Textarea from 'primevue/textarea'
 import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
 import { useFormatters } from '@/composables/useFormatters'
-import { getLedgerInvoices, registerInvoicePayment, ledgerErrorMessage } from '@/api/ledger.api'
+import {
+  getLedgerInvoices, registerInvoicePayment, getInvoiceInstallments, addInvoiceInstallment, deleteInvoiceInstallment,
+  ledgerErrorMessage
+} from '@/api/ledger.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
 import type {
-  InvoicePaymentFilter, InvoicePaymentInput, LedgerInvoice, LedgerInvoiceFilters, ReceivablesByCurrency, ReceivablesSummary
+  InvoiceInstallments, InvoicePaymentFilter, InvoicePaymentInput, LedgerInvoice, LedgerInvoiceFilters,
+  ReceivablesByCurrency, ReceivablesSummary
 } from '@/types/ledger.types'
 
 const toast = useToast()
@@ -434,6 +525,7 @@ const paymentOptions: { label: string; value: InvoicePaymentFilter }[] = [
   { label: 'Todos', value: 'all' },
   { label: 'Sin cobrar', value: 'open' },
   { label: 'Pendientes', value: 'pendiente' },
+  { label: 'Cobro parcial', value: 'parcial' },
   { label: 'Por confirmar', value: 'por_confirmar' },
   { label: 'Vencidos', value: 'vencido' },
   { label: 'Cobrados', value: 'cobrado' },
@@ -471,7 +563,7 @@ function documentLabel(row: LedgerInvoice): string {
 
 // --- Tarjetas ---
 const EMPTY: ReceivablesByCurrency = {
-  invoices: 0, invoiced: 0, pending_count: 0, pending: 0, unconfirmed_count: 0, unconfirmed: 0,
+  invoices: 0, invoiced: 0, pending_count: 0, pending: 0, partial_count: 0, unconfirmed_count: 0, unconfirmed: 0,
   overdue_count: 0, overdue: 0, paid_count: 0, paid: 0
 }
 
@@ -482,7 +574,9 @@ const cards = computed(() => {
     {
       filter: 'pendiente' as const, label: 'Por cobrar', color: 'text-orange-600',
       amount: pen.pending, usd: usd.pending, count: pen.pending_count + usd.pending_count,
-      hint: 'Se sabe que no se han cobrado'
+      hint: pen.partial_count + usd.partial_count > 0
+        ? `Saldos sin cobrar · ${pen.partial_count + usd.partial_count} con cobro parcial`
+        : 'Se sabe que no se han cobrado'
     },
     {
       filter: 'por_confirmar' as const, label: 'Por confirmar', color: 'text-gray-900',
@@ -497,7 +591,7 @@ const cards = computed(() => {
     {
       filter: 'cobrado' as const, label: 'Cobrado', color: 'text-green-600',
       amount: pen.paid, usd: usd.paid, count: pen.paid_count + usd.paid_count,
-      hint: 'Importe facturado de lo ya cobrado'
+      hint: 'Comprobantes saldados más lo abonado de los parciales'
     }
   ]
 })
@@ -518,6 +612,10 @@ function paymentBadge(row: LedgerInvoice): { label: string; class: string } {
       return row.is_overdue
         ? { label: 'Vencido', class: 'bg-red-100 text-red-700' }
         : { label: 'Pendiente', class: 'bg-orange-100 text-orange-700' }
+    case 'parcial':
+      return row.is_overdue
+        ? { label: 'Cobro parcial · vencido', class: 'bg-red-100 text-red-700' }
+        : { label: 'Cobro parcial', class: 'bg-orange-100 text-orange-700' }
     case 'por_confirmar':
       return row.is_overdue
         ? { label: 'Por confirmar · vencido', class: 'bg-red-50 text-red-700' }
@@ -536,10 +634,12 @@ function paymentDetail(row: LedgerInvoice): string {
     const parts = [
       row.payment_date ? formatDate(row.payment_date) : '',
       row.payment_method ?? '',
-      row.payment_reference ? `op. ${row.payment_reference}` : '',
-      row.paid_amount !== null && row.paid_amount !== row.total ? `recibido ${money(row.paid_amount, row.currency)}` : ''
+      row.payment_reference ? `op. ${row.payment_reference}` : ''
     ].filter(Boolean)
     return parts.join(' · ')
+  }
+  if (row.payment_status === 'parcial') {
+    return `abonado ${money(row.paid_amount ?? 0, row.currency)} · saldo ${money(row.balance, row.currency)}`
   }
   if (row.balance > 0 && row.days_since_issue !== null) {
     return `hace ${row.days_since_issue} ${row.days_since_issue === 1 ? 'día' : 'días'}`
@@ -624,30 +724,54 @@ const visiblePages = computed(() => {
 const selectedTotal = computed(() => selected.value.reduce((sum, row) => sum + (row.currency === 'PEN' ? row.total : 0), 0))
 
 // --- Registrar cobro ---
+// Un comprobante: se cobra con abonos (uno o varios). Varios a la vez: solo
+// cambio de estado, y "cobrado" salda el saldo de cada uno.
+type PaymentAction = 'abono' | 'cobrado' | 'pendiente' | 'incobrable' | 'por_confirmar'
+
+/** El BN no es un medio de pago del cliente, pero es adonde va la detracción. */
+const INSTALLMENT_METHODS = [...PLAN_PAYMENT_METHODS, 'Detracción (Banco de la Nación)']
+
 const paymentVisible = ref(false)
 const saving = ref(false)
 const paymentTargets = ref<LedgerInvoice[]>([])
+const installments = ref<InvoiceInstallments | null>(null)
+const loadingInstallments = ref(false)
+const deletingId = ref<number | null>(null)
+// Si algo cambió dentro del diálogo, la lista se recarga al cerrarlo.
+let paymentsChanged = false
+
 const paymentForm = reactive({
-  status: 'cobrado' as InvoicePaymentInput['status'],
+  action: 'abono' as PaymentAction,
   date: new Date() as Date | null,
   method: '',
   reference: '',
-  paid_amount: null as number | null,
+  amount: null as number | null,
   due_date: null as Date | null,
   note: ''
 })
 
-const statusOptions = [
-  { label: 'Cobrado', value: 'cobrado' },
+const single = computed(() => (paymentTargets.value.length === 1 ? paymentTargets.value[0] : null))
+const remaining = computed(() => installments.value?.invoice.remaining ?? 0)
+
+const actionOptions = computed(() => [
+  single.value ? { label: 'Abono', value: 'abono' } : { label: 'Cobrado', value: 'cobrado' },
   { label: 'Pendiente', value: 'pendiente' },
   { label: 'Incobrable', value: 'incobrable' },
   { label: 'Por confirmar', value: 'por_confirmar' }
-]
+])
 
 const targetsTotal = computed(() => paymentTargets.value.reduce((sum, row) => sum + (row.currency === 'PEN' ? row.total : 0), 0))
 const targetsFromPlans = computed(() => paymentTargets.value.filter(row => row.plan_backed).length)
 
-function openPayment(rows: LedgerInvoice[]) {
+function resetPaymentForm() {
+  paymentForm.date = new Date()
+  paymentForm.reference = ''
+  paymentForm.amount = remaining.value > 0 ? remaining.value : null
+  paymentForm.due_date = null
+  paymentForm.note = ''
+}
+
+async function openPayment(rows: LedgerInvoice[]) {
   // Anulados y notas de crédito no se cobran: se quedan fuera del lote.
   const targets = rows.filter(row => row.payment_status !== null)
   if (targets.length === 0) {
@@ -655,43 +779,105 @@ function openPayment(rows: LedgerInvoice[]) {
     return
   }
 
-  const single = targets.length === 1 ? targets[0] : null
   paymentTargets.value = targets
-  paymentForm.status = 'cobrado'
-  paymentForm.date = single?.payment_date ? new Date(`${single.payment_date}T00:00:00`) : new Date()
-  paymentForm.method = single?.payment_method ?? ''
-  paymentForm.reference = single?.payment_reference ?? ''
-  paymentForm.paid_amount = single?.paid_amount ?? null
-  paymentForm.due_date = null
-  paymentForm.note = single?.payment_note ?? ''
+  installments.value = null
+  paymentsChanged = false
+  paymentForm.action = targets.length === 1 ? 'abono' : 'cobrado'
+  paymentForm.method = ''
+  resetPaymentForm()
   paymentVisible.value = true
+
+  if (targets.length === 1) {
+    loadingInstallments.value = true
+    try {
+      installments.value = await getInvoiceInstallments(targets[0].id)
+      paymentForm.amount = remaining.value > 0 ? remaining.value : null
+    } catch (e) {
+      toast.add({ severity: 'error', summary: 'No se pudieron cargar los abonos', detail: ledgerErrorMessage(e), life: 6000 })
+    } finally {
+      loadingInstallments.value = false
+    }
+  }
+}
+
+function closePayment() {
+  paymentVisible.value = false
+}
+
+// También al cerrar con la X o con Escape: si hubo cambios, la lista se recarga.
+watch(paymentVisible, visible => {
+  if (!visible && paymentsChanged) {
+    paymentsChanged = false
+    load()
+  }
+})
+
+async function removeInstallment(paymentId: number) {
+  deletingId.value = paymentId
+  try {
+    const res = await deleteInvoiceInstallment(paymentId)
+    installments.value = res.data
+    paymentsChanged = true
+    resetPaymentForm()
+    toast.add({ severity: 'success', summary: res.message, life: 3000 })
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo quitar', detail: ledgerErrorMessage(e), life: 6000 })
+  } finally {
+    deletingId.value = null
+  }
+}
+
+function warn(summary: string, detail: string) {
+  toast.add({ severity: 'warn', summary, detail, life: 5000 })
 }
 
 async function savePayment() {
-  const payload: InvoicePaymentInput = {
-    invoice_ids: paymentTargets.value.map(row => row.id),
-    status: paymentForm.status,
-    note: paymentForm.note.trim() || undefined
-  }
+  const action = paymentForm.action
+  const note = paymentForm.note.trim() || undefined
 
-  if (paymentForm.status === 'cobrado') {
-    if (!paymentForm.date || !paymentForm.method.trim()) {
-      toast.add({ severity: 'warn', summary: 'Falta el cobro', detail: 'Indica la fecha del abono y el medio de pago', life: 5000 })
-      return
-    }
-    payload.date = toIsoDate(paymentForm.date)
-    payload.method = paymentForm.method.trim()
-    payload.reference = paymentForm.reference.trim() || undefined
-    if (paymentTargets.value.length === 1 && paymentForm.paid_amount) payload.paid_amount = paymentForm.paid_amount
-  } else if (paymentForm.status === 'pendiente' && paymentForm.due_date) {
-    payload.due_date = toIsoDate(paymentForm.due_date)
-  } else if (paymentForm.status === 'incobrable' && !payload.note) {
-    toast.add({ severity: 'warn', summary: 'Falta la nota', detail: 'Indica por qué se da por incobrable', life: 5000 })
-    return
+  if ((action === 'abono' || action === 'cobrado') && (!paymentForm.date || !paymentForm.method.trim())) {
+    return warn('Falta el cobro', 'Indica la fecha del abono y el medio de pago')
+  }
+  if (action === 'incobrable' && !note) {
+    return warn('Falta la nota', 'Indica por qué se da por incobrable')
   }
 
   saving.value = true
   try {
+    if (action === 'abono' && single.value) {
+      if (!paymentForm.amount || paymentForm.amount <= 0) {
+        return warn('Falta el monto', 'Indica cuánto se abonó')
+      }
+      const res = await addInvoiceInstallment(single.value.id, {
+        date: toIsoDate(paymentForm.date!),
+        method: paymentForm.method.trim(),
+        amount: paymentForm.amount,
+        reference: paymentForm.reference.trim() || undefined,
+        note
+      })
+      installments.value = res.data
+      paymentsChanged = true
+      toast.add({ severity: 'success', summary: res.message, life: 4000 })
+
+      // Con saldo, el diálogo queda abierto para el siguiente abono.
+      if (res.data.invoice.remaining <= 0) closePayment()
+      else resetPaymentForm()
+      return
+    }
+
+    const payload: InvoicePaymentInput = {
+      invoice_ids: paymentTargets.value.map(row => row.id),
+      status: action === 'abono' ? 'cobrado' : action,
+      note
+    }
+    if (action === 'cobrado') {
+      payload.date = toIsoDate(paymentForm.date!)
+      payload.method = paymentForm.method.trim()
+      payload.reference = paymentForm.reference.trim() || undefined
+    } else if (action === 'pendiente' && paymentForm.due_date) {
+      payload.due_date = toIsoDate(paymentForm.due_date)
+    }
+
     const res = await registerInvoicePayment(payload)
     const skipped = res.data.skipped.length
     toast.add({
@@ -700,8 +886,8 @@ async function savePayment() {
       detail: skipped > 0 ? `No se tocaron ${skipped}: ${res.data.skipped[0].reason}` : undefined,
       life: skipped > 0 ? 8000 : 4000
     })
-    paymentVisible.value = false
-    load()
+    paymentsChanged = true
+    closePayment()
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo registrar', detail: ledgerErrorMessage(e), life: 6000 })
   } finally {
