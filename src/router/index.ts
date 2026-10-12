@@ -195,6 +195,30 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Contabilidad de gestión: gastos de la empresa. Área de finanzas.
+    path: '/accounting',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      { path: '', redirect: '/accounting/expenses' },
+      {
+        path: 'expenses',
+        name: 'AccountingExpenses',
+        component: () => import('@/views/accounting/ExpensesView.vue')
+      },
+      {
+        path: 'payees',
+        name: 'AccountingPayees',
+        component: () => import('@/views/accounting/PayeesView.vue')
+      },
+      {
+        path: 'categories',
+        name: 'AccountingCategories',
+        component: () => import('@/views/accounting/ExpenseCategoriesView.vue')
+      }
+    ]
+  },
+  {
     path: '/subscriptions',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

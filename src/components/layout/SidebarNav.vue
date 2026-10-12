@@ -34,7 +34,9 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth.store'
 import { useRoute } from 'vue-router'
-import { HOME_TABS, STORES_TABS, INVOICES_TABS, MRR_TABS, type SectionTab } from '@/config/sections.config'
+import {
+  HOME_TABS, STORES_TABS, INVOICES_TABS, MRR_TABS, ACCOUNTING_TABS, type SectionTab
+} from '@/config/sections.config'
 
 interface NavItem {
   path: string
@@ -88,6 +90,13 @@ const navGroups: NavGroup[] = [
       { path: '/billing/ledger', label: 'Líneas facturadas', icon: 'pi pi-list' },
       { path: '/billing/concepts', label: 'Conceptos facturados', icon: 'pi pi-th-large' },
       { path: '/billing/tags', label: 'Etiquetas', icon: 'pi pi-tags' }
+    ]
+  },
+  {
+    id: 'accounting',
+    label: 'Contabilidad',
+    items: [
+      { path: '/accounting/expenses', label: 'Gastos', icon: 'pi pi-wallet', also: siblings(ACCOUNTING_TABS) }
     ]
   },
   {

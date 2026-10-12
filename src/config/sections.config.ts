@@ -23,6 +23,12 @@ export const INVOICES_TABS: SectionTab[] = [
   { to: '/billing/commissions', label: 'Comisiones emitidas', icon: 'pi pi-percentage' }
 ]
 
+export const ACCOUNTING_TABS: SectionTab[] = [
+  { to: '/accounting/expenses', label: 'Gastos', icon: 'pi pi-wallet' },
+  { to: '/accounting/payees', label: 'Proveedores y personal', icon: 'pi pi-users' },
+  { to: '/accounting/categories', label: 'Categorías', icon: 'pi pi-tags' }
+]
+
 export const MRR_TABS: SectionTab[] = [
   { to: '/revenue', label: 'MRR y retención', icon: 'pi pi-dollar' },
   { to: '/subscriptions/movement', label: 'Movimiento de suscripciones', icon: 'pi pi-chart-line' }

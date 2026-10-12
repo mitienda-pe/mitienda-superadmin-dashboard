@@ -5,10 +5,14 @@
 export type PanelArea = 'platform' | 'finance'
 
 /**
- * Rutas del área de finanzas: comprobantes, cobros, etiquetado e ingresos.
+ * Rutas del área de finanzas: comprobantes, cobros, etiquetado, ingresos y
+ * la contabilidad de gestión (gastos).
  * Todo lo demás es `platform`, que solo ve el equipo (Master).
  */
-const FINANCE_PATHS = ['/billing/invoices', '/billing/ledger', '/billing/concepts', '/billing/tags', '/billing/income']
+const FINANCE_PATHS = [
+  '/billing/invoices', '/billing/ledger', '/billing/concepts', '/billing/tags', '/billing/income',
+  '/accounting'
+]
 
 export function areaOfPath(path: string): PanelArea {
   return FINANCE_PATHS.some(base => path === base || path.startsWith(`${base}/`)) ? 'finance' : 'platform'
