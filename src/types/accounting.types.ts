@@ -149,6 +149,7 @@ export interface BankAccount {
   bank: string
   name: string
   number: string
+  cci: string
   currency: 'PEN' | 'USD'
   /** Último saldo que informó el banco en un archivo importado. */
   balance: number | null

@@ -36,6 +36,7 @@
           ></i>
         </div>
         <div class="text-xs text-gray-400 font-mono">{{ account.number || 'sin número' }}</div>
+        <div v-if="account.cci" class="text-xs text-gray-400 font-mono">CCI {{ account.cci }}</div>
         <div class="text-2xl font-bold text-gray-900 mt-2">
           {{ account.balance !== null ? money(account.balance, account.currency) : '—' }}
         </div>
@@ -444,6 +445,10 @@
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Número de cuenta</label>
           <InputText v-model="accountForm.number" maxlength="40" class="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">CCI</label>
+          <InputText v-model="accountForm.cci" maxlength="40" class="w-full" />
         </div>
       </div>
       <template #footer>
@@ -886,13 +891,14 @@ async function submitImport() {
 // --- Cuenta ---
 const accountVisible = ref(false)
 const editingAccount = ref<BankAccount | null>(null)
-const accountForm = reactive({ bank: '', name: '', number: '', currency: 'PEN' as 'PEN' | 'USD' })
+const accountForm = reactive({ bank: '', name: '', number: '', cci: '', currency: 'PEN' as 'PEN' | 'USD' })
 
 function openAccount(account: BankAccount | null) {
   editingAccount.value = account
   accountForm.bank = account?.bank ?? ''
   accountForm.name = account?.name ?? ''
   accountForm.number = account?.number ?? ''
+  accountForm.cci = account?.cci ?? ''
   accountForm.currency = account?.currency ?? 'PEN'
   accountVisible.value = true
 }
@@ -905,6 +911,7 @@ async function submitAccount() {
       bank: accountForm.bank.trim(),
       name: accountForm.name.trim(),
       number: accountForm.number.trim() || undefined,
+      cci: accountForm.cci.trim() || undefined,
       currency: accountForm.currency
     })
     accountVisible.value = false

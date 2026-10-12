@@ -129,7 +129,7 @@ export async function getBankAccounts() {
 
 export async function saveBankAccount(
   id: number | null,
-  payload: { bank: string; name: string; number?: string; currency: 'PEN' | 'USD'; is_active?: boolean }
+  payload: { bank: string; name: string; number?: string; cci?: string; currency: 'PEN' | 'USD'; is_active?: boolean }
 ) {
   const res = id === null
     ? await api.post<{ data: BankAccount[] }>(`${BASE}/bank-accounts`, payload)
