@@ -1,6 +1,7 @@
 import api from './axios'
 import type {
-  Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput
+  Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
+  SireImportResult
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
 
@@ -77,6 +78,27 @@ export async function generatePayroll(period: string) {
     `${BASE}/payroll`,
     { period }
   )
+  return res.data
+}
+
+/** Cambia la categoría de varios gastos; `businessLine` undefined no toca la línea. */
+export async function classifyExpenses(expenseIds: number[], categoryId: number, businessLine?: string) {
+  const payload: Record<string, unknown> = { expense_ids: expenseIds, category_id: categoryId }
+  if (businessLine !== undefined) payload.business_line = businessLine
+
+  const res = await api.put<{ message: string; data: { affected: number } }>(`${BASE}/expenses/classify`, payload)
+  return res.data
+}
+
+/** Registro de compras del SIRE (CSV). Sin `execute` solo devuelve qué entraría. */
+export async function importSire(file: File, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  if (execute) form.append('execute', '1')
+
+  const res = await api.post<{ message: string; data: SireImportResult }>(`${BASE}/import-sire`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
   return res.data
 }
 

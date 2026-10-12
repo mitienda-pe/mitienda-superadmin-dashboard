@@ -14,6 +14,14 @@
       <div class="flex gap-2">
         <Button
           v-if="authStore.canWriteFinance"
+          label="Importar SIRE"
+          icon="pi pi-upload"
+          severity="secondary"
+          outlined
+          @click="openSire"
+        />
+        <Button
+          v-if="authStore.canWriteFinance"
           label="Planilla del mes"
           icon="pi pi-users"
           severity="secondary"
@@ -128,7 +136,29 @@
 
     <!-- Table -->
     <div v-else class="bg-white rounded-xl border border-gray-200">
-      <DataTable :value="expenses" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">
+      <!-- Clasificar varios a la vez: es como se ordena lo importado del SIRE -->
+      <div v-if="selected.length > 0" class="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3">
+        <span class="text-sm font-medium text-gray-700">
+          {{ selected.length }} seleccionado{{ selected.length === 1 ? '' : 's' }}
+        </span>
+        <Dropdown
+          v-model="bulkCategory"
+          :options="activeCategories"
+          optionLabel="name"
+          optionValue="id"
+          optionGroupLabel="label"
+          optionGroupChildren="items"
+          filter
+          placeholder="Categoría"
+          class="w-64"
+        />
+        <Dropdown v-model="bulkLine" :options="bulkLineOptions" optionLabel="label" optionValue="value" class="w-52" />
+        <Button label="Clasificar" icon="pi pi-check" size="small" :loading="saving" :disabled="!bulkCategory" @click="submitClassify" />
+        <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
+      </div>
+
+      <DataTable v-model:selection="selected" :value="expenses" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">
+        <Column v-if="authStore.canWriteFinance" selectionMode="multiple" style="width: 3rem" />
         <Column header="A quién" style="min-width: 220px">
           <template #body="{ data: row }">
             <span class="text-sm text-gray-800 font-medium">{{ row.payee_name }}</span>
@@ -197,6 +227,7 @@
           <template #body="{ data: row }">
             <div v-if="row.status === 1" class="flex items-center justify-end gap-1">
               <Button
+                v-if="row.total > 0"
                 :label="row.balance > 0 ? 'Pagar' : 'Pagos'"
                 icon="pi pi-wallet"
                 size="small"
@@ -205,7 +236,7 @@
                 @click="openPayments(row)"
               />
               <Button
-                v-if="authStore.canWriteFinance"
+                v-if="authStore.canWriteFinance && row.total > 0"
                 icon="pi pi-pencil"
                 text
                 rounded
@@ -430,6 +461,64 @@
       </template>
     </Dialog>
 
+    <!-- Importar el registro de compras de SUNAT -->
+    <Dialog v-model:visible="sireVisible" modal header="Importar registro de compras (SIRE)" :style="{ width: '36rem' }">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500">
+          Sube el CSV del registro de compras que se descarga de SUNAT. Primero ves qué entraría; nada se guarda hasta
+          que confirmes. Lo que ya se importó antes no se repite.
+        </p>
+        <input type="file" accept=".csv,text/csv" class="block w-full text-sm text-gray-600" @change="onSireFile" />
+
+        <p v-if="sireLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
+
+        <div v-if="sirePreview" class="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Comprobantes en el archivo</span>
+            <span class="tabular-nums text-gray-800">{{ sirePreview.read }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Gastos nuevos</span>
+            <span class="tabular-nums font-semibold text-gray-900">
+              {{ sirePreview.created }} · {{ money(sirePreview.total_pen) }}
+            </span>
+          </div>
+          <div v-if="sirePreview.duplicates > 0" class="flex justify-between">
+            <span class="text-gray-500">Ya importados (se saltan)</span>
+            <span class="tabular-nums text-gray-800">{{ sirePreview.duplicates }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Entran como pagados (cargos de banco y notas de crédito)</span>
+            <span class="tabular-nums text-gray-800">{{ sirePreview.settled }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-amber-700">Quedan "Por clasificar"</span>
+            <span class="tabular-nums text-amber-700">{{ sirePreview.unclassified }}</span>
+          </div>
+          <div v-if="sirePreview.new_payees > 0" class="pt-1 text-xs text-gray-500">
+            {{ sirePreview.new_payees }} proveedores nuevos: {{ sirePreview.new_payee_names.slice(0, 8).join(', ') }}<template v-if="sirePreview.new_payees > 8">…</template>
+          </div>
+          <div v-if="sireMonths.length > 1" class="pt-1 text-xs text-gray-500">
+            Cada gasto cuenta en el mes de su fecha, no en el que se declaró: este archivo reparte gastos entre
+            {{ sireMonths[0] }} y {{ sireMonths[sireMonths.length - 1] }}.
+          </div>
+          <div v-if="sirePreview.skipped.length > 0" class="pt-1 text-xs text-amber-700">
+            {{ sirePreview.skipped.length }} no entran: {{ sirePreview.skipped[0].reason }}
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text severity="secondary" @click="sireVisible = false" />
+        <Button
+          label="Importar"
+          icon="pi pi-check"
+          :loading="saving"
+          :disabled="!sirePreview || sirePreview.created === 0"
+          @click="submitSire"
+        />
+      </template>
+    </Dialog>
+
     <!-- Planilla del mes -->
     <Dialog v-model:visible="payrollVisible" modal header="Planilla del mes" :style="{ width: '28rem' }">
       <div class="space-y-4">
@@ -469,13 +558,13 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getExpenses, getExpenseCategories, getPayees, saveExpense, voidExpense, generatePayroll,
-  getExpensePayments, addExpensePayment, deleteExpensePayment, accountingErrorMessage
+  getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage
 } from '@/api/accounting.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { parseLocalDate, toIsoDate } from '@/utils/dates'
 import type {
   Expense, ExpenseCategory, ExpenseDocumentKind, ExpenseFilters, ExpenseInput, ExpensePayment, ExpensePaymentFilter,
-  ExpenseSummary, Payee
+  ExpenseSummary, Payee, SireImportResult
 } from '@/types/accounting.types'
 
 const toast = useToast()
@@ -534,9 +623,13 @@ const KIND_LABELS: Record<ExpenseDocumentKind, string> = {
   recibo_honorarios: 'Recibo por honorarios',
   planilla: 'Planilla',
   sin_comprobante: 'Sin comprobante',
-  otro: 'Otro'
+  otro: 'Otro',
+  nota_credito: 'Nota de crédito'
 }
-const kindSelectOptions = Object.entries(KIND_LABELS).map(([value, label]) => ({ label, value }))
+// La nota de crédito no se carga a mano: solo llega importada.
+const kindSelectOptions = Object.entries(KIND_LABELS)
+  .filter(([value]) => value !== 'nota_credito')
+  .map(([value, label]) => ({ label, value }))
 
 function kindLabel(kind: ExpenseDocumentKind): string {
   return KIND_LABELS[kind] ?? kind
@@ -607,6 +700,7 @@ async function load() {
     const res = await getExpenses(filters)
     if (seq !== loadSeq) return
     expenses.value = res.data ?? []
+    selected.value = []
     summary.value = res.summary
     meta.value = res.meta
   } catch (e) {
@@ -858,6 +952,89 @@ watch(paymentsVisible, visible => {
     load()
   }
 })
+
+// --- Clasificar varios ---
+const selected = ref<Expense[]>([])
+const bulkCategory = ref<number | null>(null)
+const KEEP_LINE = 'keep'
+const bulkLine = ref(KEEP_LINE)
+const bulkLineOptions = [
+  { label: 'No cambiar la línea', value: KEEP_LINE },
+  { label: 'Común a toda la empresa', value: '' },
+  ...Object.entries(LINE_LABELS).map(([value, label]) => ({ label, value }))
+]
+
+async function submitClassify() {
+  if (!bulkCategory.value) return
+  saving.value = true
+  try {
+    const res = await classifyExpenses(
+      selected.value.map(row => row.id),
+      bulkCategory.value,
+      bulkLine.value === KEEP_LINE ? undefined : bulkLine.value
+    )
+    toast.add({ severity: 'success', summary: res.message, life: 3000 })
+    bulkCategory.value = null
+    bulkLine.value = KEEP_LINE
+    // Los proveedores pueden haber ganado categoría habitual.
+    loadCatalogs()
+    load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo clasificar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- Importar SIRE ---
+const sireVisible = ref(false)
+const sireLoading = ref(false)
+const sireFile = ref<File | null>(null)
+const sirePreview = ref<SireImportResult | null>(null)
+const sireMonths = computed(() => Object.keys(sirePreview.value?.by_month ?? {}).map(formatMonthYear))
+
+function openSire() {
+  sireFile.value = null
+  sirePreview.value = null
+  sireVisible.value = true
+}
+
+async function onSireFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0] ?? null
+  sireFile.value = file
+  sirePreview.value = null
+  if (!file) return
+
+  sireLoading.value = true
+  try {
+    sirePreview.value = (await importSire(file, false)).data
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo leer el archivo', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    sireLoading.value = false
+  }
+}
+
+async function submitSire() {
+  if (!sireFile.value) return
+  saving.value = true
+  try {
+    const res = await importSire(sireFile.value, true)
+    toast.add({
+      severity: 'success',
+      summary: res.message,
+      detail: res.data.unclassified > 0 ? `${res.data.unclassified} quedaron "Por clasificar"` : undefined,
+      life: 6000
+    })
+    sireVisible.value = false
+    loadCatalogs()
+    load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo importar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    saving.value = false
+  }
+}
 
 // --- Planilla ---
 const payrollVisible = ref(false)

@@ -35,7 +35,9 @@ export interface PayeeInput {
   is_active?: boolean
 }
 
-export type ExpenseDocumentKind = 'factura' | 'boleta' | 'recibo_honorarios' | 'planilla' | 'sin_comprobante' | 'otro'
+/** `nota_credito` solo llega por importación del SIRE, con importes negativos. */
+export type ExpenseDocumentKind =
+  | 'factura' | 'boleta' | 'recibo_honorarios' | 'planilla' | 'sin_comprobante' | 'otro' | 'nota_credito'
 export type ExpensePaymentStatus = 'pendiente' | 'parcial' | 'pagado'
 export type ExpensePaymentFilter = 'all' | 'open' | 'vencido' | 'pagado'
 
@@ -107,6 +109,23 @@ export interface ExpenseFilters {
   payment: ExpensePaymentFilter
   search: string
   page: number
+}
+
+/** Resultado de importar (o previsualizar) el registro de compras del SIRE. */
+export interface SireImportResult {
+  executed: boolean
+  read: number
+  created: number
+  duplicates: number
+  new_payees: number
+  new_payee_names: string[]
+  /** Entran en "Por clasificar": el SIRE no dice para qué fue la compra. */
+  unclassified: number
+  /** Cargos de banco y notas de crédito: entran como ya pagados. */
+  settled: number
+  total_pen: number
+  by_month: Record<string, number>
+  skipped: { id: string; reason: string }[]
 }
 
 export interface ExpensePayment {
