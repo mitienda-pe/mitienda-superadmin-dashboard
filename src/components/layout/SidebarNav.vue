@@ -1,6 +1,6 @@
 <template>
   <nav class="space-y-4">
-    <div v-for="group in navGroups" :key="group.id">
+    <div v-for="group in visibleGroups" :key="group.id">
       <button
         v-if="group.label"
         type="button"
@@ -31,7 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth.store'
 import { useRoute } from 'vue-router'
 import { HOME_TABS, STORES_TABS, INVOICES_TABS, MRR_TABS, type SectionTab } from '@/config/sections.config'
 
@@ -51,6 +52,7 @@ interface NavGroup {
 }
 
 const route = useRoute()
+const authStore = useAuthStore()
 
 /** Las pestañas de una seccion menos la primera, que es la ruta de la entrada. */
 function siblings(tabs: SectionTab[]): string[] {
@@ -117,6 +119,13 @@ const navGroups: NavGroup[] = [
 ]
 
 const navItems = navGroups.flatMap(group => group.items)
+
+// Solo las entradas que el rol puede abrir; un grupo que queda vacío no se muestra.
+const visibleGroups = computed(() =>
+  navGroups
+    .map(group => ({ ...group, items: group.items.filter(item => authStore.canPath(item.path)) }))
+    .filter(group => group.items.length > 0)
+)
 
 function isActive(path: string): boolean {
   if (route.path === path) return true

@@ -45,7 +45,9 @@
         </div>
         <div class="flex items-center gap-4">
           <span class="text-sm text-gray-500">{{ currentDate }}</span>
+          <!-- El asistente consulta toda la plataforma: solo para el equipo -->
           <button
+            v-if="authStore.isSuperAdmin"
             type="button"
             class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary-500 hover:text-primary-700 transition-colors"
             @click="assistantOpen = true"

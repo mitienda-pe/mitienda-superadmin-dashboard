@@ -210,7 +210,7 @@
               <Button icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
               <!-- Una nota de credito acredita el comprobante entero, no la linea. -->
               <Button
-                v-if="row.document_type === 1 || row.document_type === 2"
+                v-if="authStore.isSuperAdmin && (row.document_type === 1 || row.document_type === 2)"
                 icon="pi pi-undo"
                 text
                 rounded
@@ -374,12 +374,15 @@ import {
 } from '@/api/ledger.api'
 import { orderedValues } from '@/config/ledger.config'
 import { previewCreditNote, emitCreditNote } from '@/api/billing.api'
+import { useAuthStore } from '@/stores/auth.store'
 import type { CreditNotePreview } from '@/types/billing.types'
 import type {
   LedgerItem, LedgerItemFilters, LedgerItemTag, LedgerOrigin, LedgerTagDimension
 } from '@/types/ledger.types'
 
 const toast = useToast()
+// Emitir una nota de crédito es cosa del equipo; contabilidad solo etiqueta.
+const authStore = useAuthStore()
 const route = useRoute()
 const { formatCurrency, formatDate, formatNumber } = useFormatters()
 

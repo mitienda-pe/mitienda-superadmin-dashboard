@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth.api'
 import type { User, Store, LoginCredentials, SuperAdminInfo } from '@/types/auth.types'
+import { areaOfPath, homePathFor } from '@/config/access.config'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -17,6 +18,21 @@ export const useAuthStore = defineStore('auth', () => {
   // Getters
   const isAuthenticated = computed(() => !!accessToken.value && !!user.value)
   const isSuperAdmin = computed(() => superAdminInfo.value?.is_superadmin || false)
+
+  // Áreas del panel que puede ver. Una sesión guardada antes de que existieran
+  // los roles no trae `areas`: si es del equipo, ve todo.
+  const areas = computed<string[]>(() => {
+    const info = superAdminInfo.value
+    if (!info) return []
+    return info.areas ?? (info.is_superadmin ? ['platform', 'finance'] : [])
+  })
+  const hasPanelAccess = computed(() => areas.value.length > 0)
+  const canWriteFinance = computed(() => superAdminInfo.value?.finance_write ?? isSuperAdmin.value)
+  const homePath = computed(() => homePathFor(areas.value))
+
+  function canPath(path: string): boolean {
+    return areas.value.includes(areaOfPath(path))
+  }
 
   // Actions
   async function login(credentials: LoginCredentials) {
@@ -45,10 +61,10 @@ export const useAuthStore = defineStore('auth', () => {
         // Verify superadmin status — required for this app
         await checkSuperAdmin()
 
-        if (!superAdminInfo.value?.is_superadmin) {
-          // Not a superadmin — clear everything
+        if (!hasPanelAccess.value) {
+          // Sin ningún rol en el panel — clear everything
           await logout()
-          error.value = 'Acceso denegado: Se requieren permisos de Super Administrador'
+          error.value = 'Acceso denegado: tu cuenta no tiene acceso a este panel'
           return false
         }
 
@@ -219,6 +235,11 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     isAuthenticated,
     isSuperAdmin,
+    areas,
+    hasPanelAccess,
+    canWriteFinance,
+    homePath,
+    canPath,
     login,
     fetchStores,
     selectStore,

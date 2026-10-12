@@ -32,7 +32,12 @@ export interface Store {
 }
 
 export interface SuperAdminInfo {
+  /** Solo el equipo (Master). Un rol acotado no lo es: ver `areas`. */
   is_superadmin: boolean
+  role?: 'master' | 'contabilidad' | 'contabilidad_lectura' | null
+  /** Partes del panel que puede ver: 'platform' (todo) y/o 'finance'. */
+  areas?: string[]
+  finance_write?: boolean
   superadmin_type_id?: number
   superadmin_type_name?: string
   partner_id?: number

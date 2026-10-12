@@ -335,13 +335,15 @@ router.beforeEach((_to, _from, next) => {
 
   // Already authenticated and going to login
   if (_to.path === '/login' && authStore.isAuthenticated) {
-    next('/dashboard')
+    next(authStore.homePath)
     return
   }
 
-  // Requires superadmin
-  if (requiresSuperAdmin && !authStore.isSuperAdmin) {
-    next('/access-denied')
+  // Cada rol solo entra a las rutas de sus áreas. Quien tiene otra área va a
+  // su pantalla de inicio en vez de a "acceso denegado": un rol de
+  // contabilidad que abre /dashboard cae en Comprobantes.
+  if (requiresSuperAdmin && !authStore.canPath(_to.path)) {
+    next(authStore.hasPanelAccess ? authStore.homePath : '/access-denied')
     return
   }
 

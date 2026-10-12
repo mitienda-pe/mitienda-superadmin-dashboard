@@ -1,7 +1,7 @@
 <template>
-  <div class="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+  <div v-if="visibleTabs.length > 1" class="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
     <router-link
-      v-for="tab in tabs"
+      v-for="tab in visibleTabs"
       :key="tab.to"
       :to="tab.to"
       class="px-4 py-2 rounded-md text-sm font-medium transition-colors"
@@ -16,13 +16,20 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth.store'
 import type { SectionTab } from '@/config/sections.config'
 
 // Pestañas entre pantallas hermanas que comparten una sola entrada del menu
 // lateral. Cada pestaña es una ruta propia: los enlaces guardados siguen
 // funcionando y cada vista conserva su estado.
-defineProps<{ tabs: SectionTab[] }>()
+const props = defineProps<{ tabs: SectionTab[] }>()
 
 const route = useRoute()
+const authStore = useAuthStore()
+
+// Un rol acotado no ve las pestañas de pantallas que no puede abrir; si solo
+// le queda una, la barra sobra.
+const visibleTabs = computed(() => props.tabs.filter(tab => authStore.canPath(tab.to)))
 </script>
