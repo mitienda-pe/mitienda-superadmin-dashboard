@@ -394,4 +394,41 @@ router.beforeEach((_to, _from, next) => {
   next()
 })
 
+// --- Versión nueva publicada con la pestaña abierta ---
+//
+// Cada pantalla se descarga la primera vez que se entra, desde un archivo cuyo
+// nombre cambia en cada publicación. Una pestaña abierta desde antes sigue
+// pidiendo los nombres viejos, que ya no existen: el servidor contesta la
+// página de inicio en su lugar, la descarga falla y el clic no hace nada hasta
+// refrescar. Acá se refresca solo, directo a donde se quería ir.
+const RELOAD_KEY = 'stale-build-reload'
+
+function isStaleBuildError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '')
+  return /dynamically imported module|Importing a module script failed|error loading dynamically imported|Unable to preload CSS|MIME type/i.test(message)
+}
+
+/** Recarga una sola vez cada 10 segundos: si el fallo es otro, no se queda en un bucle. */
+function reloadTo(path: string) {
+  let last = 0
+  try {
+    last = Number(sessionStorage.getItem(RELOAD_KEY) ?? 0)
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+  } catch {
+    // Sin sessionStorage se recarga igual: una vez basta en el caso normal.
+  }
+  if (Date.now() - last < 10_000) return
+  window.location.assign(path)
+}
+
+router.onError((error, to) => {
+  if (isStaleBuildError(error)) reloadTo(to.fullPath)
+})
+
+// Lo mismo para lo que se descarga fuera de una navegación (un componente diferido).
+window.addEventListener('vite:preloadError', event => {
+  event.preventDefault()
+  reloadTo(window.location.pathname + window.location.search)
+})
+
 export default router
