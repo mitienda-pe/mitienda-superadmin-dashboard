@@ -107,6 +107,10 @@
         <Dropdown v-model="categoryFilter" :options="categoryOptions" optionLabel="label" optionValue="value" filter class="w-56" @change="reload" />
         <Dropdown v-model="kindFilter" :options="kindOptions" optionLabel="label" optionValue="value" class="w-40" @change="reload" />
         <Dropdown v-model="filters.payment" :options="paymentOptions" optionLabel="label" optionValue="value" class="w-40" @change="reload" />
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="filters.include_voided" inputId="voided" binary @change="reload" />
+          <label for="voided" class="text-sm text-gray-600">Ver anulados</label>
+        </div>
       </div>
     </div>
 
@@ -206,11 +210,18 @@
 
         <Column header="Pago" style="min-width: 160px">
           <template #body="{ data: row }">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="paymentBadge(row).class">
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+              :class="paymentBadge(row).class"
+              v-tooltip.top="voidHint(row)"
+            >
               {{ paymentBadge(row).label }}
             </span>
             <div v-if="row.payment_status === 'parcial'" class="text-xs text-gray-400 mt-0.5">
               saldo {{ money(row.balance, row.currency) }}
+            </div>
+            <div v-if="row.status !== 1" class="text-xs text-gray-400 mt-0.5 max-w-[220px] whitespace-normal">
+              {{ row.void_reason || 'Sin motivo registrado' }}
             </div>
           </template>
         </Column>
@@ -356,6 +367,11 @@
           <label class="block text-sm font-medium text-gray-600 mb-1">Descripción</label>
           <InputText v-model="form.description" maxlength="255" class="w-full" placeholder="Opcional" />
         </div>
+      </div>
+      <div v-if="editing && editing.paid_amount === 0" class="mt-5 pt-4 border-t border-gray-100">
+        <label class="block text-sm font-medium text-gray-600 mb-1">Si vas a anularlo, por qué</label>
+        <InputText v-model="voidReason" maxlength="255" class="w-full" placeholder="Está duplicado, se cargó por error…" />
+        <p class="text-xs text-gray-500 mt-1">El gasto no se borra: queda anulado con este motivo, la fecha y tu nombre.</p>
       </div>
       <template #footer>
         <Button
@@ -567,7 +583,9 @@ const yearFilter = ref(currentYear)
 const monthFilter = ref('')
 const categoryFilter = ref<number | typeof ALL>(ALL)
 const kindFilter = ref<string>(ALL)
-const filters = reactive<ExpenseFilters>({ period: currentYear, category_id: null, kind: '', payment: 'all', search: '', page: 1 })
+const filters = reactive<ExpenseFilters>({
+  period: currentYear, category_id: null, kind: '', payment: 'all', search: '', page: 1, include_voided: false
+})
 
 const yearOptions = [
   { label: 'Todos los años', value: ALL },
@@ -833,11 +851,26 @@ async function submitExpense() {
   }
 }
 
+const voidReason = ref('')
+
+/** Por qué, cuándo y quién anuló: lo que se ve al pasar por la etiqueta "Anulado". */
+function voidHint(row: Expense): string {
+  if (row.status === 1) return ''
+  const when = row.voided_at ? ` · ${formatDate(row.voided_at.slice(0, 10))}` : ''
+  const who = row.voided_by_name ? ` · ${row.voided_by_name}` : ''
+  return `${row.void_reason || 'Anulado sin motivo registrado'}${when}${who}`
+}
+
 async function voidCurrent() {
   if (!editing.value) return
+  if (voidReason.value.trim().length < 5) {
+    toast.add({ severity: 'warn', summary: 'Indica por qué se anula', detail: 'Queda anotado junto al gasto.', life: 5000 })
+    return
+  }
   voiding.value = true
   try {
-    const res = await voidExpense(editing.value.id)
+    const res = await voidExpense(editing.value.id, voidReason.value.trim())
+    voidReason.value = ''
     toast.add({ severity: 'success', summary: res.message, life: 3000 })
     expenseVisible.value = false
     load()

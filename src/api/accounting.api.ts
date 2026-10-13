@@ -53,6 +53,7 @@ export async function getExpenses(filters: ExpenseFilters) {
   if (filters.category_id) params.category_id = filters.category_id
   if (filters.kind) params.kind = filters.kind
   if (filters.search) params.search = filters.search
+  if (filters.include_voided) params.include_voided = '1'
 
   const res = await api.get<{
     data: Expense[]
@@ -69,8 +70,8 @@ export async function saveExpense(id: number | null, payload: ExpenseInput) {
   return res.data
 }
 
-export async function voidExpense(id: number) {
-  const res = await api.post<{ message: string; data: Expense }>(`${BASE}/expenses/${id}/void`)
+export async function voidExpense(id: number, reason: string) {
+  const res = await api.post<{ message: string; data: Expense }>(`${BASE}/expenses/${id}/void`, { reason })
   return res.data
 }
 

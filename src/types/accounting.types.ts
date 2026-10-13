@@ -99,6 +99,10 @@ export interface Expense {
   balance: number
   is_overdue: boolean
   source: 'manual' | 'sire' | 'planilla' | 'xml'
+  /** Solo en un gasto anulado: por qué, cuándo y quién (null si fue una corrección del sistema). */
+  void_reason?: string | null
+  voided_at?: string | null
+  voided_by_name?: string | null
 }
 
 export interface ExpenseInput {
@@ -137,6 +141,8 @@ export interface ExpenseFilters {
   payment: ExpensePaymentFilter
   search: string
   page: number
+  /** Los anulados no salen si no se piden. */
+  include_voided?: boolean
 }
 
 /** Resultado de importar (o previsualizar) el registro de compras del SIRE. */
