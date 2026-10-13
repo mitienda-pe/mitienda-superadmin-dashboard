@@ -12,6 +12,13 @@ import type {
   CreditNotePreview, CreditNoteResult
 } from '@/types/billing.types'
 
+// Emitir espera al proveedor de facturación: hasta 30 segundos por comprobante
+// en el servidor, más la consulta que confirma un corte. Con el tiempo de espera
+// general (30 s) el panel mostraba "timeout" mientras el servidor seguía
+// emitiendo, y reintentar ahí es lo que generó comprobantes repetidos.
+const EMIT_ONE = { timeout: 90_000 }
+const EMIT_BATCH = { timeout: 90_000 }
+
 interface CommissionsResponse {
   success: boolean
   data: CommissionItem[]
@@ -118,7 +125,8 @@ export async function previewPlanSaleInvoice(tiendaPlanId: number) {
 export async function emitPlanSaleInvoice(tiendaPlanId: number, detractionPercentage?: number) {
   const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
     `/superadmin/platform-invoices/plan-sales/${tiendaPlanId}/emit`,
-    detractionPercentage ? { detraction_percentage: detractionPercentage } : {}
+    detractionPercentage ? { detraction_percentage: detractionPercentage } : {},
+    EMIT_ONE
   )
   return res.data
 }
@@ -126,7 +134,8 @@ export async function emitPlanSaleInvoice(tiendaPlanId: number, detractionPercen
 export async function emitPlanSalesBatch(ids: number[], sendEmail = false) {
   const res = await api.post<{ message: string; data: PlatformBatchResult }>(
     '/superadmin/platform-invoices/plan-sales/emit-batch',
-    { ids, send_email: sendEmail }
+    { ids, send_email: sendEmail },
+    EMIT_BATCH
   )
   return res.data
 }
@@ -160,7 +169,8 @@ export async function previewCommissionInvoice(tiendaId: number, period: string)
 export async function emitCommissionInvoice(tiendaId: number, period: string) {
   const res = await api.post<{ message: string; data: PlatformInvoiceResult }>(
     `/superadmin/platform-invoices/commissions/${tiendaId}/emit`,
-    { period }
+    { period },
+    EMIT_ONE
   )
   return res.data
 }
@@ -172,7 +182,8 @@ export async function emitCommissionsBatch(
 ) {
   const res = await api.post<{ message: string; data: CommissionBatchResult }>(
     '/superadmin/platform-invoices/commissions/emit-batch',
-    { tienda_ids: tiendaIds, period, send_email: sendEmail }
+    { tienda_ids: tiendaIds, period, send_email: sendEmail },
+    EMIT_BATCH
   )
   return res.data
 }
@@ -245,7 +256,8 @@ export async function previewManualInvoice(payload: ManualInvoiceInput) {
 export async function emitManualInvoice(payload: ManualInvoiceInput) {
   const res = await api.post<{ message: string; data: ManualInvoiceResult }>(
     '/superadmin/platform-invoices/manual/emit',
-    payload
+    payload,
+    EMIT_ONE
   )
   return res.data
 }
@@ -264,7 +276,8 @@ export async function previewCreditNote(invoiceId: number) {
 export async function emitCreditNote(invoiceId: number, type: number, reason: string) {
   const res = await api.post<{ message: string; data: CreditNoteResult }>(
     `/superadmin/platform-invoices/credit-notes/${invoiceId}/emit`,
-    { type, reason }
+    { type, reason },
+    EMIT_ONE
   )
   return res.data
 }
