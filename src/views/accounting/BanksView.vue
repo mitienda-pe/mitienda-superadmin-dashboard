@@ -12,6 +12,16 @@
         </p>
       </div>
       <div v-if="authStore.canWriteFinance" class="flex gap-2">
+        <Button
+          v-if="hasCulqi"
+          label="Conciliar automáticamente"
+          icon="pi pi-bolt"
+          severity="secondary"
+          outlined
+          :loading="autoRunning"
+          v-tooltip.bottom="'Cobros de Culqi por su código de cargo, y sus abonos que ya llegaron al banco'"
+          @click="runAuto"
+        />
         <Button label="Nueva cuenta" icon="pi pi-plus" severity="secondary" outlined @click="openAccount(null)" />
         <Button label="Importar movimientos" icon="pi pi-upload" @click="openImport" />
       </div>
@@ -77,7 +87,7 @@
         </div>
         <p class="text-xs text-gray-400 mt-3">
           {{ formatNumber(summary.movements) }} movimientos · entró {{ plain(summary.inflow) }} · salió {{ plain(-summary.outflow) }}
-          <template v-if="summary.itf !== 0"> · ITF {{ plain(-summary.itf) }}</template>
+          <template v-if="summary.itf !== 0"> · ITF y comisiones {{ plain(-summary.itf) }}</template>
           <template v-if="!filters.account_id && mixedCurrencies"> (suma soles y dólares: filtra una cuenta para ver importes reales)</template>
         </p>
       </div>
@@ -125,7 +135,9 @@
               <span class="text-sm font-semibold block text-right tabular-nums" :class="row.amount >= 0 ? 'text-green-700' : 'text-gray-800'">
                 {{ row.amount >= 0 ? '+' : '−' }} {{ money(Math.abs(row.amount), row.currency) }}
               </span>
-              <span v-if="row.itf !== 0" class="text-xs text-gray-400 block text-right">ITF {{ plain(Math.abs(row.itf)) }}</span>
+              <span v-if="row.itf !== 0" class="text-xs text-gray-400 block text-right">
+                {{ row.bank === 'Culqi' ? 'comisión' : 'ITF' }} {{ plain(Math.abs(row.itf)) }}
+              </span>
             </template>
           </Column>
 
@@ -358,10 +370,10 @@
     <Dialog v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Sube el Excel de movimientos tal como lo descarga la banca por internet de BBVA o de BCP. Primero ves qué
-          entraría; lo que ya se importó no se repite.
+          Sube el archivo tal como se descarga: el Excel de movimientos de BBVA o de BCP, o el CSV de movimientos de
+          Culqi. Primero ves qué entraría; lo que ya se importó no se repite.
         </p>
-        <input type="file" accept=".xls,.xlsx" class="block w-full text-sm text-gray-600" @change="onFile" />
+        <input type="file" accept=".xls,.xlsx,.csv" class="block w-full text-sm text-gray-600" @change="onFile" />
 
         <p v-if="importLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
 
@@ -477,7 +489,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
-  markBankMovements, unlinkBankMovement, getExpenseCategories, getPayees, accountingErrorMessage
+  markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
@@ -588,6 +600,30 @@ function setAccount(id: number) {
 
 async function refreshAll() {
   await Promise.all([loadAccounts(), load()])
+}
+
+// --- Conciliación automática ---
+const hasCulqi = computed(() => accounts.value.some(a => a.bank === 'Culqi'))
+const autoRunning = ref(false)
+
+async function runAuto() {
+  autoRunning.value = true
+  try {
+    const res = await autoReconcileBanks()
+    toast.add({
+      severity: res.data.charges + res.data.transfers > 0 ? 'success' : 'info',
+      summary: res.message,
+      detail: res.data.charges_skipped > 0
+        ? `${res.data.charges_skipped} cobros de Culqi quedaron para revisar a mano (sin venta de plan con ese código, o con importe distinto)`
+        : undefined,
+      life: 9000
+    })
+    refreshAll()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo conciliar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    autoRunning.value = false
+  }
 }
 
 // --- Varios a la vez ---
@@ -876,7 +912,14 @@ async function submitImport() {
   saving.value = true
   try {
     const res = await importBankFile(importFile.value, importAccountId.value, true)
-    toast.add({ severity: 'success', summary: res.message, life: 5000 })
+    toast.add({
+      severity: 'success',
+      summary: res.message,
+      detail: res.data.auto_marked
+        ? `${res.data.auto_marked} entraron ya conciliados (abonos al banco). Usa "Conciliar automáticamente" para cruzar los cobros.`
+        : undefined,
+      life: 8000
+    })
     importVisible.value = false
     filters.account_id = res.data.account_id
     filters.status = 'pending'

@@ -223,6 +223,8 @@ export interface BankImportResult {
   read: number
   created: number
   duplicates: number
+  /** Entraron ya conciliados porque el archivo dice qué son (abonos de Culqi al banco). */
+  auto_marked?: number
   from: string | null
   to: string | null
   inflow: number
