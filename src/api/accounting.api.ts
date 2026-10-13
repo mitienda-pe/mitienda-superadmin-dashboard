@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -199,6 +199,31 @@ export async function unlinkBankMovement(linkId: number) {
 /** Estado de resultados por función, mes a mes (solo Master: reparte el costo de cada persona). */
 export async function getIncomeStatement(year: number) {
   const res = await api.get<{ data: IncomeStatement }>(`${BASE}/income-statement`, { params: { year } })
+  return res.data.data
+}
+
+// --- Flujo de caja (solo Master) ---
+
+export async function getCashFlow() {
+  const res = await api.get<{ data: CashFlow }>(`${BASE}/cash-flow`)
+  return res.data.data
+}
+
+/** `balance: null` deja la cuenta sin saldo conocido. */
+export async function setCashBalance(accountId: number, balance: number | null) {
+  const res = await api.put<{ data: CashAccount[] }>(`${BASE}/cash-flow/balances/${accountId}`, { balance })
+  return res.data.data
+}
+
+export async function saveCashPlanItem(id: number | null, payload: CashPlanItemInput) {
+  const res = id === null
+    ? await api.post<{ data: CashPlanItem[] }>(`${BASE}/cash-flow/plan`, payload)
+    : await api.put<{ data: CashPlanItem[] }>(`${BASE}/cash-flow/plan/${id}`, payload)
+  return res.data.data
+}
+
+export async function deleteCashPlanItem(id: number) {
+  const res = await api.delete<{ data: CashPlanItem[] }>(`${BASE}/cash-flow/plan/${id}`)
   return res.data.data
 }
 

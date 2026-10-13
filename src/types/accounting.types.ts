@@ -474,3 +474,52 @@ export interface PayrollPeriod {
   net: number
   cost: number
 }
+
+// --- Flujo de caja ---
+
+export interface CashAccount {
+  id: number
+  name: string
+  currency: 'PEN' | 'USD'
+  /** null = el banco no lo informa y nadie lo puso: no suma al saldo inicial. */
+  balance: number | null
+  balance_at: string | null
+  balance_pen: number | null
+}
+
+export interface CashFlowLine {
+  key: string
+  section: 'in' | 'out'
+  label: string
+  /** Un importe por semana, sin signo. */
+  values: number[]
+  /** Sale de un promedio, no de un documento: se puede apagar. */
+  estimated: boolean
+  basis: string
+  plan_item_id?: number
+}
+
+export interface CashPlanItem {
+  id: number
+  kind: 'ingreso' | 'egreso'
+  name: string
+  amount: number
+  currency: 'PEN' | 'USD'
+  frequency: 'unica' | 'mensual' | 'semanal'
+  start_date: string
+  end_date: string | null
+  note: string | null
+  is_active: boolean
+}
+
+export type CashPlanItemInput = Omit<CashPlanItem, 'id'>
+
+export interface CashFlow {
+  today: string
+  weeks: { start: string; end: string }[]
+  exchange_rate: number
+  accounts: CashAccount[]
+  lines: CashFlowLine[]
+  notes: { kind: 'receivable' | 'payable'; amount: number; text: string }[]
+  plan_items: CashPlanItem[]
+}
