@@ -137,7 +137,7 @@
           />
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <div v-for="card in cards" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-4">
             <div class="text-sm text-gray-500">{{ card.label }}</div>
             <div class="text-xl font-bold mt-1" :class="card.strong ? 'text-primary' : 'text-gray-900'">{{ money(card.value) }}</div>
@@ -182,7 +182,10 @@
                 </td>
                 <td class="px-3 py-3 text-right tabular-nums font-medium text-gray-900">{{ plain(line.net) }}</td>
                 <td class="px-3 py-3 text-right tabular-nums text-gray-600">{{ plain(line.essalud) }}</td>
-                <td class="px-3 py-3 text-right tabular-nums font-medium">{{ plain(line.cost) }}</td>
+                <td class="px-3 py-3 text-right tabular-nums font-medium">
+                  {{ plain(line.cost) }}
+                  <div v-if="line.cts > 0" class="text-[10px] font-normal text-gray-500">con CTS {{ plain(line.cts) }}</div>
+                </td>
                 <td class="px-3 py-3 text-right whitespace-nowrap">
                   <Button
                     icon="pi pi-file-pdf"
@@ -290,14 +293,60 @@
             <Checkbox v-model="lineForm.has_family_allowance" inputId="family" binary :disabled="!isDraft" />
             <label for="family" class="text-sm text-gray-600">Asignación familiar</label>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-600 mb-1">Gratificación</label>
-            <InputNumber v-model="lineForm.gratification" v-bind="moneyInput" :disabled="!isDraft" class="w-full" @update:modelValue="syncBonus" />
+        </div>
+
+        <!-- Beneficios -->
+        <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+          <div class="text-sm font-medium text-gray-700">Beneficios</div>
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Gratificación</label>
+              <InputNumber
+                v-model="lineForm.gratification"
+                v-bind="moneyInput"
+                :disabled="!isDraft || !lineForm.gratification_manual"
+                class="w-full"
+                @update:modelValue="syncBonus"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Bonificación 9 %</label>
+              <InputNumber
+                v-model="lineForm.gratification_bonus"
+                v-bind="moneyInput"
+                :disabled="!isDraft || !lineForm.gratification_manual"
+                class="w-full"
+              />
+            </div>
+            <div class="flex items-end pb-2 gap-2">
+              <Checkbox v-model="lineForm.gratification_manual" inputId="gratmanual" binary :disabled="!isDraft" />
+              <label for="gratmanual" class="text-sm text-gray-600">Poner a mano</label>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Depósito de CTS</label>
+              <InputNumber v-model="lineForm.cts" v-bind="moneyInput" :disabled="!isDraft || !lineForm.cts_manual" class="w-full" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-600 mb-1">Días de vacaciones</label>
+              <InputNumber v-model="lineForm.vacation_days" :min="0" :max="30" :maxFractionDigits="1" :disabled="!isDraft" class="w-full" />
+            </div>
+            <div class="flex items-end pb-2 gap-2">
+              <Checkbox v-model="lineForm.cts_manual" inputId="ctsmanual" binary :disabled="!isDraft" />
+              <label for="ctsmanual" class="text-sm text-gray-600">CTS a mano</label>
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-600 mb-1">Bonificación 9 %</label>
-            <InputNumber v-model="lineForm.gratification_bonus" v-bind="moneyInput" :disabled="!isDraft" class="w-full" />
-          </div>
+          <p class="text-xs text-gray-500">
+            El sistema calcula la gratificación en julio y diciembre y la CTS en mayo y noviembre, según los meses
+            trabajados del semestre. La CTS se deposita aparte: no entra al neto. Los días de vacaciones no cambian el
+            total; salen en la boleta y descuentan del saldo.
+          </p>
+          <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
+            <dt>Gratificación que se devenga este mes</dt><dd class="text-right tabular-nums">{{ money(editingLine.accrual_gratification) }}</dd>
+            <dt>CTS que se devenga</dt><dd class="text-right tabular-nums">{{ money(editingLine.accrual_cts) }}</dd>
+            <dt>Vacaciones que se devengan</dt><dd class="text-right tabular-nums">{{ money(editingLine.accrual_vacation) }}</dd>
+            <dt class="font-medium text-gray-800">Costo devengado del mes</dt>
+            <dd class="text-right tabular-nums font-medium text-gray-800">{{ money(editingLine.accrued_cost) }}</dd>
+          </dl>
         </div>
 
         <div class="grid grid-cols-3 gap-3">
@@ -426,7 +475,7 @@ const yearMonths = computed(() =>
     if (found) {
       const closed = found.status === 'cerrada'
       icon = closed ? (found.with_expenses ? 'pi pi-lock' : 'pi pi-history') : 'pi pi-pencil'
-      hint = `${closed ? (found.with_expenses ? 'Cerrada' : 'Historial') : 'Borrador'} · costo ${money(found.cost)}`
+      hint = `${closed ? (found.with_expenses ? 'Cerrada' : 'Historial') : 'Borrador'} · pagado ${money(found.cost)}`
     }
     return { period: key, label, icon, hint }
   })
@@ -449,7 +498,8 @@ const cards = computed(() => {
     { label: 'Retenido', value: value('pension') + value('income_tax'), hint: 'AFP u ONP y renta de quinta', strong: false },
     { label: 'Neto a pagar', value: value('net'), hint: 'Lo que recibe el personal', strong: false },
     { label: 'Aportes de la empresa', value: value('essalud') + value('life_insurance'), hint: 'EsSalud y seguro de vida ley', strong: false },
-    { label: 'Costo del mes', value: value('cost'), hint: 'Bruto más aportes', strong: true }
+    { label: 'Costo pagado', value: value('cost'), hint: value('cts') > 0 ? `Bruto, aportes y CTS (${money(value('cts'))})` : 'Bruto más aportes', strong: false },
+    { label: 'Costo devengado', value: value('accrued_cost'), hint: 'Con gratificación, CTS y vacaciones repartidas mes a mes', strong: true }
   ]
 })
 
@@ -559,6 +609,10 @@ const lineForm = reactive({
   bonus: 0,
   gratification: 0,
   gratification_bonus: 0,
+  gratification_manual: false,
+  cts: 0,
+  cts_manual: false,
+  vacation_days: 0,
   advances: 0,
   other_deductions: 0,
   tax_manual: false,
@@ -579,6 +633,10 @@ function openLine(line: PayrollLine) {
   lineForm.bonus = line.bonus
   lineForm.gratification = line.gratification
   lineForm.gratification_bonus = line.gratification_bonus
+  lineForm.gratification_manual = line.gratification_manual
+  lineForm.cts = line.cts
+  lineForm.cts_manual = line.cts_manual
+  lineForm.vacation_days = line.vacation_days
   lineForm.advances = line.advances
   lineForm.other_deductions = line.other_deductions
   lineForm.tax_manual = line.income_tax_manual
@@ -605,8 +663,11 @@ async function submitLine() {
         has_family_allowance: lineForm.has_family_allowance,
         commissions: lineForm.commissions ?? 0,
         bonus: lineForm.bonus ?? 0,
-        gratification: lineForm.gratification ?? 0,
-        gratification_bonus: lineForm.gratification_bonus ?? 0,
+        // Sin "a mano" se manda null: el sistema calcula lo que toque ese mes.
+        gratification: lineForm.gratification_manual ? (lineForm.gratification ?? 0) : null,
+        gratification_bonus: lineForm.gratification_manual ? (lineForm.gratification_bonus ?? 0) : undefined,
+        cts: lineForm.cts_manual ? (lineForm.cts ?? 0) : null,
+        vacation_days: lineForm.vacation_days ?? 0,
         advances: lineForm.advances ?? 0,
         other_deductions: lineForm.other_deductions ?? 0,
         income_tax: lineForm.tax_manual ? (lineForm.income_tax ?? 0) : null,

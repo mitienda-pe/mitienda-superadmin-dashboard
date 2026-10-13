@@ -32,11 +32,19 @@
             <label class="block text-sm font-medium text-gray-600 mb-1">Seguro de vida ley (mes)</label>
             <InputNumber v-model="form.life_insurance" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">CTS (días por año)</label>
+            <InputNumber v-model="form.cts_days" :maxFractionDigits="1" :min="0" :max="30" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Vacaciones (días por año)</label>
+            <InputNumber v-model="form.vacation_days" :maxFractionDigits="1" :min="0" :max="30" class="w-full" />
+          </div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3">
           <p class="text-xs text-gray-500 max-w-md">
-            La gratificación es medio sueldo en pequeña empresa (0.5) y uno entero en el régimen general (1). Con la UIT
-            se calcula la renta de quinta.
+            Pequeña empresa: gratificación de medio sueldo (0.5), CTS de 15 días y 15 días de vacaciones. Régimen
+            general: 1, 30 y 30. Con la UIT se calcula la renta de quinta.
           </p>
           <Button label="Guardar parámetros" icon="pi pi-check" :loading="saving" @click="submitSettings" />
         </div>
@@ -118,7 +126,9 @@ const form = reactive({
   essalud_pct: 9 as number | null,
   gratification_factor: 0.5 as number | null,
   insurance_cap: 0 as number | null,
-  life_insurance: 0 as number | null
+  life_insurance: 0 as number | null,
+  cts_days: 15 as number | null,
+  vacation_days: 15 as number | null
 })
 
 const pct = (rate: number) => Math.round(rate * 100000) / 1000
@@ -139,6 +149,8 @@ async function load() {
     form.gratification_factor = settings.gratification_factor
     form.insurance_cap = settings.insurance_cap
     form.life_insurance = settings.life_insurance
+    form.cts_days = settings.cts_days
+    form.vacation_days = settings.vacation_days
     rows.value = toRows(funds)
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudieron cargar los parámetros', detail: accountingErrorMessage(e), life: 6000 })
@@ -156,7 +168,9 @@ async function submitSettings() {
       essalud_rate: fraction(form.essalud_pct),
       gratification_factor: form.gratification_factor ?? 0,
       insurance_cap: form.insurance_cap ?? 0,
-      life_insurance: form.life_insurance ?? 0
+      life_insurance: form.life_insurance ?? 0,
+      cts_days: form.cts_days ?? 0,
+      vacation_days: form.vacation_days ?? 0
     })
     inherited.value = saved.inherited
     toast.add({ severity: 'success', summary: 'Parámetros guardados', detail: 'Usa "Recalcular" en las planillas en borrador.', life: 5000 })

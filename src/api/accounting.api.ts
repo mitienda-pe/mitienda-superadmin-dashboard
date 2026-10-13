@@ -224,7 +224,15 @@ export async function getEmployees() {
 
 export async function saveEmployee(
   payeeId: number,
-  payload: { position: string; start_date: string | null; end_date: string | null; pension_fund_id: number | null; cuspp: string }
+  payload: {
+    position: string
+    start_date: string | null
+    end_date: string | null
+    pension_fund_id: number | null
+    cuspp: string
+    vacation_opening_date: string | null
+    vacation_opening_days: number | null
+  }
 ) {
   const res = await api.put<{ data: Employee }>(`${PAYROLL}/employees/${payeeId}`, payload)
   return res.data.data

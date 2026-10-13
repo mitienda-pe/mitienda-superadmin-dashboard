@@ -49,9 +49,29 @@
               <label class="block text-sm font-medium text-gray-600 mb-1">CUSPP</label>
               <InputText v-model="form.cuspp" maxlength="20" class="w-full" />
             </div>
-            <div class="flex items-end">
-              <Button label="Guardar ficha" icon="pi pi-check" :loading="saving" @click="submitRecord" />
+          </div>
+          <div class="bg-gray-50 rounded-lg p-3 space-y-2">
+            <div class="flex flex-wrap items-end gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Vacaciones pendientes</label>
+                <InputNumber v-model="form.vacation_opening_days" :maxFractionDigits="1" :min="-60" :max="365" suffix=" días" inputClass="w-28" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">al día</label>
+                <InputText v-model="form.vacation_opening_date" type="date" />
+              </div>
+              <div v-if="selected.vacation_balance !== null" class="text-sm text-gray-700 pb-2">
+                Saldo hoy: <span class="font-semibold">{{ selected.vacation_balance }} días</span>
+                <span class="text-xs text-gray-500"> ({{ selected.vacation_taken }} gozados desde entonces)</span>
+              </div>
             </div>
+            <p class="text-xs text-gray-500">
+              El saldo parte de lo pendiente a una fecha, suma lo que se gana cada mes y resta los días que se anotan en
+              cada boleta. Sin ese punto de partida no se muestra saldo.
+            </p>
+          </div>
+          <div class="flex justify-end">
+            <Button label="Guardar ficha" icon="pi pi-check" :loading="saving" @click="submitRecord" />
           </div>
         </div>
 
@@ -157,7 +177,15 @@ const selectedId = ref<number | null>(null)
 const selected = computed(() => employees.value.find(e => e.payee_id === selectedId.value) ?? null)
 const fundOptions = computed(() => funds.value.filter(f => f.is_active).map(f => ({ label: f.name, value: f.id })))
 
-const form = reactive({ position: '', pension_fund_id: null as number | null, start_date: '', end_date: '', cuspp: '' })
+const form = reactive({
+  position: '',
+  pension_fund_id: null as number | null,
+  start_date: '',
+  end_date: '',
+  cuspp: '',
+  vacation_opening_days: null as number | null,
+  vacation_opening_date: ''
+})
 const salaryForm = reactive({ effective_from: '', base_salary: null as number | null, work_condition: 0 as number | null, family_allowance: false, note: '' })
 
 function money(amount: number): string {
@@ -182,6 +210,8 @@ function select(employee: Employee) {
   form.start_date = employee.start_date ?? ''
   form.end_date = employee.end_date ?? ''
   form.cuspp = employee.cuspp ?? ''
+  form.vacation_opening_days = employee.vacation_opening_days
+  form.vacation_opening_date = employee.vacation_opening_date ?? ''
   resetSalary()
 }
 
@@ -245,7 +275,9 @@ function submitRecord() {
         pension_fund_id: form.pension_fund_id,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
-        cuspp: form.cuspp.trim()
+        cuspp: form.cuspp.trim(),
+        vacation_opening_date: form.vacation_opening_date || null,
+        vacation_opening_days: form.vacation_opening_date ? (form.vacation_opening_days ?? 0) : null
       }),
     'Ficha guardada'
   )

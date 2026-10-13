@@ -284,6 +284,9 @@ export interface PayrollSettings {
   gratification_factor: number
   insurance_cap: number
   life_insurance: number
+  /** Remuneraciones diarias de CTS y días de vacaciones por año: 15 y 15 en pequeña empresa. */
+  cts_days: number
+  vacation_days: number
 }
 
 export interface PensionFund {
@@ -317,6 +320,11 @@ export interface Employee {
   pension_fund_id: number | null
   pension_name: string | null
   cuspp: string | null
+  /** Saldo inicial de vacaciones; sin él no hay saldo que mostrar. */
+  vacation_opening_days: number | null
+  vacation_opening_date: string | null
+  vacation_taken: number
+  vacation_balance: number | null
   current_salary: EmployeeSalary | null
   salaries: EmployeeSalary[]
 }
@@ -351,6 +359,19 @@ export interface PayrollLine {
   bonus: number
   gratification: number
   gratification_bonus: number
+  gratification_manual: boolean
+  /** Depósito de CTS del mes: no es parte del neto. */
+  cts: number
+  cts_manual: boolean
+  vacation_days: number
+  vacation_pay: number
+  /** Lo que se devenga en el mes por cada beneficio, se pague o no. */
+  accrual_gratification: number
+  accrual_cts: number
+  accrual_vacation: number
+  accruals: number
+  /** Costo con los beneficios cuando se ganan, no cuando se pagan. */
+  accrued_cost: number
   taxable: number
   gross: number
   onp: number
@@ -380,8 +401,12 @@ export interface PayrollLineInput {
   has_family_allowance?: boolean
   commissions?: number
   bonus?: number
-  gratification?: number
+  /** null deja que el sistema la calcule (julio y diciembre). */
+  gratification?: number | null
   gratification_bonus?: number
+  /** null deja que el sistema la calcule (mayo y noviembre). */
+  cts?: number | null
+  vacation_days?: number
   advances?: number
   other_deductions?: number
   /** null vuelve al cálculo del sistema. */
