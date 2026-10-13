@@ -262,6 +262,8 @@
                       <span v-else-if="invoice.name_match" class="text-green-700"> · el nombre está en la glosa</span>
                       <span v-if="invoice.same_amount" class="text-green-700"> · mismo importe</span>
                       <span v-else-if="invoice.net_of_detraction" class="text-amber-700"> · calza con el neto de detracción</span>
+                      <span v-if="invoice.document_match" class="text-green-700"> · mismo RUC</span>
+                      <span v-if="invoice.detraction_match" class="text-green-700"> · el importe es su detracción</span>
                     </div>
                   </div>
                   <div class="text-sm tabular-nums text-gray-800 whitespace-nowrap">{{ money(invoice.open_amount, invoice.currency) }}</div>
@@ -817,7 +819,9 @@ async function loadSuggestions() {
     invoiceOptions.value = res.invoices
     expenseOptions.value = res.expenses
     // Una sola candidata segura se deja elegida: es un clic menos.
-    const sure = res.invoices.filter(i => i.number_match || (i.name_match && (i.same_amount || i.net_of_detraction)))
+    const sure = res.invoices.filter(
+      i => i.number_match || (i.name_match && (i.same_amount || i.net_of_detraction)) || (i.document_match && i.detraction_match)
+    )
     if (sure.length === 1) {
       pickedInvoice.value = sure[0].id
       onPickInvoice(sure[0])

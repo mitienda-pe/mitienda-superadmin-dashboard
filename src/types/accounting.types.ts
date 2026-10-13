@@ -270,6 +270,10 @@ export interface InvoiceSuggestion {
   currency: string
   same_amount: boolean
   net_of_detraction: boolean
+  /** El importe del movimiento es la detracción (12 % o 10 %) de este comprobante. */
+  detraction_match?: boolean
+  /** El RUC de quien depositó es el del cliente. */
+  document_match?: boolean
   name_match: boolean
   number_match: boolean
 }
