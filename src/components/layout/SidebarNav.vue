@@ -61,6 +61,8 @@ function siblings(tabs: SectionTab[]): string[] {
   return tabs.slice(1).map(tab => tab.to)
 }
 
+const ACCOUNTING_OWN_ENTRIES = ['/accounting/banks', '/accounting/payroll', '/accounting/results', '/accounting/cash-flow']
+
 // El menu se agrupa por lo que la persona viene a hacer, no por el orden en
 // que se fueron agregando los modulos. Las rutas no cambian.
 const navGroups: NavGroup[] = [
@@ -96,14 +98,18 @@ const navGroups: NavGroup[] = [
     id: 'accounting',
     label: 'Contabilidad',
     items: [
-      // Gastos y Bancos tienen entrada propia; las otras pestañas cuelgan de Gastos.
+      // Cada módulo tiene su entrada; de Gastos cuelgan sus catálogos
+      // (proveedores y personal, categorías), que solo viven como pestaña.
       {
         path: '/accounting/expenses',
         label: 'Gastos',
         icon: 'pi pi-wallet',
-        also: siblings(ACCOUNTING_TABS).filter(path => path !== '/accounting/banks')
+        also: siblings(ACCOUNTING_TABS).filter(path => !ACCOUNTING_OWN_ENTRIES.includes(path))
       },
-      { path: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' }
+      { path: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' },
+      { path: '/accounting/payroll', label: 'Planilla', icon: 'pi pi-id-card' },
+      { path: '/accounting/results', label: 'Resultados', icon: 'pi pi-chart-bar' },
+      { path: '/accounting/cash-flow', label: 'Flujo de caja', icon: 'pi pi-calendar' }
     ]
   },
   {
