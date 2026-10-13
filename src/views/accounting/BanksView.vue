@@ -370,10 +370,20 @@
     <Dialog v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Sube el archivo tal como se descarga: el Excel de movimientos de BBVA o de BCP, o el CSV de movimientos de
-          Culqi. Primero ves qué entraría; lo que ya se importó no se repite.
+          Sube el archivo tal como se descarga: el Excel de movimientos de BBVA o de BCP, el CSV de movimientos de
+          Culqi, o el PDF del estado de cuenta de la tarjeta de crédito BBVA. Primero ves qué entraría; lo que ya se
+          importó no se repite.
         </p>
-        <input type="file" accept=".xls,.xlsx,.csv" class="block w-full text-sm text-gray-600" @change="onFile" />
+        <input type="file" accept=".xls,.xlsx,.csv,.pdf" class="block w-full text-sm text-gray-600" @change="onFile" />
+
+        <div v-if="isPdf">
+          <label class="block text-sm font-medium text-gray-600 mb-1">Clave del PDF</label>
+          <div class="flex gap-2">
+            <InputText v-model="pdfPassword" type="password" autocomplete="off" class="flex-1" placeholder="La que pide el banco para abrirlo" @keyup.enter="refreshPreview" />
+            <Button label="Leer" severity="secondary" outlined :loading="importLoading" @click="refreshPreview" />
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Solo se usa para leer este archivo; no se guarda.</p>
+        </div>
 
         <p v-if="importLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
 
@@ -865,6 +875,8 @@ const importVisible = ref(false)
 const importLoading = ref(false)
 const importFile = ref<File | null>(null)
 const importAccountId = ref<number | null>(null)
+const pdfPassword = ref('')
+const isPdf = computed(() => importFile.value?.name.toLowerCase().endsWith('.pdf') ?? false)
 const preview = ref<BankImportResult | null>(null)
 
 function accountsFor(currency: string): BankAccount[] {
@@ -875,6 +887,7 @@ function openImport() {
   importFile.value = null
   importAccountId.value = null
   preview.value = null
+  pdfPassword.value = ''
   importVisible.value = true
 }
 
@@ -882,13 +895,13 @@ async function refreshPreview() {
   if (!importFile.value) return
   importLoading.value = true
   try {
-    preview.value = (await importBankFile(importFile.value, importAccountId.value, false)).data
+    preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value)).data
     // Con una sola cuenta posible no hay nada que elegir.
     if (preview.value.needs_account && !importAccountId.value) {
       const options = accountsFor(preview.value.currency).filter(a => a.bank === preview.value!.bank)
       if (options.length === 1) {
         importAccountId.value = options[0].id
-        preview.value = (await importBankFile(importFile.value, importAccountId.value, false)).data
+        preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value)).data
       }
     }
   } catch (e) {
@@ -903,14 +916,16 @@ function onFile(event: Event) {
   importFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
   importAccountId.value = null
   preview.value = null
-  refreshPreview()
+  pdfPassword.value = ''
+  // Un PDF con clave no se puede leer hasta que la escriban.
+  if (!isPdf.value) refreshPreview()
 }
 
 async function submitImport() {
   if (!importFile.value) return
   saving.value = true
   try {
-    const res = await importBankFile(importFile.value, importAccountId.value, true)
+    const res = await importBankFile(importFile.value, importAccountId.value, true, pdfPassword.value)
     toast.add({
       severity: 'success',
       summary: res.message,
