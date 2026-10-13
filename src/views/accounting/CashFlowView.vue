@@ -172,6 +172,43 @@
         estimación; lo demás viene de la planilla, de comprobantes o gastos con vencimiento, o de lo que programaste.
       </p>
 
+      <!-- Préstamos -->
+      <div v-if="data.loans.length" class="bg-white rounded-xl border border-gray-200">
+        <div class="px-4 py-3 border-b border-gray-100">
+          <h2 class="text-sm font-semibold text-gray-800">Préstamos</h2>
+          <p class="text-xs text-gray-500">
+            Según su cronograma, dando por pagada toda cuota ya vencida. De cada cuota, solo el interés y el seguro son
+            gasto; la amortización devuelve capital.
+          </p>
+        </div>
+        <div class="divide-y divide-gray-100">
+          <div v-for="loan in data.loans" :key="loan.id" class="px-4 py-3 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="text-sm">
+                <span class="font-medium text-gray-800">{{ loan.name }}</span>
+                <span class="text-gray-500">
+                  · {{ loanMoney(loan, loan.principal) }}<template v-if="loan.annual_rate"> al {{ loan.annual_rate }} % anual</template>
+                  · cuota {{ loan.paid_count }} de {{ loan.installments }} pagada
+                </span>
+              </div>
+              <span v-if="loan.next" class="text-xs text-gray-500">
+                Próxima: {{ loanMoney(loan, loan.next.total) }} el {{ shortDate(loan.next.due_date) }}
+                <template v-if="loan.last_due && loan.last_due !== loan.next.due_date"> · termina el {{ shortDate(loan.last_due) }} de {{ loan.last_due.slice(0, 4) }}</template>
+                <template v-else> · es la última</template>
+              </span>
+              <span v-else class="text-xs text-emerald-700">Terminado de pagar</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+              <div><div class="text-xs text-gray-500">Capital por devolver</div><div class="font-semibold tabular-nums">{{ loanMoney(loan, loan.outstanding) }}</div></div>
+              <div><div class="text-xs text-gray-500">Falta pagar en total</div><div class="font-semibold tabular-nums">{{ loanMoney(loan, loan.remaining) }}</div></div>
+              <div><div class="text-xs text-gray-500">Capital pagado este año</div><div class="tabular-nums text-gray-700">{{ loanMoney(loan, loan.year_principal) }}</div></div>
+              <div><div class="text-xs text-gray-500">Interés pagado este año</div><div class="tabular-nums text-gray-700">{{ loanMoney(loan, loan.year_interest) }}</div></div>
+              <div><div class="text-xs text-gray-500">Desgravamen este año</div><div class="tabular-nums text-gray-700">{{ loanMoney(loan, loan.year_insurance) }}</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Compromisos programados -->
       <div class="bg-white rounded-xl border border-gray-200">
         <div class="px-4 py-3 border-b border-gray-100">
@@ -269,7 +306,7 @@ import Checkbox from 'primevue/checkbox'
 import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
 import { getCashFlow, setCashBalance, saveCashPlanItem, deleteCashPlanItem, accountingErrorMessage } from '@/api/accounting.api'
-import type { CashAccount, CashFlow, CashFlowLine, CashPlanItem } from '@/types/accounting.types'
+import type { CashAccount, CashFlow, CashFlowLine, CashPlanItem, LoanSummary } from '@/types/accounting.types'
 
 type Section = 'in' | 'out'
 
@@ -315,6 +352,10 @@ function format(value: number): string {
   if (rounded === 0) return '-'
   const text = Math.abs(rounded).toLocaleString('es-PE')
   return rounded < 0 ? `(${text})` : text
+}
+
+function loanMoney(loan: LoanSummary, amount: number): string {
+  return `${loan.currency === 'USD' ? 'US$' : 'S/'} ${plain(amount)}`
 }
 
 function shortDate(value: string): string {

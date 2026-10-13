@@ -538,5 +538,28 @@ export interface CashFlow {
   accounts: CashAccount[]
   lines: CashFlowLine[]
   notes: { kind: 'receivable' | 'payable'; amount: number; text: string }[]
+  loans: LoanSummary[]
   plan_items: CashPlanItem[]
+}
+
+/** Un préstamo según su cronograma: da por pagada toda cuota ya vencida. */
+export interface LoanSummary {
+  id: number
+  lender: string
+  name: string
+  currency: 'PEN' | 'USD'
+  principal: number
+  annual_rate: number | null
+  installments: number
+  paid_count: number
+  /** Capital que falta devolver. */
+  outstanding: number
+  /** Todo lo que falta pagar, con intereses y seguro. */
+  remaining: number
+  next: { due_date: string; total: number } | null
+  last_due: string | null
+  /** Del año en curso: el capital no es gasto; el interés y el seguro sí. */
+  year_principal: number
+  year_interest: number
+  year_insurance: number
 }
