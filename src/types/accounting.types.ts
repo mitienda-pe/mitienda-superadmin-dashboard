@@ -7,6 +7,31 @@ export interface ExpenseCategory {
   name: string
   is_payroll: boolean
   is_active: boolean
+  /** Bloque del estado de resultados donde cae. */
+  statement_function: StatementFunction
+}
+
+export type StatementFunction = 'costo' | 'admin' | 'ventas' | 'financiero' | 'excluido'
+
+export interface IncomeStatementRow {
+  type: 'section' | 'group' | 'line' | 'subtotal' | 'total' | 'result'
+  label: string
+  /** Un valor por mes, en el orden de `periods`; vacío en los títulos. */
+  values: number[]
+  total: number | null
+  note: string | null
+}
+
+export interface IncomeStatement {
+  year: number
+  periods: string[]
+  rows: IncomeStatementRow[]
+  coverage: {
+    payroll_months: string[]
+    expense_months: string[]
+    unclassified: number
+    untagged_income: number
+  }
 }
 
 export type PayeeKind = 'proveedor' | 'empleado'
@@ -325,6 +350,10 @@ export interface Employee {
   vacation_opening_date: string | null
   vacation_taken: number
   vacation_balance: number | null
+  /** Reparto de su costo en el estado de resultados; suman 100. */
+  share_cost: number
+  share_admin: number
+  share_sales: number
   current_salary: EmployeeSalary | null
   salaries: EmployeeSalary[]
 }

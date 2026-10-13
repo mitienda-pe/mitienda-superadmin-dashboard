@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -18,7 +18,7 @@ export async function getExpenseCategories() {
 
 export async function saveExpenseCategory(
   id: number | null,
-  payload: { name: string; group_name: string; is_payroll?: boolean; is_active?: boolean }
+  payload: { name: string; group_name: string; is_payroll?: boolean; is_active?: boolean; statement_function?: StatementFunction }
 ) {
   const res = id === null
     ? await api.post<{ data: ExpenseCategory[] }>(`${BASE}/categories`, payload)
@@ -196,6 +196,12 @@ export async function unlinkBankMovement(linkId: number) {
   return res.data
 }
 
+/** Estado de resultados por función, mes a mes (solo Master: reparte el costo de cada persona). */
+export async function getIncomeStatement(year: number) {
+  const res = await api.get<{ data: IncomeStatement }>(`${BASE}/income-statement`, { params: { year } })
+  return res.data.data
+}
+
 // --- Planilla (solo Master) ---
 
 const PAYROLL = `${BASE}/payroll`
@@ -232,6 +238,8 @@ export async function saveEmployee(
     cuspp: string
     vacation_opening_date: string | null
     vacation_opening_days: number | null
+    share_cost: number
+    share_sales: number
   }
 ) {
   const res = await api.put<{ data: Employee }>(`${PAYROLL}/employees/${payeeId}`, payload)

@@ -30,6 +30,7 @@
             <span class="text-sm" :class="category.is_active ? 'text-gray-700' : 'text-gray-400 line-through'">
               {{ category.name }}
               <span v-if="category.is_payroll" class="text-xs text-purple-600 ml-1">planilla</span>
+              <span class="text-xs text-gray-400 ml-1">· {{ functionLabel(category.statement_function) }}</span>
             </span>
             <Button
               v-if="authStore.canWriteFinance"
@@ -54,6 +55,10 @@
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Grupo *</label>
           <Dropdown v-model="form.group_name" :options="groupNames" editable placeholder="Operación, Planilla…" class="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">En el estado de resultados va en</label>
+          <Dropdown v-model="form.statement_function" :options="FUNCTIONS" optionLabel="label" optionValue="value" class="w-full" />
         </div>
         <div class="flex items-center gap-2">
           <Checkbox v-model="form.is_payroll" inputId="payroll" binary />
@@ -84,7 +89,7 @@ import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import { getExpenseCategories, saveExpenseCategory, accountingErrorMessage } from '@/api/accounting.api'
-import type { ExpenseCategory } from '@/types/accounting.types'
+import type { ExpenseCategory, StatementFunction } from '@/types/accounting.types'
 
 const toast = useToast()
 const authStore = useAuthStore()
@@ -119,7 +124,19 @@ async function load() {
 const visible = ref(false)
 const saving = ref(false)
 const editing = ref<ExpenseCategory | null>(null)
-const form = reactive({ name: '', group_name: '', is_payroll: false, is_active: true })
+const FUNCTIONS: { label: string; value: StatementFunction }[] = [
+  { label: 'Costo de servicio', value: 'costo' },
+  { label: 'Gasto administrativo', value: 'admin' },
+  { label: 'Gasto de venta', value: 'ventas' },
+  { label: 'Gasto financiero', value: 'financiero' },
+  { label: 'No va al estado de resultados', value: 'excluido' }
+]
+
+function functionLabel(value: StatementFunction): string {
+  return FUNCTIONS.find(f => f.value === value)?.label.toLowerCase() ?? value
+}
+
+const form = reactive({ name: '', group_name: '', is_payroll: false, is_active: true, statement_function: 'admin' as StatementFunction })
 
 function open(row: ExpenseCategory | null) {
   editing.value = row
@@ -127,6 +144,7 @@ function open(row: ExpenseCategory | null) {
   form.group_name = row?.group_name ?? ''
   form.is_payroll = row?.is_payroll ?? false
   form.is_active = row?.is_active ?? true
+  form.statement_function = row?.statement_function ?? 'admin'
   visible.value = true
 }
 
@@ -142,7 +160,8 @@ async function submit() {
       name: form.name.trim(),
       group_name: form.group_name.trim(),
       is_payroll: form.is_payroll,
-      is_active: form.is_active
+      is_active: form.is_active,
+      statement_function: form.statement_function
     })
     visible.value = false
   } catch (e) {

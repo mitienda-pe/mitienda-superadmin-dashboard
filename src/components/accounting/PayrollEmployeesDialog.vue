@@ -70,6 +70,25 @@
               cada boleta. Sin ese punto de partida no se muestra saldo.
             </p>
           </div>
+          <div class="bg-gray-50 rounded-lg p-3 space-y-2">
+            <div class="flex flex-wrap items-end gap-3">
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Costo de servicio</label>
+                <InputNumber v-model="form.share_cost" :min="0" :max="100" :maxFractionDigits="2" suffix=" %" inputClass="w-24" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1">Ventas</label>
+                <InputNumber v-model="form.share_sales" :min="0" :max="100" :maxFractionDigits="2" suffix=" %" inputClass="w-24" />
+              </div>
+              <div class="text-sm text-gray-700 pb-2">
+                Administración: <span class="font-semibold">{{ shareAdmin }} %</span>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500">
+              Cómo se reparte su costo en el estado de resultados. Lo que no va a costo de servicio ni a ventas queda en
+              administración.
+            </p>
+          </div>
           <div class="flex justify-end">
             <Button label="Guardar ficha" icon="pi pi-check" :loading="saving" @click="submitRecord" />
           </div>
@@ -184,8 +203,11 @@ const form = reactive({
   end_date: '',
   cuspp: '',
   vacation_opening_days: null as number | null,
-  vacation_opening_date: ''
+  vacation_opening_date: '',
+  share_cost: 0 as number | null,
+  share_sales: 0 as number | null
 })
+const shareAdmin = computed(() => Math.max(0, Math.round((100 - (form.share_cost ?? 0) - (form.share_sales ?? 0)) * 100) / 100))
 const salaryForm = reactive({ effective_from: '', base_salary: null as number | null, work_condition: 0 as number | null, family_allowance: false, note: '' })
 
 function money(amount: number): string {
@@ -212,6 +234,8 @@ function select(employee: Employee) {
   form.cuspp = employee.cuspp ?? ''
   form.vacation_opening_days = employee.vacation_opening_days
   form.vacation_opening_date = employee.vacation_opening_date ?? ''
+  form.share_cost = employee.share_cost
+  form.share_sales = employee.share_sales
   resetSalary()
 }
 
@@ -277,7 +301,9 @@ function submitRecord() {
         end_date: form.end_date || null,
         cuspp: form.cuspp.trim(),
         vacation_opening_date: form.vacation_opening_date || null,
-        vacation_opening_days: form.vacation_opening_date ? (form.vacation_opening_days ?? 0) : null
+        vacation_opening_days: form.vacation_opening_date ? (form.vacation_opening_days ?? 0) : null,
+        share_cost: form.share_cost ?? 0,
+        share_sales: form.share_sales ?? 0
       }),
     'Ficha guardada'
   )
