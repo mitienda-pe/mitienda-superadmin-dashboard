@@ -267,6 +267,57 @@
                   <div class="text-sm tabular-nums text-gray-800 whitespace-nowrap">{{ money(invoice.open_amount, invoice.currency) }}</div>
                 </label>
               </div>
+
+              <!-- Un depósito que cubre varias facturas del mismo cliente -->
+              <div v-if="pickedCustomer && !customerOpen">
+                <Button
+                  :label="`Repartir entre lo pendiente de ${pickedCustomer.name}`"
+                  icon="pi pi-sitemap"
+                  text
+                  size="small"
+                  :loading="loadingCustomer"
+                  @click="loadCustomer"
+                />
+              </div>
+              <div v-if="customerOpen" class="border border-primary/30 bg-primary/5 rounded-lg p-3 space-y-2">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="text-sm font-medium text-gray-800">Pendiente de {{ customerOpen.customer_name }}</div>
+                  <Button label="Volver a una sola" text size="small" severity="secondary" @click="customerOpen = null" />
+                </div>
+                <p class="text-xs text-gray-500">
+                  El depósito se aplica de la factura más antigua a la más nueva. Desmarca las que ya se cobraron por otro
+                  lado o las que este pago no cubre.
+                </p>
+                <div class="max-h-64 overflow-y-auto bg-white border border-gray-100 rounded-lg divide-y divide-gray-100">
+                  <label v-for="invoice in customerOpen.invoices" :key="invoice.id" class="flex items-center gap-3 px-3 py-2 cursor-pointer">
+                    <Checkbox v-model="customerChosen" :value="invoice.id" />
+                    <div class="flex-1 min-w-0">
+                      <div class="text-sm text-gray-800">
+                        <span class="font-medium">{{ invoice.number }}</span>
+                        <span class="text-xs text-gray-500"> · {{ formatDate(invoice.issue_date) }}</span>
+                        <span v-if="invoice.unconfirmed" class="text-xs text-amber-600"> · sin confirmar</span>
+                      </div>
+                      <div class="text-xs text-gray-500">saldo {{ money(invoice.open_amount, current.currency) }}</div>
+                    </div>
+                    <div class="text-right whitespace-nowrap">
+                      <div v-if="customerPlan[invoice.id]" class="text-sm tabular-nums font-medium text-gray-900">
+                        {{ money(customerPlan[invoice.id] ?? 0, current.currency) }}
+                      </div>
+                      <div v-else class="text-sm text-gray-300">-</div>
+                      <div v-if="customerPlan[invoice.id] && (customerPlan[invoice.id] ?? 0) < invoice.open_amount" class="text-xs text-amber-600">
+                        quedan {{ money(invoice.open_amount - (customerPlan[invoice.id] ?? 0), current.currency) }}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                <div class="flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-gray-600">
+                  <span>Se aplican <strong>{{ money(customerSummary.applied, current.currency) }}</strong> a {{ customerSummary.count }} comprobantes</span>
+                  <span v-if="customerSummary.unapplied > 0" class="text-amber-700">
+                    Sobran {{ money(customerSummary.unapplied, current.currency) }} del depósito
+                  </span>
+                  <span v-if="customerSummary.debt > 0">El cliente queda debiendo {{ money(customerSummary.debt, current.currency) }}</span>
+                </div>
+              </div>
             </template>
           </template>
 
@@ -342,7 +393,7 @@
           </template>
 
           <!-- Importe de esta parte: solo cuando se cruza con un comprobante o un gasto -->
-          <div v-if="mode === 'cobro' || mode === 'pago'" class="flex items-end gap-3">
+          <div v-if="(mode === 'cobro' && !customerOpen) || mode === 'pago'" class="flex items-end gap-3">
             <div class="w-48">
               <label class="block text-sm font-medium text-gray-600 mb-1">Importe a aplicar</label>
               <InputNumber v-model="partAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
@@ -358,7 +409,7 @@
         <Button label="Cerrar" text severity="secondary" @click="reconcileVisible = false" />
         <Button
           v-if="current && current.remaining > 0 && authStore.canWriteFinance"
-          label="Conciliar"
+          :label="mode === 'cobro' && customerOpen ? 'Aplicar el reparto' : 'Conciliar'"
           icon="pi pi-check"
           :loading="saving"
           @click="submitReconcile"
@@ -493,18 +544,20 @@ import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import RadioButton from 'primevue/radiobutton'
+import Checkbox from 'primevue/checkbox'
 import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
-  markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage
+  markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
+  getCustomerOpenInvoices
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
   BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary, ExpenseCategory,
-  ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput
+  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput
 } from '@/types/accounting.types'
 
 const toast = useToast()
@@ -690,7 +743,61 @@ const categoryOptions = computed(() =>
   categories.value.filter(c => c.is_active).map(c => ({ label: `${c.group_name} · ${c.name}`, value: c.id }))
 )
 
+// --- Reparto entre lo pendiente de un cliente ---
+const customerOpen = ref<CustomerOpenInvoices | null>(null)
+const customerChosen = ref<number[]>([])
+const loadingCustomer = ref(false)
+
+const pickedCustomer = computed(() => {
+  const invoice = invoiceOptions.value.find(i => i.id === pickedInvoice.value)
+  return invoice?.customer_document ? { document: invoice.customer_document, name: invoice.customer_name } : null
+})
+
+/** Lo mismo que hará el servidor: de la más antigua a la más nueva, en céntimos. */
+const customerPlan = computed<Record<number, number>>(() => {
+  const plan: Record<number, number> = {}
+  let cents = Math.round((current.value?.remaining ?? 0) * 100)
+  for (const invoice of customerOpen.value?.invoices ?? []) {
+    if (cents <= 0) break
+    if (!customerChosen.value.includes(invoice.id)) continue
+    const apply = Math.min(cents, Math.round(invoice.open_amount * 100))
+    if (apply <= 0) continue
+    plan[invoice.id] = apply / 100
+    cents -= apply
+  }
+  return plan
+})
+
+const customerSummary = computed(() => {
+  const applied = Object.values(customerPlan.value).reduce((sum, amount) => sum + amount, 0)
+  const open = (customerOpen.value?.invoices ?? []).reduce((sum, invoice) => sum + invoice.open_amount, 0)
+  return {
+    applied,
+    count: Object.keys(customerPlan.value).length,
+    unapplied: Math.max(0, Math.round(((current.value?.remaining ?? 0) - applied) * 100) / 100),
+    debt: Math.max(0, Math.round((open - applied) * 100) / 100)
+  }
+})
+
+async function loadCustomer() {
+  if (!current.value || !pickedCustomer.value) return
+  loadingCustomer.value = true
+  try {
+    const open = await getCustomerOpenInvoices(current.value.id, pickedCustomer.value.document)
+    customerOpen.value = open
+    // Lo sin confirmar no entra solo: puede que ya esté cobrado. Lo pendiente o cobrado en parte, sí.
+    const sure = open.invoices.filter(invoice => !invoice.unconfirmed).map(invoice => invoice.id)
+    customerChosen.value = sure.length > 0 ? sure : (pickedInvoice.value ? [pickedInvoice.value] : [])
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo cargar lo pendiente del cliente', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    loadingCustomer.value = false
+  }
+}
+
 function resetChoice() {
+  customerOpen.value = null
+  customerChosen.value = []
   pickedInvoice.value = null
   pickedExpense.value = null
   partAmount.value = current.value?.remaining ?? null
@@ -803,7 +910,11 @@ async function submitReconcile() {
   if (!current.value) return
   let payload: ReconcileInput
 
-  if (mode.value === 'cobro') {
+  if (mode.value === 'cobro' && customerOpen.value) {
+    const ids = Object.keys(customerPlan.value).map(Number)
+    if (ids.length === 0) return warn('Marca al menos un comprobante con saldo')
+    payload = { kind: 'cliente', customer_document: customerOpen.value.customer_document, invoice_ids: ids }
+  } else if (mode.value === 'cobro') {
     if (!pickedInvoice.value) return warn('Elige el comprobante que se cobró')
     if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
     payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }

@@ -294,6 +294,23 @@ export type ReconcileInput =
   | { kind: 'pago'; expense_id: number; amount?: number }
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
   | { kind: 'otro'; label: string; note?: string }
+  | { kind: 'cliente'; customer_document: string; invoice_ids: number[] }
+
+/** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */
+export interface CustomerOpenInvoices {
+  customer_name: string
+  customer_document: string
+  invoices: {
+    id: number
+    number: string
+    issue_date: string
+    due_date: string | null
+    total: number
+    open_amount: number
+    /** "Por confirmar": puede que ya esté cobrada y falte registrarlo. */
+    unconfirmed: boolean
+  }[]
+}
 
 // --- Planilla ---
 

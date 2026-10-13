@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -169,6 +169,16 @@ export async function getBankSuggestions(movementId: number) {
 export async function reconcileBankMovement(movementId: number, payload: ReconcileInput) {
   const res = await api.post<{ message: string; data: BankMovement }>(`${BASE}/bank-movements/${movementId}/reconcile`, payload)
   return res.data
+}
+
+/** Todo lo que el cliente tiene sin cobrar en la moneda del movimiento. */
+export async function getCustomerOpenInvoices(movementId: number, customerDocument: string) {
+  const res = await api.post<{ data: CustomerOpenInvoices }>(`${BASE}/bank-movements/${movementId}/reconcile`, {
+    kind: 'cliente',
+    customer_document: customerDocument,
+    preview: true
+  })
+  return res.data.data
 }
 
 export async function markBankMovements(movementIds: number[], label: string) {
