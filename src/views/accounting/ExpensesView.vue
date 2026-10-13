@@ -20,14 +20,6 @@
           outlined
           @click="openSire"
         />
-        <Button
-          v-if="authStore.canWriteFinance"
-          label="Planilla del mes"
-          icon="pi pi-users"
-          severity="secondary"
-          outlined
-          @click="payrollVisible = true"
-        />
         <Button v-if="authStore.canWriteFinance" label="Registrar gasto" icon="pi pi-plus" @click="openExpense(null)" />
       </div>
     </div>
@@ -130,7 +122,7 @@
       <i class="pi pi-wallet text-4xl text-gray-300 mb-3"></i>
       <p class="text-gray-500 font-medium">Sin gastos</p>
       <p class="text-sm text-gray-400 mt-1">
-        No hay gastos con estos filtros. Registra el primero o genera la planilla del mes.
+        No hay gastos con estos filtros. Registra el primero o cierra la planilla del mes.
       </p>
     </div>
 
@@ -519,24 +511,6 @@
         />
       </template>
     </Dialog>
-
-    <!-- Planilla del mes -->
-    <Dialog v-model:visible="payrollVisible" modal header="Planilla del mes" :style="{ width: '28rem' }">
-      <div class="space-y-4">
-        <p class="text-sm text-gray-500">
-          Crea un gasto por cada persona activa con monto mensual definido, por pagar. Si el mes ya se generó, no repite.
-          El monto de cada uno se edita después si ese mes fue distinto.
-        </p>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Mes</label>
-          <InputText v-model="payrollPeriod" type="month" class="w-full" />
-        </div>
-      </div>
-      <template #footer>
-        <Button label="Cancelar" text severity="secondary" @click="payrollVisible = false" />
-        <Button label="Generar" icon="pi pi-check" :loading="saving" :disabled="!payrollPeriod" @click="submitPayroll" />
-      </template>
-    </Dialog>
   </div>
 </template>
 
@@ -558,7 +532,7 @@ import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
-  getExpenses, getExpenseCategories, getPayees, saveExpense, voidExpense, generatePayroll,
+  getExpenses, getExpenseCategories, getPayees, saveExpense, voidExpense,
   getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage
 } from '@/api/accounting.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
@@ -1032,24 +1006,6 @@ async function submitSire() {
     load()
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo importar', detail: accountingErrorMessage(e), life: 7000 })
-  } finally {
-    saving.value = false
-  }
-}
-
-// --- Planilla ---
-const payrollVisible = ref(false)
-const payrollPeriod = ref(`${currentYear}-${String(new Date().getMonth() + 1).padStart(2, '0')}`)
-
-async function submitPayroll() {
-  saving.value = true
-  try {
-    const res = await generatePayroll(payrollPeriod.value)
-    toast.add({ severity: res.data.created > 0 ? 'success' : 'info', summary: res.message, life: 5000 })
-    payrollVisible.value = false
-    load()
-  } catch (e) {
-    toast.add({ severity: 'error', summary: 'No se pudo generar', detail: accountingErrorMessage(e), life: 7000 })
   } finally {
     saving.value = false
   }

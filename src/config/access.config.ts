@@ -14,7 +14,11 @@ const FINANCE_PATHS = [
   '/accounting'
 ]
 
+/** Dentro de finanzas pero solo para Master: los sueldos de cada persona. */
+const MASTER_ONLY_PATHS = ['/accounting/payroll']
+
 export function areaOfPath(path: string): PanelArea {
+  if (MASTER_ONLY_PATHS.some(base => path === base || path.startsWith(`${base}/`))) return 'platform'
   return FINANCE_PATHS.some(base => path === base || path.startsWith(`${base}/`)) ? 'finance' : 'platform'
 }
 

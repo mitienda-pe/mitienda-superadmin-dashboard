@@ -2,7 +2,8 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  PayrollPeriod
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
 
@@ -70,15 +71,6 @@ export async function saveExpense(id: number | null, payload: ExpenseInput) {
 
 export async function voidExpense(id: number) {
   const res = await api.post<{ message: string; data: Expense }>(`${BASE}/expenses/${id}/void`)
-  return res.data
-}
-
-/** Un gasto por empleado activo con monto mensual; no repite lo ya generado. */
-export async function generatePayroll(period: string) {
-  const res = await api.post<{ message: string; data: { created: number; skipped: number; period: string } }>(
-    `${BASE}/payroll`,
-    { period }
-  )
   return res.data
 }
 
@@ -202,6 +194,96 @@ export async function autoReconcileBanks() {
 export async function unlinkBankMovement(linkId: number) {
   const res = await api.delete<{ message: string; data: BankMovement }>(`${BASE}/bank-links/${linkId}`)
   return res.data
+}
+
+// --- Planilla (solo Master) ---
+
+const PAYROLL = `${BASE}/payroll`
+
+export async function getPayrollSettings(year: number) {
+  const res = await api.get<{ data: { settings: PayrollSettings; funds: PensionFund[] } }>(`${PAYROLL}/settings`, { params: { year } })
+  return res.data.data
+}
+
+export async function savePayrollSettings(year: number, payload: Omit<PayrollSettings, 'year' | 'inherited'>) {
+  const res = await api.put<{ data: PayrollSettings }>(`${PAYROLL}/settings/${year}`, payload)
+  return res.data.data
+}
+
+export async function savePensionFund(id: number | null, payload: Omit<PensionFund, 'id'>) {
+  const res = id === null
+    ? await api.post<{ data: PensionFund[] }>(`${PAYROLL}/funds`, payload)
+    : await api.put<{ data: PensionFund[] }>(`${PAYROLL}/funds/${id}`, payload)
+  return res.data.data
+}
+
+export async function getEmployees() {
+  const res = await api.get<{ data: Employee[] }>(`${PAYROLL}/employees`)
+  return res.data.data
+}
+
+export async function saveEmployee(
+  payeeId: number,
+  payload: { position: string; start_date: string | null; end_date: string | null; pension_fund_id: number | null; cuspp: string }
+) {
+  const res = await api.put<{ data: Employee }>(`${PAYROLL}/employees/${payeeId}`, payload)
+  return res.data.data
+}
+
+/** Con una fecha de vigencia que ya existe, corrige ese sueldo. */
+export async function saveEmployeeSalary(
+  payeeId: number,
+  payload: { effective_from: string; base_salary: number; work_condition: number; family_allowance: boolean; note: string }
+) {
+  const res = await api.post<{ data: Employee }>(`${PAYROLL}/employees/${payeeId}/salaries`, payload)
+  return res.data.data
+}
+
+export async function deleteEmployeeSalary(salaryId: number) {
+  const res = await api.delete<{ data: Employee }>(`${PAYROLL}/salaries/${salaryId}`)
+  return res.data.data
+}
+
+export async function getPayrollPeriods(year: number) {
+  const res = await api.get<{ data: PayrollPeriod[] }>(`${PAYROLL}/periods`, { params: { year } })
+  return res.data.data
+}
+
+export async function getPayroll(period: string) {
+  const res = await api.get<{ data: Payroll }>(`${PAYROLL}/periods/${period}`)
+  return res.data.data
+}
+
+/** Abre el mes o suma a quien falte. `refresh` relee las fichas; `with_expenses: false` lo carga como historial. */
+export async function preparePayroll(period: string, options: { with_expenses?: boolean; refresh?: boolean } = {}) {
+  const res = await api.post<{ message: string; data: Payroll }>(`${PAYROLL}/periods/${period}/prepare`, options)
+  return res.data
+}
+
+export async function closePayroll(period: string) {
+  const res = await api.post<{ message: string; data: Payroll }>(`${PAYROLL}/periods/${period}/close`)
+  return res.data
+}
+
+export async function reopenPayroll(period: string) {
+  const res = await api.post<{ message: string; data: Payroll }>(`${PAYROLL}/periods/${period}/reopen`)
+  return res.data
+}
+
+export async function updatePayrollLine(lineId: number, payload: PayrollLineInput) {
+  const res = await api.put<{ message: string; data: Payroll }>(`${PAYROLL}/lines/${lineId}`, payload)
+  return res.data
+}
+
+export async function deletePayrollLine(lineId: number) {
+  const res = await api.delete<{ message: string; data: Payroll }>(`${PAYROLL}/lines/${lineId}`)
+  return res.data
+}
+
+/** La boleta de pago en PDF, como URL local para abrirla en otra pestaña. */
+export async function getPayslipUrl(lineId: number) {
+  const res = await api.get<Blob>(`${PAYROLL}/lines/${lineId}/payslip`, { responseType: 'blob' })
+  return URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
 }
 
 export function accountingErrorMessage(e: any): string {

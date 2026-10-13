@@ -6,7 +6,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Proveedores y personal</h1>
         <p class="text-sm text-gray-500 mt-1 max-w-3xl">
-          A quién le paga MiTienda. El personal lleva su monto mensual: con eso se genera la planilla del mes desde Gastos.
+          A quién le paga MiTienda. El sueldo y la ficha de cada persona del equipo se llevan en Planilla.
         </p>
       </div>
       <Button v-if="authStore.canWriteFinance" label="Agregar" icon="pi pi-plus" @click="open(null)" />
@@ -115,14 +115,13 @@
               class="w-full"
             />
           </div>
-          <div>
+          <div v-if="form.kind === 'proveedor'">
             <label class="block text-sm font-medium text-gray-600 mb-1">Monto mensual (S/)</label>
             <InputNumber v-model="form.default_amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
           </div>
         </div>
         <p v-if="form.kind === 'empleado'" class="text-xs text-gray-500">
-          Para que entre en "Planilla del mes" necesita categoría y monto mensual. Pon el costo total de la persona o
-          regístralo por partes (sueldo, EsSalud…) como gastos separados.
+          Su sueldo, su sistema de pensiones y su fecha de ingreso se completan en Planilla → Personal.
         </p>
         <div v-if="form.kind === 'proveedor'">
           <label class="block text-sm font-medium text-gray-600 mb-1">Cómo aparece en el estado de cuenta</label>

@@ -26,6 +26,7 @@ export const INVOICES_TABS: SectionTab[] = [
 export const ACCOUNTING_TABS: SectionTab[] = [
   { to: '/accounting/expenses', label: 'Gastos', icon: 'pi pi-wallet' },
   { to: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' },
+  { to: '/accounting/payroll', label: 'Planilla', icon: 'pi pi-id-card' },
   { to: '/accounting/payees', label: 'Proveedores y personal', icon: 'pi pi-users' },
   { to: '/accounting/categories', label: 'Categorías', icon: 'pi pi-tags' }
 ]

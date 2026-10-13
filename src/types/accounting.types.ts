@@ -269,3 +269,154 @@ export type ReconcileInput =
   | { kind: 'pago'; expense_id: number; amount?: number }
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
   | { kind: 'otro'; label: string; note?: string }
+
+// --- Planilla ---
+
+export interface PayrollSettings {
+  year: number
+  /** Son los de un año anterior: falta confirmar los de este. */
+  inherited: boolean
+  uit: number
+  minimum_wage: number
+  /** Tasas como fracción: 0.09 es 9 %. */
+  essalud_rate: number
+  /** Sueldos por gratificación: 0.5 en pequeña empresa. */
+  gratification_factor: number
+  insurance_cap: number
+  life_insurance: number
+}
+
+export interface PensionFund {
+  id: number
+  name: string
+  kind: 'afp' | 'onp' | 'ninguno'
+  payee_name: string | null
+  contribution_rate: number
+  insurance_rate: number
+  commission_rate: number
+  is_active: boolean
+}
+
+export interface EmployeeSalary {
+  id: number
+  effective_from: string
+  base_salary: number
+  work_condition: number
+  family_allowance: boolean
+  note: string | null
+}
+
+export interface Employee {
+  payee_id: number
+  name: string
+  document: string
+  is_active: boolean
+  position: string | null
+  start_date: string | null
+  end_date: string | null
+  pension_fund_id: number | null
+  pension_name: string | null
+  cuspp: string | null
+  current_salary: EmployeeSalary | null
+  salaries: EmployeeSalary[]
+}
+
+/** Cómo salió la retención de renta de quinta del mes. */
+export interface IncomeTaxDetail {
+  projected: number
+  deduction: number
+  annual_tax: number
+  withheld: number
+  divisor: number
+  extra: number
+  amount: number
+}
+
+export interface PayrollLine {
+  id: number
+  payee_id: number
+  payee_name: string
+  payee_document: string
+  position: string | null
+  pension_name: string | null
+  days_worked: number
+  has_family_allowance: boolean
+  /** Lo pactado para el mes; `basic` y `work_condition` son lo pagado según los días. */
+  base_salary: number
+  work_condition_full: number
+  basic: number
+  family_allowance: number
+  work_condition: number
+  commissions: number
+  bonus: number
+  gratification: number
+  gratification_bonus: number
+  taxable: number
+  gross: number
+  onp: number
+  afp_contribution: number
+  afp_insurance: number
+  afp_commission: number
+  /** ONP o AFP: lo retenido para pensiones. */
+  pension: number
+  income_tax: number
+  income_tax_manual: boolean
+  income_tax_detail: IncomeTaxDetail | null
+  advances: number
+  other_deductions: number
+  deductions: number
+  net: number
+  essalud: number
+  life_insurance: number
+  /** Bruto más aportes del empleador. */
+  cost: number
+  note: string | null
+}
+
+export interface PayrollLineInput {
+  days_worked?: number
+  base_salary?: number
+  work_condition_full?: number
+  has_family_allowance?: boolean
+  commissions?: number
+  bonus?: number
+  gratification?: number
+  gratification_bonus?: number
+  advances?: number
+  other_deductions?: number
+  /** null vuelve al cálculo del sistema. */
+  income_tax?: number | null
+  note?: string
+}
+
+export interface PayrollExpense {
+  id: number
+  payee_name: string
+  category_name: string
+  description: string | null
+  due_date: string | null
+  total: number
+  paid_amount: number
+  payment_status: 'pendiente' | 'parcial' | 'pagado'
+}
+
+export interface Payroll {
+  period: string
+  settings: PayrollSettings
+  payroll: { id: number; status: 'borrador' | 'cerrada'; with_expenses: boolean; closed_at: string | null } | null
+  lines: PayrollLine[]
+  totals: Record<string, number>
+  /** Personal del mes que aún no está en la planilla; `problem` dice qué le falta. */
+  pending: { payee_id: number; name: string; ready: boolean; problem: string | null }[]
+  expenses: PayrollExpense[]
+}
+
+export interface PayrollPeriod {
+  period: string
+  status: 'borrador' | 'cerrada'
+  with_expenses: boolean
+  people: number
+  gross: number
+  net: number
+  cost: number
+}
