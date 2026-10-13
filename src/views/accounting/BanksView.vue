@@ -13,13 +13,13 @@
       </div>
       <div v-if="authStore.canWriteFinance" class="flex gap-2">
         <Button
-          v-if="hasCulqi"
+          v-if="accounts.length > 0"
           label="Conciliar automáticamente"
           icon="pi pi-bolt"
           severity="secondary"
           outlined
           :loading="autoRunning"
-          v-tooltip.bottom="'Cobros de Culqi por su código de cargo, y sus abonos que ya llegaron al banco'"
+          v-tooltip.bottom="'Cobros de Culqi por su código, sus abonos al banco, y consumos de proveedores que se reconocen por la glosa'"
           @click="runAuto"
         />
         <Button label="Nueva cuenta" icon="pi pi-plus" severity="secondary" outlined @click="openAccount(null)" />
@@ -603,7 +603,6 @@ async function refreshAll() {
 }
 
 // --- Conciliación automática ---
-const hasCulqi = computed(() => accounts.value.some(a => a.bank === 'Culqi'))
 const autoRunning = ref(false)
 
 async function runAuto() {
@@ -611,10 +610,10 @@ async function runAuto() {
   try {
     const res = await autoReconcileBanks()
     toast.add({
-      severity: res.data.charges + res.data.transfers > 0 ? 'success' : 'info',
+      severity: res.data.charges + res.data.transfers + res.data.expenses > 0 ? 'success' : 'info',
       summary: res.message,
-      detail: res.data.charges_skipped > 0
-        ? `${res.data.charges_skipped} cobros de Culqi quedaron para revisar a mano (sin venta de plan con ese código, o con importe distinto)`
+      detail: res.data.charges_skipped + res.data.expenses_ambiguous > 0
+        ? `Para revisar a mano: ${res.data.charges_skipped} cobros de Culqi (sin venta de plan con ese código, o con importe distinto) y ${res.data.expenses_ambiguous} consumos (calzan con más de un proveedor o les falta categoría)`
         : undefined,
       life: 9000
     })

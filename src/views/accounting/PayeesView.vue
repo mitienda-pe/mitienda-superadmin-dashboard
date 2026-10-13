@@ -45,6 +45,7 @@
           <template #body="{ data: row }">
             <span class="text-sm font-medium" :class="row.is_active ? 'text-gray-800' : 'text-gray-400'">{{ row.name }}</span>
             <div class="text-xs text-gray-400 font-mono">{{ row.document }}</div>
+            <div v-if="row.match_terms" class="text-xs text-gray-400">en el banco: {{ row.match_terms }}</div>
           </template>
         </Column>
         <Column header="Tipo" style="width: 130px">
@@ -123,6 +124,14 @@
           Para que entre en "Planilla del mes" necesita categoría y monto mensual. Pon el costo total de la persona o
           regístralo por partes (sueldo, EsSalud…) como gastos separados.
         </p>
+        <div v-if="form.kind === 'proveedor'">
+          <label class="block text-sm font-medium text-gray-600 mb-1">Cómo aparece en el estado de cuenta</label>
+          <InputText v-model="form.match_terms" maxlength="255" placeholder="AMAZON WEB SERVICES" class="w-full" />
+          <p class="text-xs text-gray-500 mt-1">
+            El texto con que el banco lo nombra en la tarjeta o la cuenta (varios, separados por coma). Con eso y la
+            categoría habitual, sus consumos se convierten solos en gastos al conciliar automáticamente.
+          </p>
+        </div>
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Notas</label>
           <InputText v-model="form.notes" maxlength="255" class="w-full" />
@@ -210,6 +219,7 @@ const form = reactive({
   document: '',
   default_category_id: null as number | null,
   default_amount: null as number | null,
+  match_terms: '',
   notes: '',
   is_active: true
 })
@@ -221,6 +231,7 @@ function open(row: Payee | null) {
   form.document = row?.document ?? ''
   form.default_category_id = row?.default_category_id ?? null
   form.default_amount = row?.default_amount ?? null
+  form.match_terms = row?.match_terms ?? ''
   form.notes = row?.notes ?? ''
   form.is_active = row?.is_active ?? true
   visible.value = true
@@ -240,6 +251,8 @@ async function submit() {
       document: form.document.trim() || undefined,
       default_category_id: form.default_category_id,
       default_amount: form.default_amount,
+      // Siempre se manda: sin esto, editar al proveedor le borraría sus textos.
+      match_terms: form.kind === 'proveedor' ? form.match_terms.trim() : '',
       notes: form.notes.trim() || undefined,
       is_active: form.is_active
     })

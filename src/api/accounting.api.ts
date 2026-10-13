@@ -188,7 +188,10 @@ export async function markBankMovements(movementIds: number[], label: string) {
 
 /** Concilia lo que tiene prueba fuerte: cobros de Culqi por código y sus abonos al banco. */
 export async function autoReconcileBanks() {
-  const res = await api.post<{ message: string; data: { charges: number; charges_skipped: number; transfers: number } }>(
+  const res = await api.post<{
+    message: string
+    data: { charges: number; charges_skipped: number; transfers: number; expenses: number; expenses_ambiguous: number }
+  }>(
     `${BASE}/bank-auto-reconcile`
   )
   return res.data

@@ -20,6 +20,8 @@ export interface Payee {
   default_category_name: string | null
   /** Empleado: lo que se le paga al mes; con esto se genera la planilla. */
   default_amount: number | null
+  /** Cómo aparece en el estado de cuenta, separado por comas: sus consumos se vuelven gasto solos. */
+  match_terms: string
   notes: string | null
   is_active: boolean
   expense_count: number
@@ -31,6 +33,7 @@ export interface PayeeInput {
   document?: string
   default_category_id?: number | null
   default_amount?: number | null
+  match_terms?: string
   notes?: string
   is_active?: boolean
 }
