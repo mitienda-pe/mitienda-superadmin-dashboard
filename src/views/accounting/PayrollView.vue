@@ -318,7 +318,7 @@
             <div class="flex items-center gap-2">
               <Checkbox v-model="lineForm.tax_manual" inputId="taxmanual" binary :disabled="!isDraft" />
               <label for="taxmanual" class="text-sm text-gray-600">Poner la retención a mano</label>
-              <InputNumber v-if="lineForm.tax_manual" v-model="lineForm.income_tax" v-bind="moneyInput" :disabled="!isDraft" class="w-36" />
+              <InputNumber v-if="lineForm.tax_manual" v-model="lineForm.income_tax" v-bind="moneyInput" :disabled="!isDraft" inputClass="w-28" />
             </div>
           </div>
           <dl v-if="taxDetail" class="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-gray-600">
@@ -634,9 +634,21 @@ function removeLine() {
 
 async function openPayslip(line: PayrollLine) {
   payslipLoading.value = line.id
+  // La pestaña se abre antes de pedir el PDF: abrirla después de esperar la
+  // respuesta ya no cuenta como clic y el navegador la bloquea.
+  const tab = window.open('', '_blank')
   try {
-    window.open(await getPayslipUrl(line.id), '_blank')
+    const url = await getPayslipUrl(line.id)
+    if (tab) {
+      tab.location.href = url
+    } else {
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `boleta-${period.value}-${line.payee_name}.pdf`
+      link.click()
+    }
   } catch (e) {
+    tab?.close()
     toast.add({ severity: 'error', summary: 'No se pudo abrir la boleta', detail: accountingErrorMessage(e), life: 6000 })
   } finally {
     payslipLoading.value = null
