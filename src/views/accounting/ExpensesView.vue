@@ -14,7 +14,7 @@
       <div class="flex gap-2">
         <Button
           v-if="authStore.canWriteFinance"
-          label="Importar SIRE"
+          label="Importar comprobantes"
           icon="pi pi-upload"
           severity="secondary"
           outlined
@@ -462,13 +462,14 @@
     </Dialog>
 
     <!-- Importar el registro de compras de SUNAT -->
-    <Dialog v-model:visible="sireVisible" modal header="Importar registro de compras (SIRE)" :style="{ width: '36rem' }">
+    <Dialog v-model:visible="sireVisible" modal header="Importar comprobantes de compra" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Sube el CSV del registro de compras que se descarga de SUNAT. Primero ves qué entraría; nada se guarda hasta
-          que confirmes. Lo que ya se importó antes no se repite.
+          Sube el CSV del registro de compras de SUNAT (SIRE), o el XML de un comprobante suelto, como el Documento
+          Autorizado mensual de Culqi. Primero ves qué entraría; nada se guarda hasta que confirmes, y lo que ya se
+          importó no se repite aunque llegue por el otro camino.
         </p>
-        <input type="file" accept=".csv,text/csv" class="block w-full text-sm text-gray-600" @change="onSireFile" />
+        <input type="file" accept=".csv,.xml,text/csv,text/xml" class="block w-full text-sm text-gray-600" @change="onSireFile" />
 
         <p v-if="sireLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
 
@@ -488,7 +489,7 @@
             <span class="tabular-nums text-gray-800">{{ sirePreview.duplicates }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500">Entran como pagados (cargos de banco y notas de crédito)</span>
+            <span class="text-gray-500">Entran como pagados (bancos, pasarelas y notas de crédito)</span>
             <span class="tabular-nums text-gray-800">{{ sirePreview.settled }}</span>
           </div>
           <div class="flex justify-between">

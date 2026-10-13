@@ -70,7 +70,7 @@ export interface Expense {
   paid_amount: number
   balance: number
   is_overdue: boolean
-  source: 'manual' | 'sire' | 'planilla'
+  source: 'manual' | 'sire' | 'planilla' | 'xml'
 }
 
 export interface ExpenseInput {
