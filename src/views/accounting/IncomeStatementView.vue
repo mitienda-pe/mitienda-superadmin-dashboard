@@ -76,6 +76,53 @@
         Cada categoría de gasto cae en el bloque que tiene asignado en Categorías; el costo de cada persona se reparte
         según su ficha en Planilla → Personal. Los gastos van en negativo.
       </p>
+
+      <!-- Por línea de negocio: solo lo directo; lo común no se reparte -->
+      <div v-if="data.by_line?.lines.length" class="bg-white rounded-xl border border-gray-200 overflow-x-auto" :class="{ 'opacity-60': loading }">
+        <div class="px-4 pt-4">
+          <h2 class="text-base font-semibold text-gray-900">Por línea de negocio</h2>
+          <p class="text-xs text-gray-500 mt-1 max-w-3xl">
+            Ventas según la etiqueta de cada línea del libro de comprobantes. Gasto directo es el que en Gastos tiene su
+            línea asignada; la planilla y los gastos sin línea quedan como costos comunes, sin repartir.
+          </p>
+        </div>
+        <table class="w-full text-sm whitespace-nowrap mt-3">
+          <thead>
+            <tr class="text-xs text-gray-500 border-b border-gray-200">
+              <th class="px-4 py-2 text-left font-medium">Línea</th>
+              <th class="px-4 py-2 text-right font-medium">Ventas</th>
+              <th class="px-4 py-2 text-right font-medium">% de ventas</th>
+              <th class="px-4 py-2 text-right font-medium">Gastos directos</th>
+              <th class="px-4 py-2 text-right font-medium">Contribución</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="line in data.by_line.lines" :key="line.key" class="border-b border-gray-100">
+              <td class="px-4 py-2 text-gray-800">{{ line.name }}</td>
+              <td class="px-4 py-2 text-right tabular-nums">{{ format(line.revenue) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums text-gray-500">{{ share(line.revenue) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums">{{ format(-line.direct) }}</td>
+              <td class="px-4 py-2 text-right tabular-nums font-medium" :class="line.contribution < 0 ? 'text-red-600' : 'text-gray-900'">
+                {{ format(line.contribution) }}
+              </td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="px-4 py-2 text-gray-600" colspan="4">Costos comunes (planilla y gastos sin línea)</td>
+              <td class="px-4 py-2 text-right tabular-nums">{{ format(-data.by_line.common_costs) }}</td>
+            </tr>
+            <tr class="bg-gray-50 font-semibold">
+              <td class="px-4 py-2 text-gray-900" colspan="4">Resultado antes de depreciación, amortización e impuestos</td>
+              <td class="px-4 py-2 text-right tabular-nums" :class="data.by_line.result < 0 ? 'text-red-600' : 'text-gray-900'">
+                {{ format(data.by_line.result) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-if="data.by_line.tagged_costs === 0" class="px-4 py-3 text-xs text-amber-700">
+          Ningún gasto del año tiene línea asignada: la contribución es igual a las ventas. Asígnala en Gastos a lo que
+          sea propio de una línea (por ejemplo, servidores o integraciones solo de B2B).
+        </p>
+      </div>
     </template>
   </div>
 </template>
@@ -109,6 +156,11 @@ function format(value: number): string {
   if (rounded === 0) return '-'
   const text = Math.abs(rounded).toLocaleString('es-PE')
   return rounded < 0 ? `(${text})` : text
+}
+
+function share(amount: number): string {
+  const total = data.value?.by_line?.lines.reduce((sum, line) => sum + line.revenue, 0) ?? 0
+  return total > 0 ? `${((amount / total) * 100).toFixed(1)} %` : '-'
 }
 
 function monthList(periods: string[]): string {

@@ -32,6 +32,13 @@ export interface IncomeStatement {
     unclassified: number
     untagged_income: number
   }
+  /** Ventas y gastos directos por línea de negocio; lo común no se reparte. */
+  by_line?: {
+    lines: Array<{ key: string; name: string; revenue: number; direct: number; contribution: number }>
+    common_costs: number
+    result: number
+    tagged_costs: number
+  }
 }
 
 export type PayeeKind = 'proveedor' | 'empleado'
