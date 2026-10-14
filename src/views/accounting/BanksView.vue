@@ -159,7 +159,7 @@
           <Column header="" style="width: 130px">
             <template #body="{ data: row }">
               <Button
-                v-if="authStore.canWriteFinance || row.links.length > 0"
+                v-if="authStore.canWrite('reconcile') || row.links.length > 0"
                 :label="row.remaining > 0 ? 'Conciliar' : 'Ver'"
                 :icon="row.remaining > 0 ? 'pi pi-link' : 'pi pi-eye'"
                 size="small"
@@ -215,7 +215,7 @@
               <td class="py-1.5 text-right tabular-nums text-gray-800 whitespace-nowrap">{{ money(link.amount, current.currency) }}</td>
               <td class="py-1.5 text-right w-8">
                 <Button
-                  v-if="authStore.canWriteFinance"
+                  v-if="authStore.canWriteFinance || (authStore.canWrite('reconcile') && link.kind === 'cobro')"
                   icon="pi pi-undo"
                   text
                   rounded
@@ -230,7 +230,7 @@
           </tbody>
         </table>
 
-        <template v-if="current.remaining > 0 && authStore.canWriteFinance">
+        <template v-if="current.remaining > 0 && authStore.canWrite('reconcile')">
           <SelectButton v-model="mode" :options="modeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
 
           <!-- Cobro de un comprobante -->
@@ -410,7 +410,7 @@
       <template #footer>
         <Button label="Cerrar" text severity="secondary" @click="reconcileVisible = false" />
         <Button
-          v-if="current && current.remaining > 0 && authStore.canWriteFinance"
+          v-if="current && current.remaining > 0 && authStore.canWrite('reconcile')"
           :label="mode === 'cobro' && customerOpen ? 'Aplicar el reparto' : 'Conciliar'"
           icon="pi pi-check"
           :loading="saving"
@@ -728,11 +728,12 @@ const newExpense = reactive({ payee_id: null as number | null, category_id: null
 const other = reactive({ label: null as string | null, note: '' })
 let changed = false
 
+// Quien solo concilia (ventas) cruza ingresos con comprobantes; lo demás es de contabilidad.
 const modeOptions = computed(() =>
   current.value && current.value.amount >= 0
     ? [
         { label: 'Cobro de un comprobante', value: 'cobro' },
-        { label: 'No es un cobro', value: 'otro' }
+        ...(authStore.canWriteFinance ? [{ label: 'No es un cobro', value: 'otro' }] : [])
       ]
     : [
         { label: 'Pago de un gasto', value: 'pago' },

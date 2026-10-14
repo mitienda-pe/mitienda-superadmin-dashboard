@@ -116,7 +116,7 @@
         </span>
         <div class="flex-1"></div>
         <Button label="Limpiar" severity="secondary" text size="small" @click="selectedIds = []" />
-        <Button label="Etiquetar seleccionadas" icon="pi pi-tags" size="small" @click="openAssign(selectedIds)" />
+        <Button v-if="authStore.canWrite('finance')" label="Etiquetar seleccionadas" icon="pi pi-tags" size="small" @click="openAssign(selectedIds)" />
       </div>
 
       <!-- Todo el filtro, no solo la pagina: para clasificar por lo que la linea
@@ -132,6 +132,7 @@
         </span>
         <div class="flex-1"></div>
         <Button
+          v-if="authStore.canWrite('finance')"
           label="Etiquetar todos los resultados"
           icon="pi pi-tags"
           size="small"
@@ -207,7 +208,7 @@
         <Column headerStyle="width: 6rem">
           <template #body="{ data: row }">
             <div class="flex items-center justify-end">
-              <Button icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
+              <Button v-if="authStore.canWrite('finance')" icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
               <!-- Una nota de credito acredita el comprobante entero, no la linea. -->
               <Button
                 v-if="authStore.canPath('/billing/emit') && (row.document_type === 1 || row.document_type === 2)"

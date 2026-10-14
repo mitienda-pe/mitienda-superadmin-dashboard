@@ -29,7 +29,16 @@ export const useAuthStore = defineStore('auth', () => {
     return info.areas ?? (info.is_superadmin ? [...ALL_AREAS] : [])
   })
   const hasPanelAccess = computed(() => areas.value.length > 0)
-  const canWriteFinance = computed(() => superAdminInfo.value?.finance_write ?? isSuperAdmin.value)
+  /** ¿Puede modificar en esa área? Una sesión guardada sin `write_areas` usa el permiso viejo. */
+  function canWrite(area: string): boolean {
+    const info = superAdminInfo.value
+    if (!info) return false
+    if (info.role === 'master') return true
+    if (info.write_areas) return info.write_areas.includes(area)
+    return areas.value.includes(area) && (info.finance_write ?? info.is_superadmin)
+  }
+  // Las pantallas de Contabilidad (gastos, proveedores, categorías, bancos).
+  const canWriteFinance = computed(() => canWrite('accounting'))
   const homePath = computed(() => homePathFor(areas.value))
 
   function canPath(path: string): boolean {
@@ -258,6 +267,7 @@ export const useAuthStore = defineStore('auth', () => {
     areas,
     hasPanelAccess,
     canWriteFinance,
+    canWrite,
     homePath,
     canPath,
     login,

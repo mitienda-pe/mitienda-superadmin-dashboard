@@ -37,6 +37,8 @@ export interface SuperAdminInfo {
   role?: 'master' | 'desarrollo' | 'ventas' | 'contabilidad' | 'contabilidad_lectura' | null
   /** Partes del panel que puede ver: platform, billing, finance, accounting (ver access.config). */
   areas?: string[]
+  /** Áreas donde puede modificar; en las demás de `areas` solo mira. */
+  write_areas?: string[]
   finance_write?: boolean
   superadmin_type_id?: number
   superadmin_type_name?: string

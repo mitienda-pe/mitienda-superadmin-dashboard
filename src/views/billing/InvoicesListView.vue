@@ -136,7 +136,7 @@
           {{ selected.length }} seleccionado{{ selected.length === 1 ? '' : 's' }} ·
           {{ money(selectedTotal, 'PEN') }}
         </span>
-        <Button label="Registrar cobro" icon="pi pi-check" size="small" @click="openPayment(selected)" />
+        <Button v-if="authStore.canWrite('collections')" label="Registrar cobro" icon="pi pi-check" size="small" @click="openPayment(selected)" />
         <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
       </div>
 
@@ -225,8 +225,9 @@
 
         <Column header="" style="width: 130px">
           <template #body="{ data: row }">
+            <!-- Anotar un cobro a mano; quien solo concilia lo hace desde Bancos -->
             <Button
-              v-if="row.payment_status"
+              v-if="row.payment_status && authStore.canWrite('collections')"
               :label="row.balance > 0 ? 'Registrar' : 'Corregir'"
               icon="pi pi-wallet"
               size="small"
@@ -480,6 +481,7 @@ import Calendar from 'primevue/calendar'
 import Textarea from 'primevue/textarea'
 import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getLedgerInvoices, registerInvoicePayment, getInvoiceInstallments, addInvoiceInstallment, deleteInvoiceInstallment,
@@ -493,6 +495,7 @@ import type {
 } from '@/types/ledger.types'
 
 const toast = useToast()
+const authStore = useAuthStore()
 const { formatDate, formatNumber } = useFormatters()
 
 const invoices = ref<LedgerInvoice[]>([])
