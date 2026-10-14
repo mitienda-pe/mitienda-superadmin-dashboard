@@ -195,6 +195,15 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Programas de convenio (Tu Empresa): el partner solo ve el suyo.
+    path: '/programs',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      { path: '', name: 'Programs', component: () => import('@/views/programs/ProgramsView.vue') }
+    ]
+  },
+  {
     // Contabilidad de gestión: gastos de la empresa. Área de finanzas.
     path: '/accounting',
     component: DashboardLayout,

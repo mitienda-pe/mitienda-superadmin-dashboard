@@ -78,6 +78,7 @@ const navGroups: NavGroup[] = [
     items: [
       { path: '/stores', label: 'Tiendas y usuarios', icon: 'pi pi-shop', also: siblings(STORES_TABS) },
       { path: '/pipeline', label: 'Pipeline de trials', icon: 'pi pi-filter' },
+      { path: '/programs', label: 'Programas', icon: 'pi pi-gift' },
       { path: '/complaints', label: 'Reclamos', icon: 'pi pi-flag' }
     ]
   },

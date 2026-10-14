@@ -57,8 +57,17 @@
           currency="PEN"
           locale="es-PE"
           :minFractionDigits="2"
+          :disabled="useProgramDiscount"
           class="w-full"
         />
+        <label
+          v-if="context?.program_discount && form.frequency === 'annual' && selectedDetail"
+          class="flex items-center gap-2 text-sm text-gray-700 mt-2"
+        >
+          <input v-model="form.apply_program_discount" type="checkbox" class="accent-primary" />
+          {{ context.program_discount.program }}: {{ context.program_discount.percent }} % en el primer año
+          (S/ {{ discountedPrice.toFixed(2) }})
+        </label>
         <p v-if="selectedDetail && form.price !== selectedDetail.precio" class="text-xs text-gray-500 mt-1">
           Precio de lista: S/ {{ selectedDetail.precio.toFixed(2) }}. Se propone lo que la tienda venía pagando.
         </p>
@@ -235,6 +244,7 @@ const form = reactive({
   plan_id: null as number | null,
   frequency: 'monthly' as 'monthly' | 'annual',
   price: 0,
+  apply_program_discount: false,
   document_number: '',
   business_name: '',
   first_name: '',
@@ -299,6 +309,18 @@ function defaultDueDate(): Date {
   return d
 }
 
+// Descuento de programa: solo anual, sobre el precio de lista. El API recalcula.
+const discountedPrice = computed(() => {
+  const pct = context.value?.program_discount?.percent ?? 0
+  return Math.round((selectedDetail.value?.precio ?? 0) * (1 - pct / 100) * 100) / 100
+})
+const useProgramDiscount = computed(
+  () => form.apply_program_discount && !!context.value?.program_discount && form.frequency === 'annual'
+)
+watch([useProgramDiscount, discountedPrice], ([on, price]) => {
+  if (on) form.price = price
+})
+
 // El precio sigue al plan/frecuencia elegidos, salvo en la carga inicial,
 // donde se propone lo que la tienda venía pagando.
 let prefilling = false
@@ -325,6 +347,7 @@ async function load(storeId: number) {
     form.price = sameDetail && ctx.data.price > 0 ? ctx.data.price : (selectedDetail.value?.precio ?? 0)
     Object.assign(form, ctx.data.billing)
     form.payment_note = ''
+    form.apply_program_discount = false
     form.payment_status = null
     form.payment_date = new Date()
     form.payment_method = ''
@@ -407,6 +430,7 @@ async function submit() {
     const res = await renewStorePlan(props.storeId, {
       plandetalle_id: detail.plandetalle_id,
       price: form.price,
+      apply_program_discount: useProgramDiscount.value || undefined,
       payment_note: form.payment_note || undefined,
       payment,
       billing

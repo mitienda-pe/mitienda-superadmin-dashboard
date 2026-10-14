@@ -7,10 +7,11 @@
 //   ventas                → emisión, ver comprobantes y conciliar ingresos en Bancos
 //   contabilidad          → cobros y contabilidad
 //   contabilidad_lectura  → cobros y contabilidad, sin modificar
+//   programa              → solo las tiendas del programa de su partner (Tu Empresa)
 
-export type PanelArea = 'platform' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting'
+export type PanelArea = 'platform' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting' | 'programs'
 
-export const ALL_AREAS: PanelArea[] = ['platform', 'billing', 'finance', 'collections', 'reconcile', 'accounting']
+export const ALL_AREAS: PanelArea[] = ['platform', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs']
 
 /** Emitir: ventas de planes (y su renovación), comisiones, emisión manual. */
 const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/commission-period']
@@ -26,6 +27,9 @@ const RECONCILE_PATHS = ['/accounting/banks']
 /** Contabilidad de la empresa: gastos, planilla, resultados, flujo de caja. */
 const ACCOUNTING_PATHS = ['/accounting']
 
+/** Programas de convenio (Tu Empresa) y sus tiendas inscritas. */
+const PROGRAMS_PATHS = ['/programs']
+
 function under(path: string, bases: string[]): boolean {
   return bases.some(base => path === base || path.startsWith(`${base}/`))
 }
@@ -35,6 +39,7 @@ export function areaOfPath(path: string): PanelArea {
   if (under(path, FINANCE_PATHS)) return 'finance'
   if (under(path, RECONCILE_PATHS)) return 'reconcile'
   if (under(path, ACCOUNTING_PATHS)) return 'accounting'
+  if (under(path, PROGRAMS_PATHS)) return 'programs'
   return 'platform'
 }
 
@@ -45,5 +50,6 @@ export function homePathFor(areas: string[]): string {
   if (areas.includes('finance')) return '/billing/invoices'
   if (areas.includes('accounting')) return '/accounting/expenses'
   if (areas.includes('reconcile')) return '/accounting/banks'
+  if (areas.includes('programs')) return '/programs'
   return '/access-denied'
 }

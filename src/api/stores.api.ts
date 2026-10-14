@@ -122,6 +122,8 @@ export interface RenewStorePlanPayload {
   plandetalle_id: number
   price?: number
   payment_note?: string
+  /** Precio de lista con el descuento del programa; el API lo calcula y lo marca como usado. */
+  apply_program_discount?: boolean
   /**
    * Obligatorio: registrar la renovación ya no la da por pagada. Pendiente =
    * activa hasta la fecha límite y se factura a crédito.
@@ -149,6 +151,8 @@ export interface RenewalContext {
   price: number
   is_trial: boolean
   expires_at: string | null
+  /** Descuento de un programa de convenio (Tu Empresa): solo plan anual, una vez. */
+  program_discount?: { enrollment_id: number; program: string; percent: number } | null
   billing: PlanBillingData
 }
 
