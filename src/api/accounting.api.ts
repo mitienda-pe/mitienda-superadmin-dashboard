@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -236,6 +236,18 @@ export async function saveCashPlanItem(id: number | null, payload: CashPlanItemI
 export async function deleteCashPlanItem(id: number) {
   const res = await api.delete<{ data: CashPlanItem[] }>(`${BASE}/cash-flow/plan/${id}`)
   return res.data.data
+}
+
+// --- Beneficios adeudados (solo Master) ---
+
+export async function getBenefitDebts() {
+  const res = await api.get<{ data: BenefitDebts }>(`${BASE}/payroll/benefit-debts`)
+  return res.data.data
+}
+
+export async function addBenefitDebt(payload: { payee_id: number; concept: BenefitConcept; due_date: string; amount: number; label?: string }) {
+  const res = await api.post<{ message: string; data: BenefitDebts }>(`${BASE}/payroll/benefit-debts`, payload)
+  return res.data
 }
 
 // --- Planilla (solo Master) ---

@@ -12,6 +12,7 @@
       </div>
       <div class="flex flex-wrap gap-2">
         <Button label="Parámetros" icon="pi pi-sliders-h" severity="secondary" outlined @click="settingsVisible = true" />
+        <Button label="Beneficios adeudados" icon="pi pi-exclamation-circle" severity="secondary" outlined @click="debtsVisible = true" />
         <Button label="Personal" icon="pi pi-users" severity="secondary" outlined @click="employeesVisible = true" />
       </div>
     </div>
@@ -419,6 +420,7 @@
 
     <PayrollEmployeesDialog v-model:visible="employeesVisible" @changed="load" />
     <PayrollSettingsDialog v-model:visible="settingsVisible" :year="year" @changed="load" />
+    <BenefitDebtsDialog v-model:visible="debtsVisible" />
   </div>
 </template>
 
@@ -426,6 +428,7 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import PayrollEmployeesDialog from '@/components/accounting/PayrollEmployeesDialog.vue'
 import PayrollSettingsDialog from '@/components/accounting/PayrollSettingsDialog.vue'
+import BenefitDebtsDialog from '@/components/accounting/BenefitDebtsDialog.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, onMounted } from 'vue'
 import InputText from 'primevue/inputtext'
@@ -454,6 +457,7 @@ const error = ref<string | null>(null)
 const historyOnly = ref(false)
 const employeesVisible = ref(false)
 const settingsVisible = ref(false)
+const debtsVisible = ref(false)
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic']
 const MONTH_NAMES = [

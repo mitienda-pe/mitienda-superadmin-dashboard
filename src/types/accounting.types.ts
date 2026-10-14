@@ -573,3 +573,23 @@ export interface LoanSummary {
   year_interest: number
   year_insurance: number
 }
+
+// --- Beneficios adeudados ---
+
+export type BenefitConcept = 'gratificacion' | 'cts' | 'vacaciones' | 'otro'
+
+export interface BenefitDebtItem {
+  /** Cada deuda es un gasto por pagar: sus pagos son los del gasto. */
+  expense_id: number
+  concept: BenefitConcept
+  description: string
+  due_date: string
+  total: number
+  paid: number
+  balance: number
+}
+
+export interface BenefitDebts {
+  people: { payee_id: number; name: string; owed: number; paid: number; balance: number; items: BenefitDebtItem[] }[]
+  totals: { owed: number; paid: number; balance: number }
+}
