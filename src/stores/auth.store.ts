@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth.api'
 import type { User, Store, LoginCredentials, SuperAdminInfo } from '@/types/auth.types'
-import { areaOfPath, homePathFor } from '@/config/access.config'
+import { ALL_AREAS, areaOfPath, homePathFor } from '@/config/access.config'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -20,11 +20,13 @@ export const useAuthStore = defineStore('auth', () => {
   const isSuperAdmin = computed(() => superAdminInfo.value?.is_superadmin || false)
 
   // Áreas del panel que puede ver. Una sesión guardada antes de que existieran
-  // los roles no trae `areas`: si es del equipo, ve todo.
+  // las áreas actuales puede traer una lista vieja: Master ve todo igual, y la
+  // lista se refresca al abrir el panel (restoreSession).
   const areas = computed<string[]>(() => {
     const info = superAdminInfo.value
     if (!info) return []
-    return info.areas ?? (info.is_superadmin ? ['platform', 'finance'] : [])
+    if (info.role === 'master') return [...ALL_AREAS]
+    return info.areas ?? (info.is_superadmin ? [...ALL_AREAS] : [])
   })
   const hasPanelAccess = computed(() => areas.value.length > 0)
   const canWriteFinance = computed(() => superAdminInfo.value?.finance_write ?? isSuperAdmin.value)
@@ -222,6 +224,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     fetchStores()
+    refreshAccess()
+  }
+
+  /**
+   * Los permisos pueden haber cambiado desde que se guardó la sesión. Si el API
+   * no contesta se sigue con lo guardado: un corte de red no debe dejar a
+   * nadie afuera.
+   */
+  async function refreshAccess() {
+    try {
+      const response = await authApi.checkSuperAdmin()
+      if (response.success && response.data) {
+        superAdminInfo.value = response.data
+        localStorage.setItem('superadmin_info', JSON.stringify(response.data))
+      }
+    } catch {
+      // Sin cambios.
+    }
   }
 
   return {

@@ -210,7 +210,7 @@
               <Button icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
               <!-- Una nota de credito acredita el comprobante entero, no la linea. -->
               <Button
-                v-if="authStore.isSuperAdmin && (row.document_type === 1 || row.document_type === 2)"
+                v-if="authStore.canPath('/billing/emit') && (row.document_type === 1 || row.document_type === 2)"
                 icon="pi pi-undo"
                 text
                 rounded
