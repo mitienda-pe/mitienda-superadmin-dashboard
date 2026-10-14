@@ -28,13 +28,13 @@
         <table class="w-full text-sm">
           <tbody>
             <tr v-for="item in person.items" :key="item.expense_id" class="border-t border-gray-100">
-              <td class="px-4 py-2 text-gray-700">{{ item.description.replace(/^Adeudado: /, '') }}</td>
+              <td class="px-4 py-2 text-gray-700">{{ item.description.replace(/^Adeudado: /, '').replace(' (según la hoja de planilla)', '') }}</td>
               <td class="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">vencía {{ shortDate(item.due_date) }}</td>
-              <td class="px-3 py-2 text-right tabular-nums">{{ money(item.total) }}</td>
-              <td class="px-3 py-2 text-right tabular-nums text-xs" :class="item.balance > 0 ? 'text-red-600' : 'text-emerald-700'">
+              <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{{ money(item.total) }}</td>
+              <td class="px-3 py-2 text-right tabular-nums text-xs whitespace-nowrap" :class="item.balance > 0 ? 'text-red-600' : 'text-emerald-700'">
                 {{ item.balance > 0 ? (item.paid > 0 ? `faltan ${money(item.balance)}` : 'por pagar') : 'pagado' }}
               </td>
-              <td class="px-3 py-2 text-right">
+              <td class="px-3 py-2 text-right whitespace-nowrap">
                 <Button v-if="item.balance > 0" label="Registrar pago" size="small" text @click="openPayment(person.name, item)" />
               </td>
             </tr>
