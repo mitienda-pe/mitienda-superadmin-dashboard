@@ -29,8 +29,10 @@ export const ACCOUNTING_TABS: SectionTab[] = [
   { to: '/accounting/payroll', label: 'Planilla', icon: 'pi pi-id-card' },
   { to: '/accounting/results', label: 'Resultados', icon: 'pi pi-chart-bar' },
   { to: '/accounting/cash-flow', label: 'Flujo de caja', icon: 'pi pi-calendar' },
+  { to: '/accounting/journal', label: 'Libro diario y mayor', icon: 'pi pi-book' },
   { to: '/accounting/payees', label: 'Proveedores y personal', icon: 'pi pi-users' },
-  { to: '/accounting/categories', label: 'Categorías', icon: 'pi pi-tags' }
+  { to: '/accounting/categories', label: 'Categorías', icon: 'pi pi-tags' },
+  { to: '/accounting/chart', label: 'Plan de cuentas', icon: 'pi pi-sitemap' }
 ]
 
 export const MRR_TABS: SectionTab[] = [

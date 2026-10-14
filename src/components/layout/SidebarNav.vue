@@ -61,7 +61,7 @@ function siblings(tabs: SectionTab[]): string[] {
   return tabs.slice(1).map(tab => tab.to)
 }
 
-const ACCOUNTING_OWN_ENTRIES = ['/accounting/banks', '/accounting/payroll', '/accounting/results', '/accounting/cash-flow']
+const ACCOUNTING_OWN_ENTRIES = ['/accounting/banks', '/accounting/payroll', '/accounting/results', '/accounting/cash-flow', '/accounting/journal', '/accounting/chart']
 
 // El menu se agrupa por lo que la persona viene a hacer, no por el orden en
 // que se fueron agregando los modulos. Las rutas no cambian.
@@ -110,7 +110,8 @@ const navGroups: NavGroup[] = [
       { path: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' },
       { path: '/accounting/payroll', label: 'Planilla', icon: 'pi pi-id-card' },
       { path: '/accounting/results', label: 'Resultados', icon: 'pi pi-chart-bar' },
-      { path: '/accounting/cash-flow', label: 'Flujo de caja', icon: 'pi pi-calendar' }
+      { path: '/accounting/cash-flow', label: 'Flujo de caja', icon: 'pi pi-calendar' },
+      { path: '/accounting/journal', label: 'Libro diario y mayor', icon: 'pi pi-book', also: ['/accounting/chart'] }
     ]
   },
   {

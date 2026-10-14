@@ -364,6 +364,15 @@
         </div>
 
         <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Mes del servicio</label>
+          <InputText v-model="form.service_period" type="month" class="w-full sm:w-1/3" />
+          <p class="text-xs text-gray-400 mt-1">
+            Solo si el servicio es de otro mes que el comprobante (AWS de setiembre facturado en octubre): el estudio lo
+            usa para el devengado y sale en la glosa del asiento.
+          </p>
+        </div>
+
+        <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Descripción</label>
           <InputText v-model="form.description" maxlength="255" class="w-full" placeholder="Opcional" />
         </div>
@@ -751,6 +760,7 @@ const form = reactive({
   issue_date: new Date() as Date | null,
   due_date: null as Date | null,
   period: '',
+  service_period: '',
   currency: 'PEN' as 'PEN' | 'USD',
   exchange_rate: null as number | null,
   total: null as number | null,
@@ -801,6 +811,7 @@ function openExpense(row: Expense | null) {
   form.issue_date = row ? parseLocalDate(row.issue_date) : new Date()
   form.due_date = row?.due_date ? parseLocalDate(row.due_date) : null
   form.period = row && row.period !== row.issue_date.slice(0, 7) ? row.period : ''
+  form.service_period = row?.service_period ?? ''
   form.currency = row?.currency ?? 'PEN'
   form.exchange_rate = row?.exchange_rate ?? null
   form.total = row?.total ?? null
@@ -832,6 +843,7 @@ async function submitExpense() {
     document_number: form.document_number.trim() || undefined,
     due_date: form.due_date ? toIsoDate(form.due_date) : undefined,
     period: form.period || undefined,
+    service_period: form.service_period || undefined,
     currency: form.currency,
     exchange_rate: form.currency === 'USD' ? form.exchange_rate ?? undefined : undefined,
     description: form.description.trim() || undefined,

@@ -91,6 +91,8 @@ export interface Expense {
   due_date: string | null
   /** AAAA-MM al que corresponde el gasto; puede no ser el mes de la fecha. */
   period: string
+  /** Mes del servicio (devengado) si no es el del comprobante. */
+  service_period?: string | null
   currency: 'PEN' | 'USD'
   exchange_rate: number | null
   net: number
@@ -122,6 +124,7 @@ export interface ExpenseInput {
   document_number?: string
   due_date?: string
   period?: string
+  service_period?: string
   currency?: 'PEN' | 'USD'
   exchange_rate?: number
   description?: string
