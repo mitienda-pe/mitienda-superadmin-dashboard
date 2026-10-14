@@ -5,8 +5,9 @@
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Plan de cuentas</h1>
       <p class="text-sm text-gray-500 mt-1 max-w-3xl">
-        Con qué cuentas del PCGE se arman los asientos del libro diario. Lo sembrado es una propuesta con cuentas
-        estándar: reemplázalas por las subcuentas que usa el estudio en Concar.
+        Con qué cuentas se arman los asientos del libro diario. El catálogo es el PCGE 2026 oficial; las
+        asignaciones son una propuesta para revisar con el estudio. El elemento 9 sigue la NIIF 18 (91 operación,
+        93 financiamiento), con subcuentas propias para costo, administración y ventas.
       </p>
     </div>
 
@@ -27,6 +28,7 @@
               optionValue="value"
               filter
               showClear
+              :virtualScrollerOptions="{ itemSize: 36 }"
               placeholder="Sin cuenta"
               class="w-64"
               :disabled="!canWrite"
@@ -52,6 +54,7 @@
                 optionValue="value"
                 filter
                 showClear
+                :virtualScrollerOptions="{ itemSize: 36 }"
                 placeholder="Sin cuenta"
                 class="w-64"
                 :disabled="!canWrite"
@@ -72,6 +75,7 @@
                 optionValue="value"
                 filter
                 showClear
+                :virtualScrollerOptions="{ itemSize: 36 }"
                 placeholder="Sin cuenta"
                 class="w-64"
                 :disabled="!canWrite"
@@ -93,11 +97,21 @@
             <Button type="submit" label="Agregar o cambiar" icon="pi pi-plus" size="small" :disabled="!draft.code || !draft.name" />
           </form>
         </div>
-        <DataTable :value="chart.accounts" size="small" :rows="25" paginator class="text-sm">
+        <DataTable :value="chart.accounts" size="small" :rows="25" paginator :globalFilterFields="['code', 'name']" :filters="tableFilters" class="text-sm">
+          <template #header>
+            <InputText v-model="tableFilters.global.value" placeholder="Buscar código o nombre" class="w-72" />
+          </template>
           <Column field="code" header="Código" sortable style="width: 120px" />
           <Column field="name" header="Nombre" sortable />
           <Column field="kind" header="Tipo" sortable style="width: 140px">
             <template #body="{ data: row }">{{ KIND_LABELS[row.kind] ?? row.kind }}</template>
+          </Column>
+          <Column field="origin" header="Origen" sortable style="width: 120px">
+            <template #body="{ data: row }">
+              <span class="text-xs px-2 py-0.5 rounded" :class="row.origin === 'propia' ? 'bg-teal-50 text-teal-700' : 'bg-gray-100 text-gray-600'">
+                {{ row.origin === 'propia' ? 'Propia' : 'PCGE 2026' }}
+              </span>
+            </template>
           </Column>
           <Column v-if="canWrite" style="width: 60px">
             <template #body="{ data: row }">
@@ -125,7 +139,7 @@ import { accountingErrorMessage } from '@/api/accounting.api'
 import { getChart, saveLedgerAccount, assignLedgerAccount, type ChartOfAccounts, type LedgerAccount, type AccountKind } from '@/api/books.api'
 
 const KIND_LABELS: Record<string, string> = {
-  activo: 'Activo', pasivo: 'Pasivo', patrimonio: 'Patrimonio', gasto: 'Gasto (6)', ingreso: 'Ingreso (7)', destino: 'Destino (9)', puente: 'Puente (79)'
+  activo: 'Activo', pasivo: 'Pasivo', patrimonio: 'Patrimonio', gasto: 'Gasto (6)', ingreso: 'Ingreso (7)', saldo: 'Saldos (8)', destino: 'Destino (9)', puente: 'Puente (79)'
 }
 const KIND_OPTIONS = Object.entries(KIND_LABELS).map(([value, label]) => ({ value, label }))
 const FUNCTION_LABELS: Record<string, string> = { costo: 'costo', admin: 'administración', ventas: 'ventas', financiero: 'financiero', excluido: 'no va a resultados' }
@@ -136,6 +150,7 @@ const canWrite = computed(() => auth.canWrite('accounting'))
 const chart = ref<ChartOfAccounts | null>(null)
 const error = ref<string | null>(null)
 const draft = reactive({ code: '', name: '', kind: 'gasto' as AccountKind })
+const tableFilters = ref({ global: { value: null as string | null, matchMode: 'contains' } })
 
 const accountOptions = computed(() => (chart.value?.accounts ?? []).map(a => ({ value: a.code, label: `${a.code} · ${a.name}` })))
 const expenseOptions = computed(() =>

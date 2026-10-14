@@ -2,13 +2,14 @@ import api from './axios'
 
 const BASE = '/superadmin/accounting/ledger'
 
-export type AccountKind = 'activo' | 'pasivo' | 'patrimonio' | 'gasto' | 'ingreso' | 'destino' | 'puente'
+export type AccountKind = 'activo' | 'pasivo' | 'patrimonio' | 'gasto' | 'ingreso' | 'saldo' | 'destino' | 'puente'
 
 export interface LedgerAccount {
   id: number
   code: string
   name: string
   kind: AccountKind
+  origin: 'pcge2026' | 'propia'
   is_active: number | string
 }
 
