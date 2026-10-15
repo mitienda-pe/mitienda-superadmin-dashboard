@@ -19,7 +19,7 @@
             class="w-full"
           />
         </div>
-        <div class="flex items-center gap-6 md:col-span-2">
+        <div class="flex items-center gap-6 md:col-span-2 flex-wrap">
           <div class="flex items-center gap-2">
             <InputSwitch v-model="configForm.blocked" />
             <label class="text-sm text-gray-600">Bloqueada</label>
@@ -94,7 +94,7 @@
 
     <!-- Section 3: Plan Config -->
     <div v-if="plan" class="bg-white rounded-xl border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
           Plan Actual
           <span class="text-xs font-normal text-gray-400 ml-2">{{ plan.name }}</span>
@@ -174,7 +174,7 @@
           <label class="block text-sm font-medium text-gray-600 mb-1">Max Usuarios</label>
           <InputNumber v-model="planForm.max_users" :min="0" class="w-full" />
         </div>
-        <div class="md:col-span-3">
+        <div class="md:col-span-2 lg:col-span-3">
           <label class="block text-sm font-medium text-gray-600 mb-1">Nota de Pago</label>
           <Textarea v-model="planForm.payment_note" rows="2" class="w-full" />
         </div>
@@ -190,15 +190,15 @@
       </div>
     </div>
 
-    <div v-else class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-center text-gray-400">
+    <div v-else class="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400">
       <i class="pi pi-info-circle text-xl mb-2"></i>
       <p class="text-sm">Esta tienda no tiene un plan activo.</p>
     </div>
 
     <!-- Section 4: Store Modules -->
     <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div class="flex flex-wrap items-center gap-2">
           <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
             Modulos de la Tienda
           </h3>

@@ -5,6 +5,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import Checkbox from 'primevue/checkbox'
@@ -174,12 +175,18 @@ const pluginOptions = computed(() =>
   catalog.value.map((p) => ({ label: `${p.plugin_name} (${p.plugin_slug})`, value: p.plugin_id })),
 )
 
+const pricingModeOptions = [
+  { label: 'none', value: 'none' },
+  { label: 'per_unit', value: 'per_unit' },
+  { label: 'base_plus_addons', value: 'base_plus_addons' },
+]
+
 onMounted(loadCatalog)
 </script>
 
 <template>
   <div class="space-y-8">
-    <header class="flex items-center justify-between">
+    <header class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Plugins</h1>
         <p class="mt-1 text-sm text-gray-500">
@@ -190,8 +197,8 @@ onMounted(loadCatalog)
     </header>
 
     <!-- Catálogo -->
-    <section class="bg-white rounded-xl border border-gray-200">
-      <div class="px-4 py-3 border-b border-gray-200">
+    <section class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200">
         <h2 class="text-base font-semibold text-gray-900">Catálogo</h2>
       </div>
       <div v-if="isLoadingCatalog" class="flex justify-center py-10">
@@ -219,8 +226,8 @@ onMounted(loadCatalog)
     </section>
 
     <!-- Asignaciones por tienda -->
-    <section class="bg-white rounded-xl border border-gray-200">
-      <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+    <section class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-base font-semibold text-gray-900">Asignaciones por tienda</h2>
         <div class="flex items-center gap-2">
           <InputNumber v-model="tiendaIdInput" placeholder="tienda_id" :useGrouping="false" class="w-32" />
@@ -279,17 +286,13 @@ onMounted(loadCatalog)
       modal
       :style="{ width: '40rem' }"
       :pt="{
-        header: { class: 'px-8 pt-6 pb-4' },
-        content: { class: 'px-8 pb-6' },
-        footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100 flex justify-end gap-2' }
+        footer: { class: 'pt-4 border-t border-gray-100' }
       }"
     >
       <div class="space-y-5 pt-2">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Plugin</label>
-          <select v-model="assignForm.plugin_id" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-            <option v-for="opt in pluginOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-          </select>
+          <Dropdown v-model="assignForm.plugin_id" :options="pluginOptions" optionLabel="label" optionValue="value" placeholder="Elegir plugin" class="w-full" />
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">producto_id (opcional)</label>
@@ -321,9 +324,7 @@ onMounted(loadCatalog)
       modal
       :style="{ width: '45rem' }"
       :pt="{
-        header: { class: 'px-8 pt-6 pb-4' },
-        content: { class: 'px-8 pb-6' },
-        footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100 flex justify-end gap-2' }
+        footer: { class: 'pt-4 border-t border-gray-100' }
       }"
     >
       <div class="grid grid-cols-2 gap-x-6 gap-y-5 pt-2">
@@ -345,11 +346,7 @@ onMounted(loadCatalog)
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Pricing mode</label>
-          <select v-model="pluginForm.pricingMode" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-            <option value="none">none</option>
-            <option value="per_unit">per_unit</option>
-            <option value="base_plus_addons">base_plus_addons</option>
-          </select>
+          <Dropdown v-model="pluginForm.pricingMode" :options="pricingModeOptions" optionLabel="label" optionValue="value" class="w-full" />
         </div>
         <div class="col-span-2">
           <label class="block text-sm font-medium text-gray-700 mb-2">Slots (coma-separado)</label>

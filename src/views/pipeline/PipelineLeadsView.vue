@@ -79,7 +79,6 @@
           icon="pi pi-sort-amount-down"
           :class="store.filters.order === 'DESC' ? '' : 'p-button-outlined'"
           severity="secondary"
-          size="small"
           @click="toggleOrder"
           v-tooltip="store.filters.order === 'DESC' ? 'Mayor a menor' : 'Menor a mayor'"
         />
@@ -87,7 +86,6 @@
         <Button
           icon="pi pi-filter-slash"
           severity="secondary"
-          size="small"
           outlined
           @click="store.resetFilters()"
           v-tooltip="'Limpiar filtros'"
@@ -117,146 +115,148 @@
       </div>
 
       <!-- Table -->
-      <table v-else class="w-full">
-        <thead>
-          <tr class="border-b border-gray-200 bg-gray-50">
-            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('readiness_score')">
-              Score <i v-if="store.filters.sort === 'readiness_score'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Tienda</th>
-            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Etapa</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_start')">
-              Inicio <i v-if="store.filters.sort === 'trial_start'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_end')">
-              Fin <i v-if="store.filters.sort === 'trial_end'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('days_remaining')">
-              Días rest. <i v-if="store.filters.sort === 'days_remaining'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('published_product_count')">
-              Productos <i v-if="store.filters.sort === 'published_product_count'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Pasarela</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('paid_orders')">
-              Ventas <i v-if="store.filters.sort === 'paid_orders'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('total_revenue')">
-              Revenue <i v-if="store.filters.sort === 'total_revenue'" :class="sortIcon" class="text-xs ml-0.5"></i>
-            </th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Setup</th>
-            <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 w-12"></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-          <tr
-            v-for="lead in store.leads"
-            :key="lead.id"
-            class="hover:bg-gray-50 cursor-pointer transition-colors"
-            @click="goToDetail(lead.id)"
-          >
-            <!-- Score -->
-            <td class="px-4 py-3">
-              <ReadinessScoreBadge :score="lead.readiness_score" :size="36" />
-            </td>
+      <div v-else class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-200 bg-gray-50">
+              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('readiness_score')">
+                Score <i v-if="store.filters.sort === 'readiness_score'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Tienda</th>
+              <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Etapa</th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_start')">
+                Inicio <i v-if="store.filters.sort === 'trial_start'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('trial_end')">
+                Fin <i v-if="store.filters.sort === 'trial_end'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('days_remaining')">
+                Días rest. <i v-if="store.filters.sort === 'days_remaining'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('published_product_count')">
+                Productos <i v-if="store.filters.sort === 'published_product_count'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Pasarela</th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('paid_orders')">
+                Ventas <i v-if="store.filters.sort === 'paid_orders'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:text-gray-700 select-none" @click="sortBy('total_revenue')">
+                Revenue <i v-if="store.filters.sort === 'total_revenue'" :class="sortIcon" class="text-xs ml-0.5"></i>
+              </th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">Setup</th>
+              <th class="text-center text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 w-12"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr
+              v-for="lead in store.leads"
+              :key="lead.id"
+              class="hover:bg-gray-50 cursor-pointer transition-colors"
+              @click="goToDetail(lead.id)"
+            >
+              <!-- Score -->
+              <td class="px-4 py-3">
+                <ReadinessScoreBadge :score="lead.readiness_score" :size="36" />
+              </td>
 
-            <!-- Store info -->
-            <td class="px-4 py-3">
-              <div class="min-w-0">
-                <p class="text-sm font-medium text-gray-900 truncate">{{ lead.name }}</p>
-                <p class="text-xs text-gray-500 truncate">{{ lead.owner_name || lead.email }}</p>
-              </div>
-            </td>
+              <!-- Store info -->
+              <td class="px-4 py-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-900 truncate">{{ lead.name }}</p>
+                  <p class="text-xs text-gray-500 truncate">{{ lead.owner_name || lead.email }}</p>
+                </div>
+              </td>
 
-            <!-- Stage -->
-            <td class="px-4 py-3">
-              <PipelineStageBadge :stage="lead.pipeline_stage" />
-            </td>
+              <!-- Stage -->
+              <td class="px-4 py-3">
+                <PipelineStageBadge :stage="lead.pipeline_stage" />
+              </td>
 
-            <!-- Trial start -->
-            <td class="px-4 py-3 text-center">
-              <span class="text-xs text-gray-500">{{ formatDate(lead.trial_start) }}</span>
-            </td>
+              <!-- Trial start -->
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs text-gray-500">{{ formatDate(lead.trial_start) }}</span>
+              </td>
 
-            <!-- Trial end -->
-            <td class="px-4 py-3 text-center">
-              <span class="text-xs text-gray-500">{{ formatDate(lead.trial_end) }}</span>
-            </td>
+              <!-- Trial end -->
+              <td class="px-4 py-3 text-center">
+                <span class="text-xs text-gray-500">{{ formatDate(lead.trial_end) }}</span>
+              </td>
 
-            <!-- Days remaining (real-time) -->
-            <td class="px-4 py-3 text-center">
-              <span
-                class="text-sm font-medium"
-                :class="calcDaysRemaining(lead.trial_end) < 0 ? 'text-gray-400' : calcDaysRemaining(lead.trial_end) <= 3 ? 'text-red-600' : calcDaysRemaining(lead.trial_end) <= 7 ? 'text-orange-500' : 'text-gray-700'"
-              >
-                {{ calcDaysRemaining(lead.trial_end) < 0 ? 'Expirado' : calcDaysRemaining(lead.trial_end) + 'd' }}
-              </span>
-            </td>
+              <!-- Days remaining (real-time) -->
+              <td class="px-4 py-3 text-center">
+                <span
+                  class="text-sm font-medium"
+                  :class="calcDaysRemaining(lead.trial_end) < 0 ? 'text-gray-400' : calcDaysRemaining(lead.trial_end) <= 3 ? 'text-red-600' : calcDaysRemaining(lead.trial_end) <= 7 ? 'text-orange-500' : 'text-gray-700'"
+                >
+                  {{ calcDaysRemaining(lead.trial_end) < 0 ? 'Expirado' : calcDaysRemaining(lead.trial_end) + 'd' }}
+                </span>
+              </td>
 
-            <!-- Products -->
-            <td class="px-4 py-3 text-center">
-              <span class="text-sm" :class="lead.published_product_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-400'">
-                {{ lead.published_product_count }}
-              </span>
-            </td>
+              <!-- Products -->
+              <td class="px-4 py-3 text-center">
+                <span class="text-sm" :class="lead.published_product_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-400'">
+                  {{ lead.published_product_count }}
+                </span>
+              </td>
 
-            <!-- Gateway -->
-            <td class="px-4 py-3 text-center">
-              <i
-                :class="lead.has_gateway ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-gray-300'"
-                class="text-base"
-              ></i>
-            </td>
-
-            <!-- Orders -->
-            <td class="px-4 py-3 text-center">
-              <span class="text-sm" :class="lead.paid_orders > 0 ? 'text-green-600 font-medium' : 'text-gray-400'">
-                {{ lead.paid_orders }}
-              </span>
-            </td>
-
-            <!-- Revenue -->
-            <td class="px-4 py-3 text-right">
-              <span class="text-sm" :class="lead.total_revenue > 0 ? 'text-gray-900 font-medium' : 'text-gray-400'">
-                {{ lead.total_revenue > 0 ? formatCurrency(lead.total_revenue) : '-' }}
-              </span>
-            </td>
-
-            <!-- Setup indicators -->
-            <td class="px-4 py-3">
-              <div class="flex items-center justify-center gap-1">
+              <!-- Gateway -->
+              <td class="px-4 py-3 text-center">
                 <i
-                  class="text-xs"
-                  :class="lead.has_logo ? 'pi pi-image text-green-500' : 'pi pi-image text-gray-300'"
-                  v-tooltip="'Logo'"
+                  :class="lead.has_gateway ? 'pi pi-check-circle text-green-500' : 'pi pi-times-circle text-gray-300'"
+                  class="text-base"
                 ></i>
-                <i
-                  class="text-xs"
-                  :class="lead.has_shipping_config ? 'pi pi-truck text-green-500' : 'pi pi-truck text-gray-300'"
-                  v-tooltip="'Envío'"
-                ></i>
-                <i
-                  class="text-xs"
-                  :class="lead.has_custom_domain ? 'pi pi-globe text-green-500' : 'pi pi-globe text-gray-300'"
-                  v-tooltip="'Dominio'"
-                ></i>
-              </div>
-            </td>
+              </td>
 
-            <!-- Actions -->
-            <td class="px-4 py-3 text-center" @click.stop>
-              <Button
-                icon="pi pi-ellipsis-v"
-                severity="secondary"
-                text
-                size="small"
-                rounded
-                @click="openFlagMenu($event, lead)"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
+              <!-- Orders -->
+              <td class="px-4 py-3 text-center">
+                <span class="text-sm" :class="lead.paid_orders > 0 ? 'text-green-600 font-medium' : 'text-gray-400'">
+                  {{ lead.paid_orders }}
+                </span>
+              </td>
+
+              <!-- Revenue -->
+              <td class="px-4 py-3 text-right">
+                <span class="text-sm" :class="lead.total_revenue > 0 ? 'text-gray-900 font-medium' : 'text-gray-400'">
+                  {{ lead.total_revenue > 0 ? formatCurrency(lead.total_revenue) : '-' }}
+                </span>
+              </td>
+
+              <!-- Setup indicators -->
+              <td class="px-4 py-3">
+                <div class="flex items-center justify-center gap-1">
+                  <i
+                    class="text-xs"
+                    :class="lead.has_logo ? 'pi pi-image text-green-500' : 'pi pi-image text-gray-300'"
+                    v-tooltip="'Logo'"
+                  ></i>
+                  <i
+                    class="text-xs"
+                    :class="lead.has_shipping_config ? 'pi pi-truck text-green-500' : 'pi pi-truck text-gray-300'"
+                    v-tooltip="'Envío'"
+                  ></i>
+                  <i
+                    class="text-xs"
+                    :class="lead.has_custom_domain ? 'pi pi-globe text-green-500' : 'pi pi-globe text-gray-300'"
+                    v-tooltip="'Dominio'"
+                  ></i>
+                </div>
+              </td>
+
+              <!-- Actions -->
+              <td class="px-4 py-3 text-center" @click.stop>
+                <Button
+                  icon="pi pi-ellipsis-v"
+                  severity="secondary"
+                  text
+                  size="small"
+                  rounded
+                  @click="openFlagMenu($event, lead)"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       <Menu ref="flagMenuRef" :model="flagMenuItems" :popup="true" />
 

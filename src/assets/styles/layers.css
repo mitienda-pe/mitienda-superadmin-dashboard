@@ -1,0 +1,5 @@
+/* Orden de capas CSS. Tiene que cargarse ANTES que el tema de PrimeVue: el
+   orden lo fija la primera vez que aparece cada capa, y si el tema llega
+   primero, el reset de Tailwind queda por encima y le borra bordes, fondos y
+   paddings a todos los componentes. Ver main.css. */
+@layer tailwind-base, primevue;

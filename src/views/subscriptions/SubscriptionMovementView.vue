@@ -3,18 +3,19 @@
     <SectionTabs :tabs="MRR_TABS" />
 
     <!-- Header with month picker -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Movimiento de Suscripciones</h1>
         <p class="text-sm text-gray-500 mt-1">Resumen mensual de suscripciones pagadas</p>
       </div>
       <div class="flex items-center gap-2">
-        <button
-          class="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+        <Button
+          icon="pi pi-chevron-left"
+          outlined
+          severity="secondary"
+          aria-label="Mes anterior"
           @click="prevMonth"
-        >
-          <i class="pi pi-chevron-left text-gray-600"></i>
-        </button>
+        />
         <Dropdown
           v-model="selectedMonth"
           :options="monthOptions"
@@ -23,14 +24,14 @@
           class="w-48"
           @change="onMonthChange"
         />
-        <button
-          class="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+        <Button
+          icon="pi pi-chevron-right"
+          outlined
+          severity="secondary"
+          aria-label="Mes siguiente"
           :disabled="isCurrentOrFutureMonth"
-          :class="{ 'opacity-40 cursor-not-allowed': isCurrentOrFutureMonth }"
           @click="nextMonth"
-        >
-          <i class="pi pi-chevron-right text-gray-600"></i>
-        </button>
+        />
       </div>
     </div>
 
@@ -54,12 +55,7 @@
     <div v-else-if="store.error" class="bg-white rounded-xl border border-red-200 p-8 text-center">
       <i class="pi pi-exclamation-circle text-4xl text-red-400 mb-3"></i>
       <p class="text-red-600 font-medium">{{ store.error }}</p>
-      <button
-        class="mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        @click="loadData"
-      >
-        Reintentar
-      </button>
+      <Button label="Reintentar" icon="pi pi-refresh" class="mt-4" severity="danger" outlined @click="loadData" />
     </div>
 
     <!-- KPI Cards -->
@@ -103,7 +99,7 @@
 
         <!-- Variación neta -->
         <div
-          class="rounded-xl border p-5"
+          class="bg-white rounded-xl border p-5"
           :class="kpis.variacion >= 0
             ? 'border-green-200 bg-green-50/30'
             : 'border-red-200 bg-red-50/30'"
@@ -264,7 +260,7 @@
 
         <!-- Perdidas table -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div class="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
               <i class="pi pi-arrow-down-right text-red-600"></i>
               <h2 class="text-lg font-semibold text-gray-900">
@@ -387,6 +383,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dropdown from 'primevue/dropdown'
+import Button from 'primevue/button'
 import type { GainedStoreType } from '@/types/subscription-movement.types'
 
 const store = useSubscriptionMovementStore()

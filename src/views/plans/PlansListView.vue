@@ -20,66 +20,68 @@
           Vista Matriz
         </router-link>
       </div>
-      <DataTable
-        :value="plansStore.plans"
-        class="p-datatable-sm"
-        stripedRows
-        :rowHover="true"
-        @row-click="goToDetail"
-      >
-        <Column field="id" header="ID" :sortable="true" style="width: 60px" />
-        <Column field="name" header="Plan" :sortable="true">
-          <template #body="{ data }">
-            <div class="flex items-center gap-2">
-              <span class="font-medium">{{ data.name }}</span>
-              <span
-                v-if="!data.active"
-                class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"
-              >
-                Inactivo
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <DataTable
+          :value="plansStore.plans"
+          class="p-datatable-sm"
+          stripedRows
+          :rowHover="true"
+          @row-click="goToDetail"
+        >
+          <Column field="id" header="ID" :sortable="true" style="width: 60px" />
+          <Column field="name" header="Plan" :sortable="true">
+            <template #body="{ data }">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">{{ data.name }}</span>
+                <span
+                  v-if="!data.active"
+                  class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full"
+                >
+                  Inactivo
+                </span>
+              </div>
+            </template>
+          </Column>
+          <Column field="max_items" header="Max Productos" :sortable="true" style="width: 130px">
+            <template #body="{ data }">
+              {{ data.max_items === 0 ? 'Ilimitado' : data.max_items }}
+            </template>
+          </Column>
+          <Column field="max_pages" header="Max Paginas" :sortable="true" style="width: 130px">
+            <template #body="{ data }">
+              {{ data.max_pages === 0 ? 'Ilimitado' : data.max_pages }}
+            </template>
+          </Column>
+          <Column field="module_count" header="Modulos" :sortable="true" style="width: 100px">
+            <template #body="{ data }">
+              <span class="inline-flex items-center gap-1 text-sm">
+                <i class="pi pi-th-large text-xs text-gray-400"></i>
+                {{ data.module_count }}
               </span>
-            </div>
-          </template>
-        </Column>
-        <Column field="max_items" header="Max Productos" :sortable="true" style="width: 130px">
-          <template #body="{ data }">
-            {{ data.max_items === 0 ? 'Ilimitado' : data.max_items }}
-          </template>
-        </Column>
-        <Column field="max_pages" header="Max Paginas" :sortable="true" style="width: 130px">
-          <template #body="{ data }">
-            {{ data.max_pages === 0 ? 'Ilimitado' : data.max_pages }}
-          </template>
-        </Column>
-        <Column field="module_count" header="Modulos" :sortable="true" style="width: 100px">
-          <template #body="{ data }">
-            <span class="inline-flex items-center gap-1 text-sm">
-              <i class="pi pi-th-large text-xs text-gray-400"></i>
-              {{ data.module_count }}
-            </span>
-          </template>
-        </Column>
-        <Column field="active_stores" header="Tiendas Activas" :sortable="true" style="width: 130px">
-          <template #body="{ data }">
-            <span class="inline-flex items-center gap-1 text-sm">
-              <i class="pi pi-shop text-xs text-gray-400"></i>
-              {{ data.active_stores }}
-            </span>
-          </template>
-        </Column>
-        <Column style="width: 60px">
-          <template #body="{ data }">
-            <Button
-              icon="pi pi-chevron-right"
-              text
-              rounded
-              size="small"
-              severity="secondary"
-              @click.stop="goToDetail({ data })"
-            />
-          </template>
-        </Column>
-      </DataTable>
+            </template>
+          </Column>
+          <Column field="active_stores" header="Tiendas Activas" :sortable="true" style="width: 130px">
+            <template #body="{ data }">
+              <span class="inline-flex items-center gap-1 text-sm">
+                <i class="pi pi-shop text-xs text-gray-400"></i>
+                {{ data.active_stores }}
+              </span>
+            </template>
+          </Column>
+          <Column style="width: 60px">
+            <template #body="{ data }">
+              <Button
+                icon="pi pi-chevron-right"
+                text
+                rounded
+                size="small"
+                severity="secondary"
+                @click.stop="goToDetail({ data })"
+              />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
     </div>
   </div>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-white rounded-xl border border-gray-200">
+  <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <div class="p-5 border-b border-gray-100">
       <h3 class="text-base font-semibold text-gray-800">Top 10 Productos (últimos 90 días)</h3>
     </div>

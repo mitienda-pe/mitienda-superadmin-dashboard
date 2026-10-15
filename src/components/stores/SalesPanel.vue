@@ -32,7 +32,7 @@
     <DailySalesChart v-if="dailySales.length" :data="dailySales" />
 
     <!-- Recent orders -->
-    <div v-if="orders.length" class="bg-white rounded-xl border border-gray-200">
+    <div v-if="orders.length" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div class="p-5 border-b border-gray-100">
         <h3 class="text-base font-semibold text-gray-800">Últimos 20 Pedidos</h3>
       </div>

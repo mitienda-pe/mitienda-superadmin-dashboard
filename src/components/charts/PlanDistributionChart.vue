@@ -1,22 +1,22 @@
 <template>
   <div class="bg-white rounded-xl border border-gray-200 p-5">
     <h3 class="text-base font-semibold text-gray-800 mb-4">Distribución por Plan</h3>
-    <div class="flex items-center gap-6">
+    <div class="flex flex-col xl:flex-row items-center gap-6">
       <v-chart :option="chartOption" :autoresize="true" class="donut-chart" />
-      <div class="flex-1 space-y-3">
+      <div class="flex-1 w-full min-w-0 space-y-3">
         <div
           v-for="(segment, index) in data"
           :key="segment.plan"
-          class="flex items-center justify-between"
+          class="flex items-center justify-between gap-3"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 min-w-0">
             <span
-              class="w-3 h-3 rounded-full"
+              class="w-3 h-3 rounded-full flex-shrink-0"
               :style="{ backgroundColor: palette[index] }"
             ></span>
-            <span class="text-sm text-gray-700">{{ segment.plan }}</span>
+            <span class="text-sm text-gray-700 truncate">{{ segment.plan }}</span>
           </div>
-          <div class="text-right">
+          <div class="text-right whitespace-nowrap">
             <span class="text-sm font-semibold text-gray-900">{{ segment.count }}</span>
             <span class="text-xs text-gray-400 ml-1">({{ getPercentage(segment.count).toFixed(1) }}%)</span>
           </div>

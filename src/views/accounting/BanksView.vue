@@ -104,13 +104,13 @@
         <p v-if="filters.status === 'pending'" class="text-sm text-gray-400 mt-1">No queda ningún movimiento por conciliar.</p>
       </div>
 
-      <div v-else class="bg-white rounded-xl border border-gray-200">
+      <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <!-- Varios que no son ingreso ni gasto: los ITF, las comisiones -->
         <div v-if="selected.length > 0" class="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3">
           <span class="text-sm font-medium text-gray-700">{{ selected.length }} seleccionado{{ selected.length === 1 ? '' : 's' }}</span>
           <Dropdown v-model="bulkLabel" :options="otherOptions" optionLabel="label" optionValue="value" placeholder="No es ingreso ni gasto: es…" class="w-80" />
-          <Button label="Marcar" icon="pi pi-check" size="small" :loading="saving" :disabled="!bulkLabel" @click="submitBulk" />
-          <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
+          <Button label="Marcar" icon="pi pi-check" :loading="saving" :disabled="!bulkLabel" @click="submitBulk" />
+          <Button label="Quitar selección" text severity="secondary" @click="selected = []" />
         </div>
 
         <DataTable v-model:selection="selected" :value="movements" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">

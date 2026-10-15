@@ -66,22 +66,14 @@
               class="w-40"
               @change="applyLegacyFilters"
             />
-            <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-              <button
-                class="px-3 py-2 text-xs font-medium transition-colors"
-                :class="legacyViewMode === 'latest' ? 'bg-primary-50 text-primary-700' : 'bg-white text-gray-500 hover:bg-gray-50'"
-                @click="toggleLegacyView('latest')"
-              >
-                Estado actual
-              </button>
-              <button
-                class="px-3 py-2 text-xs font-medium transition-colors border-l border-gray-200"
-                :class="legacyViewMode === 'history' ? 'bg-primary-50 text-primary-700' : 'bg-white text-gray-500 hover:bg-gray-50'"
-                @click="toggleLegacyView('history')"
-              >
-                Historial
-              </button>
-            </div>
+            <SelectButton
+              :modelValue="legacyViewMode"
+              :options="legacyViewOptions"
+              optionLabel="label"
+              optionValue="value"
+              :allowEmpty="false"
+              @update:modelValue="toggleLegacyView"
+            />
             <Button
               v-if="hasLegacyActiveFilters"
               icon="pi pi-filter-slash"
@@ -116,7 +108,7 @@
         </div>
 
         <!-- Legacy Data Table -->
-        <div v-else class="bg-white rounded-xl border border-gray-200">
+        <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <DataTable
             :value="legacyStore.subscriptions"
             :loading="legacyStore.loading"
@@ -321,7 +313,7 @@
         </div>
 
         <!-- Data Table -->
-        <div v-else class="bg-white rounded-xl border border-gray-200">
+        <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <DataTable
             :value="billingStore.subscriptions"
             :loading="billingStore.loading"
@@ -426,6 +418,7 @@ import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
 import Button from 'primevue/button'
+import SelectButton from 'primevue/selectbutton'
 import SubscriptionStatusBadge from '@/components/subscriptions/SubscriptionStatusBadge.vue'
 import LegacyStatusBadge from '@/components/subscriptions/LegacyStatusBadge.vue'
 import { useSubscriptionsStore } from '@/stores/subscriptions.store'
@@ -443,6 +436,10 @@ const legacySearchQuery = ref('')
 const legacyStatusFilter = ref('all')
 const legacyPlanFilter = ref('all')
 const legacyViewMode = ref<'latest' | 'history'>('latest')
+const legacyViewOptions = [
+  { label: 'Estado actual', value: 'latest' },
+  { label: 'Historial', value: 'history' },
+]
 
 const legacyStatusOptions = [
   { label: 'Todos', value: 'all' },

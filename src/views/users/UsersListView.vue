@@ -62,7 +62,7 @@
     </div>
 
     <!-- Tabla -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable
         :value="usersStore.users"
         :loading="usersStore.isLoading"

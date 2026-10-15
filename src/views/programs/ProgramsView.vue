@@ -28,9 +28,9 @@
 
     <template v-else>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div v-for="card in summary" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-4">
+        <div v-for="card in summary" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-5">
           <div class="text-xs text-gray-500">{{ card.label }}</div>
-          <div class="text-2xl font-semibold text-gray-900 tabular-nums">{{ card.value }}</div>
+          <div class="text-2xl font-bold text-gray-900 tabular-nums">{{ card.value }}</div>
         </div>
       </div>
 

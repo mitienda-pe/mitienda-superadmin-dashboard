@@ -130,7 +130,7 @@
     </div>
 
     <!-- Table -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <!-- Barra de acciones del lote: solo aparece con algo seleccionado -->
       <div
         v-if="selectedPending.length > 0"
@@ -168,7 +168,7 @@
             <router-link
               v-if="row.tienda_id"
               :to="`/stores/${row.tienda_id}`"
-              class="text-primary-600 hover:underline font-medium"
+              class="text-sm text-primary-600 hover:underline font-medium"
             >
               {{ row.tienda_nombre }}
             </router-link>

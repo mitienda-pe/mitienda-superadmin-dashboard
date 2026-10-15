@@ -72,7 +72,7 @@
             <span class="text-xs text-gray-400">
               {{ value.items_count === 0 ? 'sin uso' : formatNumber(value.items_count) + (value.items_count === 1 ? ' línea' : ' líneas') }}
             </span>
-            <Button icon="pi pi-pencil" text rounded size="small" v-tooltip.top="'Editar'" @click="openValueDialog(dimension, value)" />
+            <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" v-tooltip.top="'Editar'" @click="openValueDialog(dimension, value)" />
             <Button
               :icon="value.is_active ? 'pi pi-eye-slash' : 'pi pi-eye'"
               text

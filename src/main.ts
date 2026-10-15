@@ -8,8 +8,11 @@ import Tooltip from 'primevue/tooltip'
 import App from './App.vue'
 import router from './router'
 
+// Orden de capas CSS: va antes que el tema (ver layers.css)
+import './assets/styles/layers.css'
+
 // PrimeVue styles
-import 'primevue/resources/themes/lara-light-blue/theme.css'
+import 'primevue/resources/themes/lara-light-teal/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 

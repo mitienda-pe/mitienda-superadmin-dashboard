@@ -60,14 +60,16 @@
           :disabled="useProgramDiscount"
           class="w-full"
         />
-        <label
+        <div
           v-if="context?.program_discount && form.frequency === 'annual' && selectedDetail"
-          class="flex items-center gap-2 text-sm text-gray-700 mt-2"
+          class="flex items-center gap-2 mt-2"
         >
-          <input v-model="form.apply_program_discount" type="checkbox" class="accent-primary" />
-          {{ context.program_discount.program }}: {{ context.program_discount.percent }} % en el primer año
-          (S/ {{ discountedPrice.toFixed(2) }})
-        </label>
+          <Checkbox v-model="form.apply_program_discount" :binary="true" inputId="renew-program-discount" />
+          <label for="renew-program-discount" class="text-sm text-gray-700 cursor-pointer">
+            {{ context.program_discount.program }}: {{ context.program_discount.percent }} % en el primer año
+            (S/ {{ discountedPrice.toFixed(2) }})
+          </label>
+        </div>
         <p v-if="selectedDetail && form.price !== selectedDetail.precio" class="text-xs text-gray-500 mt-1">
           Precio de lista: S/ {{ selectedDetail.precio.toFixed(2) }}. Se propone lo que la tienda venía pagando.
         </p>
@@ -189,6 +191,7 @@ import InputNumber from 'primevue/inputnumber'
 import Calendar from 'primevue/calendar'
 import Textarea from 'primevue/textarea'
 import Dialog from 'primevue/dialog'
+import Checkbox from 'primevue/checkbox'
 import SelectButton from 'primevue/selectbutton'
 import { useToast } from 'primevue/usetoast'
 import type { AvailablePlan, PlanPaymentUpdate } from '@/types/store.types'

@@ -13,20 +13,23 @@
       </div>
       <div class="flex items-center gap-2">
         <InputText v-model="period" type="month" class="w-44" @change="load" />
-        <Button label="Exportar CSV" icon="pi pi-download" outlined size="small" :disabled="!journal" :loading="exporting" @click="exportCsv" />
+        <Button label="Exportar CSV" icon="pi pi-download" outlined :disabled="!journal" :loading="exporting" @click="exportCsv" />
       </div>
     </div>
 
-    <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{{ error }}</div>
+    <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+      <p class="text-red-700 font-medium">{{ error }}</p>
+      <Button label="Reintentar" icon="pi pi-refresh" class="mt-4" severity="danger" outlined @click="load" />
+    </div>
     <div v-else-if="loading && !journal" class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-400">
       <i class="pi pi-spin pi-spinner text-2xl"></i>
     </div>
 
     <template v-if="journal">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-4" :class="{ 'opacity-60': loading }">
-        <div v-for="card in cards" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-4">
+        <div v-for="card in cards" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-5">
           <div class="text-xs text-gray-500">{{ card.label }}</div>
-          <div class="text-xl font-semibold text-gray-900 tabular-nums">{{ card.value }}</div>
+          <div class="text-xl font-semibold text-gray-900 tabular-nums mt-1">{{ card.value }}</div>
         </div>
       </div>
 

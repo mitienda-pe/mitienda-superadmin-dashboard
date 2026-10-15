@@ -70,14 +70,14 @@
             </span>
             <span
               v-if="detail.tienda_id"
-              class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-xs font-medium inline-flex items-center"
+              class="px-2 py-0.5 rounded bg-gray-100 text-gray-700 text-xs font-medium inline-flex items-center"
             >
               <i class="pi pi-shop mr-1" />
               {{ detail.tienda_nombre || 'Tienda #' + detail.tienda_id }}
             </span>
             <span
               v-else
-              class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs font-medium inline-flex items-center"
+              class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-xs font-medium inline-flex items-center"
             >
               <i class="pi pi-globe mr-1" />
               Plataforma

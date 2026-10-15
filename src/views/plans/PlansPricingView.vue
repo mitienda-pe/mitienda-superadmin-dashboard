@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="{ 'pb-20': isDirty }">
     <!-- Loading -->
     <div v-if="plansStore.isPricingLoading" class="flex justify-center py-20">
       <i class="pi pi-spin pi-spinner text-4xl text-primary-600"></i>
@@ -15,7 +15,7 @@
     <!-- Content -->
     <div v-else-if="mainPlans.length" class="space-y-6">
       <!-- Action Bar -->
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <router-link to="/plans" class="text-sm text-gray-500 hover:text-primary-600 transition-colors">
             <i class="pi pi-th-large text-xs mr-1"></i>
@@ -53,151 +53,153 @@
       </div>
 
       <!-- Pricing Cards Grid -->
-      <div class="grid gap-6" :style="{ gridTemplateColumns: `repeat(${mainPlans.length}, minmax(220px, 1fr))` }">
-        <div
-          v-for="plan in mainPlans"
-          :key="plan.id"
-          class="bg-white rounded-xl border-2 transition-all flex flex-col"
-          :class="plan.name === 'Medium' ? 'border-primary-400 shadow-lg shadow-primary-100' : 'border-gray-200'"
-        >
-          <!-- Plan Header -->
-          <div class="p-5 text-center border-b border-gray-100">
-            <div
-              v-if="plan.name === 'Medium'"
-              class="text-xs font-semibold text-primary-600 bg-primary-50 rounded-full px-3 py-1 inline-block mb-2"
-            >
-              Mas Popular
-            </div>
-            <h3 class="text-lg font-bold text-gray-800">{{ plan.name }}</h3>
-            <div v-if="plan.monthly_price != null" class="mt-2">
-              <span class="text-3xl font-bold text-gray-900">S/ {{ plan.monthly_price }}</span>
-              <span class="text-sm text-gray-500">/mes</span>
-            </div>
-            <div v-if="plan.yearly_price != null" class="text-xs text-gray-400 mt-1">
-              S/ {{ plan.yearly_price }}/año
-            </div>
-            <div v-else class="mt-2 text-2xl font-bold text-gray-400">Gratis</div>
-            <div class="text-xs text-gray-400 mt-2">
-              {{ plan.active_stores }} tiendas activas
-            </div>
-          </div>
-
-          <!-- Quotas -->
-          <div class="px-5 py-3 bg-gray-50 border-b border-gray-100 space-y-1">
-            <div class="flex items-center justify-between text-xs text-gray-600">
-              <span>Productos</span>
-              <span class="font-semibold">{{ plan.max_items === 0 ? 'Ilimitados' : plan.max_items }}</span>
-            </div>
-            <div class="flex items-center justify-between text-xs text-gray-600">
-              <span>Paginas</span>
-              <span class="font-semibold">{{ plan.max_pages === 0 ? 'Ilimitadas' : plan.max_pages }}</span>
-            </div>
-            <div class="flex items-center justify-between text-xs text-gray-600">
-              <span>Usuarios</span>
-              <span class="font-semibold">{{ plan.max_users === 0 ? 'Ilimitados' : plan.max_users }}</span>
-            </div>
-          </div>
-
-          <!-- Inheritance -->
-          <div class="px-5 pt-4 pb-2">
-            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Hereda de
-            </label>
-            <Dropdown
-              v-model="form[plan.id].inherits_from"
-              :options="inheritOptions(plan.id)"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Ninguno"
-              class="w-full"
-              :pt="{ root: { class: 'text-sm' } }"
-            />
-            <div
-              v-if="form[plan.id].inherits_from"
-              class="mt-2 text-xs text-primary-600 bg-primary-50 rounded-lg px-3 py-2"
-            >
-              <i class="pi pi-info-circle mr-1"></i>
-              Incluye todo lo del plan {{ getPlanName(form[plan.id].inherits_from) }}
-            </div>
-          </div>
-
-          <!-- Features List -->
-          <div class="px-5 py-3 flex-1">
-            <div class="flex items-center justify-between mb-3">
-              <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Caracteristicas propias
-              </label>
-              <div class="flex items-center gap-2">
-                <button
-                  v-if="plansStore.matrixData"
-                  class="text-xs text-gray-500 hover:text-primary-600"
-                  @click="populateFromModules(plan.id)"
-                  title="Pre-poblar desde modulos asignados en la Matriz"
-                >
-                  <i class="pi pi-bolt text-xs mr-0.5"></i>
-                  Desde modulos
-                </button>
-                <button
-                  class="text-xs text-primary-600 hover:text-primary-800"
-                  @click="addFeature(plan.id)"
-                >
-                  <i class="pi pi-plus text-xs mr-0.5"></i>
-                  Agregar
-                </button>
+      <div class="overflow-x-auto">
+        <div class="grid gap-6" :style="{ gridTemplateColumns: `repeat(${mainPlans.length}, minmax(220px, 1fr))` }">
+          <div
+            v-for="plan in mainPlans"
+            :key="plan.id"
+            class="bg-white rounded-xl border-2 transition-all flex flex-col"
+            :class="plan.name === 'Medium' ? 'border-primary-400 shadow-lg shadow-primary-100' : 'border-gray-200'"
+          >
+            <!-- Plan Header -->
+            <div class="p-5 text-center border-b border-gray-100">
+              <div
+                v-if="plan.name === 'Medium'"
+                class="text-xs font-semibold text-primary-600 bg-primary-50 rounded-full px-3 py-1 inline-block mb-2"
+              >
+                Mas Popular
+              </div>
+              <h3 class="text-lg font-bold text-gray-800">{{ plan.name }}</h3>
+              <div v-if="plan.monthly_price != null" class="mt-2">
+                <span class="text-3xl font-bold text-gray-900">S/ {{ plan.monthly_price }}</span>
+                <span class="text-sm text-gray-500">/mes</span>
+              </div>
+              <div v-else class="mt-2 text-2xl font-bold text-gray-400">Gratis</div>
+              <div v-if="plan.yearly_price != null" class="text-xs text-gray-400 mt-1">
+                S/ {{ plan.yearly_price }}/año
+              </div>
+              <div class="text-xs text-gray-400 mt-2">
+                {{ plan.active_stores }} tiendas activas
               </div>
             </div>
 
-            <draggable
-              v-model="form[plan.id].features"
-              item-key="key"
-              handle=".drag-handle"
-              :animation="200"
-              class="space-y-2"
-            >
-              <template #item="{ element: feature, index }">
-                <div
-                  class="group flex items-start gap-2 bg-gray-50 rounded-lg p-2 border border-gray-100"
-                  :class="{ 'border-primary-200 bg-primary-50/50': feature.highlighted }"
-                >
-                  <button class="drag-handle mt-1 cursor-grab text-gray-300 hover:text-gray-500">
-                    <i class="pi pi-bars text-xs"></i>
-                  </button>
-                  <div class="flex-1 min-w-0">
-                    <InputText
-                      v-model="feature.text"
-                      class="w-full !text-sm !py-1 !px-2"
-                      placeholder="Ej: Dominio Propio"
-                    />
-                    <div class="flex items-center gap-2 mt-1.5">
-                      <InputText
-                        v-model="feature.category"
-                        class="!text-xs !py-0.5 !px-1.5 flex-1"
-                        placeholder="Categoria"
-                      />
-                      <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer whitespace-nowrap">
-                        <Checkbox v-model="feature.highlighted" :binary="true" class="!w-4 !h-4" />
-                        <span>Destacar</span>
-                      </label>
-                    </div>
-                  </div>
+            <!-- Quotas -->
+            <div class="px-5 py-3 bg-gray-50 border-b border-gray-100 space-y-1">
+              <div class="flex items-center justify-between text-xs text-gray-600">
+                <span>Productos</span>
+                <span class="font-semibold">{{ plan.max_items === 0 ? 'Ilimitados' : plan.max_items }}</span>
+              </div>
+              <div class="flex items-center justify-between text-xs text-gray-600">
+                <span>Paginas</span>
+                <span class="font-semibold">{{ plan.max_pages === 0 ? 'Ilimitadas' : plan.max_pages }}</span>
+              </div>
+              <div class="flex items-center justify-between text-xs text-gray-600">
+                <span>Usuarios</span>
+                <span class="font-semibold">{{ plan.max_users === 0 ? 'Ilimitados' : plan.max_users }}</span>
+              </div>
+            </div>
+
+            <!-- Inheritance -->
+            <div class="px-5 pt-4 pb-2">
+              <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                Hereda de
+              </label>
+              <Dropdown
+                v-model="form[plan.id].inherits_from"
+                :options="inheritOptions(plan.id)"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Ninguno"
+                class="w-full"
+                :pt="{ root: { class: 'text-sm' } }"
+              />
+              <div
+                v-if="form[plan.id].inherits_from"
+                class="mt-2 text-xs text-primary-600 bg-primary-50 rounded-lg px-3 py-2"
+              >
+                <i class="pi pi-info-circle mr-1"></i>
+                Incluye todo lo del plan {{ getPlanName(form[plan.id].inherits_from) }}
+              </div>
+            </div>
+
+            <!-- Features List -->
+            <div class="px-5 py-3 flex-1">
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Caracteristicas propias
+                </label>
+                <div class="flex items-center gap-2">
                   <button
-                    class="mt-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    @click="removeFeature(plan.id, index)"
+                    v-if="plansStore.matrixData"
+                    class="text-xs text-gray-500 hover:text-primary-600"
+                    @click="populateFromModules(plan.id)"
+                    title="Pre-poblar desde modulos asignados en la Matriz"
                   >
-                    <i class="pi pi-trash text-xs"></i>
+                    <i class="pi pi-bolt text-xs mr-0.5"></i>
+                    Desde modulos
+                  </button>
+                  <button
+                    class="text-xs text-primary-600 hover:text-primary-800"
+                    @click="addFeature(plan.id)"
+                  >
+                    <i class="pi pi-plus text-xs mr-0.5"></i>
+                    Agregar
                   </button>
                 </div>
-              </template>
-            </draggable>
+              </div>
 
-            <div
-              v-if="form[plan.id].features.length === 0"
-              class="text-xs text-gray-400 text-center py-4 border border-dashed border-gray-200 rounded-lg"
-            >
-              Sin caracteristicas propias.
-              <button class="text-primary-600 hover:underline ml-1" @click="addFeature(plan.id)">
-                Agregar una
-              </button>
+              <draggable
+                v-model="form[plan.id].features"
+                item-key="key"
+                handle=".drag-handle"
+                :animation="200"
+                class="space-y-2"
+              >
+                <template #item="{ element: feature, index }">
+                  <div
+                    class="group flex items-start gap-2 bg-gray-50 rounded-lg p-2 border border-gray-100"
+                    :class="{ 'border-primary-200 bg-primary-50/50': feature.highlighted }"
+                  >
+                    <button class="drag-handle mt-1 cursor-grab text-gray-300 hover:text-gray-500">
+                      <i class="pi pi-bars text-xs"></i>
+                    </button>
+                    <div class="flex-1 min-w-0">
+                      <InputText
+                        v-model="feature.text"
+                        class="w-full !text-sm !py-1 !px-2"
+                        placeholder="Ej: Dominio Propio"
+                      />
+                      <div class="flex items-center gap-2 mt-1.5">
+                        <InputText
+                          v-model="feature.category"
+                          class="!text-xs !py-0.5 !px-1.5 flex-1"
+                          placeholder="Categoria"
+                        />
+                        <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer whitespace-nowrap">
+                          <Checkbox v-model="feature.highlighted" :binary="true" class="!w-4 !h-4" />
+                          <span>Destacar</span>
+                        </label>
+                      </div>
+                    </div>
+                    <button
+                      class="mt-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                      @click="removeFeature(plan.id, index)"
+                    >
+                      <i class="pi pi-trash text-xs"></i>
+                    </button>
+                  </div>
+                </template>
+              </draggable>
+
+              <div
+                v-if="form[plan.id].features.length === 0"
+                class="text-xs text-gray-400 text-center py-4 border border-dashed border-gray-200 rounded-lg"
+              >
+                Sin caracteristicas propias.
+                <button class="text-primary-600 hover:underline ml-1" @click="addFeature(plan.id)">
+                  Agregar una
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -303,7 +305,7 @@
       <Transition name="slide-up">
         <div
           v-if="isDirty"
-          class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-8 py-3 flex items-center justify-between shadow-lg z-30"
+          class="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-8 py-3 flex items-center justify-between shadow-lg z-30"
         >
           <span class="text-sm text-orange-600">
             <i class="pi pi-exclamation-circle mr-1"></i>

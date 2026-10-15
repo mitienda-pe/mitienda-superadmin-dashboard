@@ -131,7 +131,7 @@
     </div>
 
     <!-- Table -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <!-- Clasificar varios a la vez: es como se ordena lo importado del SIRE -->
       <div v-if="selected.length > 0" class="flex flex-wrap items-center gap-3 border-b border-gray-100 bg-gray-50 px-5 py-3">
         <span class="text-sm font-medium text-gray-700">
@@ -149,8 +149,8 @@
           class="w-64"
         />
         <Dropdown v-model="bulkLine" :options="bulkLineOptions" optionLabel="label" optionValue="value" class="w-52" />
-        <Button label="Clasificar" icon="pi pi-check" size="small" :loading="saving" :disabled="!bulkCategory" @click="submitClassify" />
-        <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
+        <Button label="Clasificar" icon="pi pi-check" :loading="saving" :disabled="!bulkCategory" @click="submitClassify" />
+        <Button label="Quitar selección" text severity="secondary" @click="selected = []" />
       </div>
 
       <DataTable v-model:selection="selected" :value="expenses" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">

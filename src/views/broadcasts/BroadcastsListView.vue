@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Avisos Backoffice</h1>
         <p class="text-sm text-gray-500 mt-1">
@@ -81,7 +81,7 @@
       <Button label="Crear primero" icon="pi pi-plus" @click="openCreate" />
     </div>
 
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable :value="store.items" stripedRows responsiveLayout="scroll">
         <Column field="title" header="Título" sortable>
           <template #body="{ data }">
@@ -172,19 +172,21 @@
             </span>
           </template>
         </Column>
-        <Column header="" style="width: 170px">
+        <Column header="" style="width: 180px">
           <template #body="{ data }">
-            <Button icon="pi pi-pencil" text rounded v-tooltip.top="'Editar'" @click="openEdit(data)" />
-            <Button
-              icon="pi pi-refresh"
-              text
-              rounded
-              severity="info"
-              v-tooltip.top="'Resetear vistas (volver a mostrar a todos)'"
-              :disabled="!(data.dismissals_count ?? 0)"
-              @click="confirmReset(data)"
-            />
-            <Button icon="pi pi-trash" severity="danger" text rounded v-tooltip.top="'Eliminar'" @click="confirmDelete(data)" />
+            <div class="flex items-center justify-end gap-1 whitespace-nowrap">
+              <Button icon="pi pi-pencil" text rounded v-tooltip.top="'Editar'" @click="openEdit(data)" />
+              <Button
+                icon="pi pi-refresh"
+                text
+                rounded
+                severity="secondary"
+                v-tooltip.top="'Resetear vistas (volver a mostrar a todos)'"
+                :disabled="!(data.dismissals_count ?? 0)"
+                @click="confirmReset(data)"
+              />
+              <Button icon="pi pi-trash" severity="danger" text rounded v-tooltip.top="'Eliminar'" @click="confirmDelete(data)" />
+            </div>
           </template>
         </Column>
       </DataTable>
@@ -229,7 +231,7 @@
       </div>
       <template #footer>
         <Button label="Cancelar" severity="secondary" text @click="showResetDialog = false" />
-        <Button label="Resetear" severity="info" icon="pi pi-refresh" :loading="isResetting" @click="handleReset" />
+        <Button label="Resetear" icon="pi pi-refresh" :loading="isResetting" @click="handleReset" />
       </template>
     </Dialog>
   </div>

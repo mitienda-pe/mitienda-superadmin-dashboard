@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="{ 'pb-20': isDirty }">
     <!-- Loading -->
     <div v-if="plansStore.isMatrixLoading" class="flex justify-center py-20">
       <i class="pi pi-spin pi-spinner text-4xl text-primary-600"></i>
@@ -15,7 +15,7 @@
     <!-- Matrix Content -->
     <div v-else-if="matrixPlans.length" class="space-y-4">
       <!-- Action Bar -->
-      <div class="flex items-center justify-between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex items-center gap-3">
           <router-link to="/plans/list" class="text-sm text-gray-500 hover:text-primary-600 transition-colors">
             <i class="pi pi-list text-xs mr-1"></i>
@@ -263,7 +263,7 @@
       <Transition name="slide-up">
         <div
           v-if="isDirty"
-          class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-8 py-3 flex items-center justify-between shadow-lg z-30"
+          class="fixed bottom-0 left-64 right-0 bg-white border-t border-gray-200 px-8 py-3 flex items-center justify-between shadow-lg z-30"
         >
           <span class="text-sm text-orange-600">
             <i class="pi pi-exclamation-circle mr-1"></i>

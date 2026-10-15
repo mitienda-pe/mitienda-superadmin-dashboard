@@ -107,7 +107,7 @@
     </div>
 
     <!-- Bitácora de vigencia -->
-    <div class="bg-white rounded-xl border border-gray-200">
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div class="p-5 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
         <h3 class="text-base font-semibold text-gray-800">Cambios de vigencia</h3>
         <div v-if="changes" class="flex gap-4 text-xs">
@@ -119,55 +119,55 @@
           </span>
         </div>
       </div>
-      <div class="p-5">
+      <div v-if="changesLoading || changesError || !changes || changes.changes.length === 0" class="p-5">
         <div v-if="changesLoading" class="text-center text-gray-400 py-6">Cargando…</div>
         <div v-else-if="changesError" class="text-center text-red-600 py-6 text-sm">{{ changesError }}</div>
         <div v-else-if="!changes || changes.changes.length === 0" class="text-center text-gray-400 py-6 text-sm">
           Sin cambios registrados. La bitácora empezó a registrar el {{ BITACORA_DESDE }}.
         </div>
-        <DataTable v-else :value="changes.changes" :rows="20" paginator stripedRows class="p-datatable-sm">
-          <Column header="Fecha">
-            <template #body="{ data }">
-              <span class="whitespace-nowrap text-xs">{{ data.created_at }}</span>
-            </template>
-          </Column>
-          <Column header="Fila" field="plan_row_id" />
-          <Column header="Cambio">
-            <template #body="{ data }">
-              <span class="text-xs">
-                <strong>{{ fieldLabel(data.field) }}</strong>
-                <template v-if="data.field === 'alta'">: {{ data.new_value }}</template>
-                <template v-else>: {{ valueLabel(data.field, data.old_value) }} → {{ valueLabel(data.field, data.new_value) }}</template>
-              </span>
-            </template>
-          </Column>
-          <Column header="Días">
-            <template #body="{ data }">
-              <span
-                v-if="data.days_delta !== null && data.field !== 'alta'"
-                class="text-xs font-semibold"
-                :class="data.days_delta > 0 ? 'text-amber-700' : 'text-gray-600'"
-              >{{ data.days_delta > 0 ? '+' : '' }}{{ data.days_delta }}</span>
-              <span v-else-if="data.field === 'alta' && data.days_delta !== null" class="text-xs text-gray-400">
-                {{ data.days_delta }} de duración
-              </span>
-            </template>
-          </Column>
-          <Column header="Quién">
-            <template #body="{ data }">
-              <span class="text-xs">
-                {{ data.user_name || originLabel(data.origin) }}
-                <span v-if="data.origin === 'externo'" class="text-gray-400" :title="data.db_user || ''">(sin usuario)</span>
-              </span>
-            </template>
-          </Column>
-          <Column header="Motivo">
-            <template #body="{ data }">
-              <span class="text-xs text-gray-600">{{ data.reason || '—' }}</span>
-            </template>
-          </Column>
-        </DataTable>
       </div>
+      <DataTable v-else :value="changes.changes" :rows="20" paginator stripedRows class="p-datatable-sm">
+        <Column header="Fecha">
+          <template #body="{ data }">
+            <span class="whitespace-nowrap text-xs">{{ data.created_at }}</span>
+          </template>
+        </Column>
+        <Column header="Fila" field="plan_row_id" />
+        <Column header="Cambio">
+          <template #body="{ data }">
+            <span class="text-xs">
+              <strong>{{ fieldLabel(data.field) }}</strong>
+              <template v-if="data.field === 'alta'">: {{ data.new_value }}</template>
+              <template v-else>: {{ valueLabel(data.field, data.old_value) }} → {{ valueLabel(data.field, data.new_value) }}</template>
+            </span>
+          </template>
+        </Column>
+        <Column header="Días">
+          <template #body="{ data }">
+            <span
+              v-if="data.days_delta !== null && data.field !== 'alta'"
+              class="text-xs font-semibold"
+              :class="data.days_delta > 0 ? 'text-amber-700' : 'text-gray-600'"
+            >{{ data.days_delta > 0 ? '+' : '' }}{{ data.days_delta }}</span>
+            <span v-else-if="data.field === 'alta' && data.days_delta !== null" class="text-xs text-gray-400">
+              {{ data.days_delta }} de duración
+            </span>
+          </template>
+        </Column>
+        <Column header="Quién">
+          <template #body="{ data }">
+            <span class="text-xs">
+              {{ data.user_name || originLabel(data.origin) }}
+              <span v-if="data.origin === 'externo'" class="text-gray-400" :title="data.db_user || ''">(sin usuario)</span>
+            </span>
+          </template>
+        </Column>
+        <Column header="Motivo">
+          <template #body="{ data }">
+            <span class="text-xs text-gray-600">{{ data.reason || '—' }}</span>
+          </template>
+        </Column>
+      </DataTable>
     </div>
 
     <!-- Confirmar cobro / marcar pendiente -->

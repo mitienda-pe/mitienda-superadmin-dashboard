@@ -29,7 +29,7 @@
       <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
         <div
           class="h-full rounded-full transition-all duration-300"
-          :class="completedCount === checklist.length ? 'bg-green-500' : 'bg-blue-500'"
+          :class="completedCount === checklist.length ? 'bg-green-500' : 'bg-primary-500'"
           :style="{ width: `${(completedCount / checklist.length) * 100}%` }"
         ></div>
       </div>

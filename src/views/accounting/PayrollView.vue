@@ -139,7 +139,7 @@
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <div v-for="card in cards" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-4">
+          <div v-for="card in cards" :key="card.label" class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">{{ card.label }}</div>
             <div class="text-xl font-bold mt-1" :class="card.strong ? 'text-primary' : 'text-gray-900'">{{ money(card.value) }}</div>
             <div class="text-xs text-gray-400 mt-1">{{ card.hint }}</div>

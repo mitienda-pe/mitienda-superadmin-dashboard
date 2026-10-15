@@ -10,9 +10,9 @@
       <!-- Info -->
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-4">
-          <div>
+          <div class="min-w-0">
             <h1 class="text-xl font-bold text-gray-900">{{ store.name }}</h1>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
               <a :href="store.url" target="_blank" class="text-sm text-primary-600 hover:underline">
                 {{ store.url }} <i class="pi pi-external-link text-xs"></i>
               </a>

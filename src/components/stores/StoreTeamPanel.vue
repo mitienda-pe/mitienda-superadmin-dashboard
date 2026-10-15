@@ -52,7 +52,7 @@
       </div>
 
       <!-- Usuarios -->
-      <div class="bg-white rounded-xl border border-gray-200">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="p-5 border-b border-gray-100">
           <h3 class="text-base font-semibold text-gray-800">Usuarios del backoffice</h3>
         </div>
@@ -98,7 +98,7 @@
       </div>
 
       <!-- Sucursales -->
-      <div class="bg-white rounded-xl border border-gray-200">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="p-5 border-b border-gray-100">
           <h3 class="text-base font-semibold text-gray-800">Sucursales</h3>
         </div>
@@ -128,7 +128,7 @@
       </div>
 
       <!-- Cajeros -->
-      <div class="bg-white rounded-xl border border-gray-200">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div class="p-5 border-b border-gray-100">
           <h3 class="text-base font-semibold text-gray-800">Cajeros del POS (ingreso con PIN)</h3>
         </div>

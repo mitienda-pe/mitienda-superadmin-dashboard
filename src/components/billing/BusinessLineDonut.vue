@@ -30,6 +30,8 @@
         </tbody>
       </table>
     </div>
+
+    <p v-else class="text-sm text-gray-400 py-6 text-center">Sin ingresos en el rango</p>
   </div>
 </template>
 

@@ -68,16 +68,16 @@
 
         <!-- Lo esencial -->
         <div class="space-y-4">
-          <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">Saldo hoy</div>
             <div class="text-2xl font-bold text-gray-900 mt-1">{{ money(opening) }}</div>
           </div>
-          <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">Punto más bajo</div>
             <div class="text-2xl font-bold mt-1" :class="lowest.amount < 0 ? 'text-red-600' : 'text-gray-900'">{{ money(lowest.amount) }}</div>
             <div class="text-xs text-gray-400 mt-1">semana del {{ weekLabel(lowest.index) }}</div>
           </div>
-          <div class="bg-white rounded-xl border border-gray-200 p-4">
+          <div class="bg-white rounded-xl border border-gray-200 p-5">
             <div class="text-sm text-gray-500">Al cabo de 13 semanas</div>
             <div class="text-2xl font-bold mt-1" :class="closing[closing.length - 1] < 0 ? 'text-red-600' : 'text-primary'">
               {{ money(closing[closing.length - 1] ?? 0) }}

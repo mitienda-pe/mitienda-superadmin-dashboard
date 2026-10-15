@@ -90,7 +90,7 @@
           <Checkbox v-model="pricesIncludeTax" inputId="pricesIncludeTax" binary />
           <label for="pricesIncludeTax" class="text-sm text-gray-600">Los precios que escribo ya incluyen IGV</label>
         </div>
-        <div v-if="documentType === 1" class="flex items-center gap-2 pb-2">
+        <div v-if="documentType === 1" class="flex items-center gap-2">
           <Checkbox v-model="onCredit" inputId="onCredit" binary />
           <label for="onCredit" class="text-sm text-gray-600">A crédito, vence el</label>
           <InputText v-model="creditDueDate" type="date" class="w-44" :disabled="!onCredit" :min="tomorrow" />
@@ -117,7 +117,7 @@
           <label class="block text-xs font-medium text-gray-500 mb-1">Fecha de emisión</label>
           <InputText v-model="issueDate" type="date" class="w-44" :min="oldestIssueDate" :max="today" />
         </div>
-        <div v-if="documentType === 1" class="flex items-center gap-2 pb-2">
+        <div v-if="documentType === 1" class="flex items-center gap-2">
           <Checkbox v-model="detractionEnabled" inputId="detraction" binary />
           <label for="detraction" class="text-sm text-gray-600">Sujeta a detracción del</label>
           <input v-model.number="detractionPercentage" type="number" min="0" max="30" step="0.5" :disabled="!detractionEnabled" class="p-inputtext p-component w-20" />

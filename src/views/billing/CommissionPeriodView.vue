@@ -31,7 +31,7 @@
       panel legacy mostraba todas las tiendas con ventas y el operador marcaba a
       mano; se replica ese criterio porque no esta escrito en ningun lado.
     -->
-    <div class="flex items-start gap-3 rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+    <div class="flex items-start gap-3 rounded-xl border border-primary-100 bg-primary-50 p-4">
       <i class="pi pi-info-circle text-primary mt-0.5"></i>
       <p class="text-sm text-gray-700">
         Este listado muestra <strong>todas</strong> las tiendas con ventas del periodo cuyo plan
@@ -94,11 +94,11 @@
     </div>
 
     <!-- Tabla -->
-    <div v-else-if="data" class="bg-white rounded-xl border border-gray-200">
+    <div v-else-if="data" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <!-- Barra del lote: solo aparece con algo seleccionado -->
       <div
         v-if="selectedIds.length > 0"
-        class="flex flex-wrap items-center gap-4 border-b border-gray-200 bg-gray-50 px-4 py-3"
+        class="flex flex-wrap items-center gap-4 border-b border-gray-100 bg-gray-50 px-5 py-3"
       >
         <span class="text-sm font-medium text-gray-700">
           {{ selectedIds.length }} seleccionada{{ selectedIds.length === 1 ? '' : 's' }}
@@ -166,20 +166,20 @@
           <template #body="{ data: row }">
             <span
               v-if="row.comprobante"
-              class="inline-block rounded px-2 py-0.5 text-xs bg-green-50 text-green-700"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-green-50 text-green-700"
             >
               {{ row.comprobante }}
             </span>
             <span
               v-else-if="row.exonerated"
-              class="inline-block rounded px-2 py-0.5 text-xs bg-purple-50 text-purple-700"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-purple-50 text-purple-700"
               v-tooltip="row.exoneration_reason || 'Sin motivo registrado'"
             >
               Exonerada
             </span>
             <span
               v-else-if="row.can_emit"
-              class="inline-block rounded px-2 py-0.5 text-xs bg-gray-100 text-gray-600"
+              class="inline-flex items-center rounded-full px-2 py-0.5 text-xs bg-gray-100 text-gray-600"
             >
               Sin facturar
             </span>

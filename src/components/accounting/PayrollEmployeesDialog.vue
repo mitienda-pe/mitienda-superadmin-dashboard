@@ -53,11 +53,11 @@
           <div class="bg-gray-50 rounded-lg p-3 space-y-2">
             <div class="flex flex-wrap items-end gap-3">
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Vacaciones pendientes</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Vacaciones pendientes</label>
                 <InputNumber v-model="form.vacation_opening_days" :maxFractionDigits="1" :min="-60" :max="365" suffix=" días" inputClass="w-28" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">al día</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">al día</label>
                 <InputText v-model="form.vacation_opening_date" type="date" />
               </div>
               <div v-if="selected.vacation_balance !== null" class="text-sm text-gray-700 pb-2">
@@ -73,11 +73,11 @@
           <div class="bg-gray-50 rounded-lg p-3 space-y-2">
             <div class="flex flex-wrap items-end gap-3">
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Costo de servicio</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Costo de servicio</label>
                 <InputNumber v-model="form.share_cost" :min="0" :max="100" :maxFractionDigits="2" suffix=" %" inputClass="w-24" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Ventas</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Ventas</label>
                 <InputNumber v-model="form.share_sales" :min="0" :max="100" :maxFractionDigits="2" suffix=" %" inputClass="w-24" />
               </div>
               <div class="text-sm text-gray-700 pb-2">
@@ -136,15 +136,15 @@
           <div class="bg-gray-50 rounded-lg p-3 space-y-3">
             <div class="grid grid-cols-3 gap-3">
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Rige desde *</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Rige desde *</label>
                 <InputText v-model="salaryForm.effective_from" type="date" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Sueldo afecto *</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Sueldo afecto *</label>
                 <InputNumber v-model="salaryForm.base_salary" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
               </div>
               <div>
-                <label class="block text-xs font-medium text-gray-600 mb-1">Condición de trabajo</label>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Condición de trabajo</label>
                 <InputNumber v-model="salaryForm.work_condition" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
               </div>
             </div>
@@ -154,7 +154,7 @@
                 <Checkbox v-model="salaryForm.family_allowance" inputId="salaryfamily" binary />
                 <label for="salaryfamily" class="text-sm text-gray-600">Asignación familiar</label>
               </div>
-              <Button label="Guardar sueldo" icon="pi pi-plus" size="small" :loading="saving" @click="submitSalary" />
+              <Button label="Guardar sueldo" icon="pi pi-plus" :loading="saving" @click="submitSalary" />
             </div>
             <p class="text-xs text-gray-500">
               El sueldo afecto paga AFP, EsSalud y renta de quinta. La condición de trabajo no. Con una fecha que ya

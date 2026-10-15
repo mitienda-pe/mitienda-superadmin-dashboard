@@ -108,7 +108,7 @@
       <p class="text-gray-500">No hay registros para los filtros seleccionados.</p>
     </div>
 
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable
         :value="store.items"
         stripedRows

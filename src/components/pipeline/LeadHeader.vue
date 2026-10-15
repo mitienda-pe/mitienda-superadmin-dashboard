@@ -1,6 +1,6 @@
 <template>
   <div class="bg-white rounded-xl border border-gray-200 p-6">
-    <div class="flex items-start justify-between mb-4">
+    <div class="flex items-start justify-between gap-4 mb-4">
       <div>
         <h2 class="text-xl font-bold text-gray-900">{{ lead.name }}</h2>
         <p class="text-sm text-gray-500 mt-0.5">{{ lead.slug }}.mitienda.pe</p>
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Owner info -->
-    <div v-if="lead.owner_name" class="flex items-center gap-4 text-sm text-gray-600 mb-4">
+    <div v-if="lead.owner_name" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mb-4">
       <span class="flex items-center gap-1.5">
         <i class="pi pi-user text-xs text-gray-400"></i>
         {{ lead.owner_name }}

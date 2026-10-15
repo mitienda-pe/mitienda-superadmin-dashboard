@@ -88,7 +88,7 @@
     </div>
 
     <!-- Table -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable
         :value="store.commissions"
         :loading="store.commissionsLoading"
@@ -97,7 +97,7 @@
       >
         <Column field="tienda_nombre" header="Tienda" style="min-width: 180px">
           <template #body="{ data: row }">
-            <router-link :to="`/stores/${row.tienda_id}`" class="text-primary-600 hover:underline font-medium">
+            <router-link :to="`/stores/${row.tienda_id}`" class="text-sm text-primary-600 hover:underline font-medium">
               {{ row.tienda_nombre }}
             </router-link>
           </template>

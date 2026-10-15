@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold text-gray-900">MCP Tokens</h1>
         <p class="text-sm text-gray-500 mt-1">
@@ -56,7 +56,7 @@
     </div>
 
     <!-- Tokens table -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable :value="tokens" :loading="isLoading" stripedRows>
         <Column field="label" header="Etiqueta" sortable>
           <template #body="{ data }">

@@ -31,7 +31,7 @@
             <MrrBreakdownChart v-if="store.mrrBreakdown.length" :data="store.mrrBreakdown" />
 
             <!-- LTV by Plan -->
-            <div v-if="store.ltvData.length" class="bg-white rounded-xl border border-gray-200">
+            <div v-if="store.ltvData.length" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div class="p-5 border-b border-gray-100">
                 <h3 class="text-base font-semibold text-gray-800">LTV por Plan</h3>
                 <p class="text-xs text-gray-400 mt-0.5">
@@ -117,7 +117,7 @@
             </div>
 
             <!-- Top stores table -->
-            <div class="bg-white rounded-xl border border-gray-200">
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div class="p-5 border-b border-gray-100">
                 <h3 class="text-base font-semibold text-gray-800">Top 10 Tiendas por GMV (mes actual)</h3>
               </div>

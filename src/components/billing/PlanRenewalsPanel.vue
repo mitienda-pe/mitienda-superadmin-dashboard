@@ -72,8 +72,8 @@
       <p class="text-sm text-gray-400 mt-1">Ninguna tienda vence en la ventana elegida</p>
     </div>
 
-    <div v-else class="bg-white rounded-xl border border-gray-200">
-      <DataTable :value="items" :loading="loading" dataKey="tienda_id" stripedRows>
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <DataTable :value="items" :loading="loading" dataKey="tienda_id" stripedRows class="p-datatable-sm">
         <Column header="Tienda" style="min-width: 200px">
           <template #body="{ data: row }">
             <router-link

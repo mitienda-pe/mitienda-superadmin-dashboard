@@ -11,7 +11,10 @@
       </p>
     </div>
 
-    <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{{ error }}</div>
+    <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+      <p class="text-red-700 font-medium">{{ error }}</p>
+      <Button label="Reintentar" icon="pi pi-refresh" class="mt-4" severity="danger" outlined @click="load" />
+    </div>
 
     <template v-if="chart">
       <div class="grid lg:grid-cols-2 gap-6">
@@ -87,14 +90,14 @@
       </div>
 
       <!-- Catálogo -->
-      <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <div class="flex flex-wrap items-end justify-between gap-3 mb-3">
+      <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="flex flex-wrap items-end justify-between gap-3 px-5 py-4 border-b border-gray-100">
           <h2 class="font-semibold text-gray-900">Catálogo</h2>
           <form v-if="canWrite" class="flex flex-wrap items-end gap-2" @submit.prevent="addAccount">
             <InputText v-model="draft.code" placeholder="Código" class="w-28" />
             <InputText v-model="draft.name" placeholder="Nombre" class="w-64" />
             <Dropdown v-model="draft.kind" :options="KIND_OPTIONS" optionLabel="label" optionValue="value" class="w-40" />
-            <Button type="submit" label="Agregar o cambiar" icon="pi pi-plus" size="small" :disabled="!draft.code || !draft.name" />
+            <Button type="submit" label="Agregar o cambiar" icon="pi pi-plus" :disabled="!draft.code || !draft.name" />
           </form>
         </div>
         <DataTable :value="chart.accounts" size="small" :rows="25" paginator :globalFilterFields="['code', 'name']" :filters="tableFilters" class="text-sm">

@@ -39,7 +39,7 @@
       <p class="text-sm text-gray-400 mt-1">Agrega a los proveedores y a las personas del equipo antes de cargar gastos.</p>
     </div>
 
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <DataTable :value="payees" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">
         <Column header="Nombre" style="min-width: 240px">
           <template #body="{ data: row }">

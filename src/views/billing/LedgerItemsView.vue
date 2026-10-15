@@ -105,10 +105,10 @@
     </div>
 
     <!-- Table -->
-    <div v-else class="bg-white rounded-xl border border-gray-200">
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
       <div
         v-if="selectedIds.length > 0"
-        class="flex flex-wrap items-center gap-4 border-b border-gray-200 bg-gray-50 px-4 py-3"
+        class="flex flex-wrap items-center gap-4 border-b border-gray-100 bg-gray-50 px-5 py-3"
       >
         <span class="text-sm font-medium text-gray-700">
           {{ selectedIds.length }} seleccionada{{ selectedIds.length === 1 ? '' : 's' }}
@@ -123,7 +123,7 @@
            dice (una busqueda, un cliente) cuando el codigo no agrupa bien. -->
       <div
         v-else-if="canTagAll"
-        class="flex flex-wrap items-center gap-4 border-b border-gray-200 px-4 py-3"
+        class="flex flex-wrap items-center gap-4 border-b border-gray-100 px-5 py-3"
       >
         <span class="text-sm text-gray-600">
           <strong class="font-semibold text-gray-800">{{ formatNumber(meta.total) }}</strong>

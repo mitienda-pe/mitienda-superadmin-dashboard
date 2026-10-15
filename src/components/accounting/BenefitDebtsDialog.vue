@@ -46,11 +46,25 @@
       <div class="bg-gray-50 rounded-lg p-3 space-y-3">
         <div class="text-sm font-medium text-gray-700">Agregar una deuda</div>
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <Dropdown v-model="form.payee_id" :options="people" optionLabel="name" optionValue="payee_id" placeholder="Persona" class="w-full" />
-          <Dropdown v-model="form.concept" :options="CONCEPTS" optionLabel="label" optionValue="value" class="w-full" />
-          <InputText v-model="form.due_date" type="date" class="w-full" v-tooltip.top="'Cuándo debió pagarse'" />
-          <InputNumber v-model="form.amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" placeholder="Importe" class="w-full" />
-          <Button label="Agregar" icon="pi pi-plus" :loading="saving" @click="submitDebt" />
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Persona</label>
+            <Dropdown v-model="form.payee_id" :options="people" optionLabel="name" optionValue="payee_id" placeholder="Persona" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Concepto</label>
+            <Dropdown v-model="form.concept" :options="CONCEPTS" optionLabel="label" optionValue="value" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Vencía</label>
+            <InputText v-model="form.due_date" type="date" class="w-full" v-tooltip.top="'Cuándo debió pagarse'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Importe</label>
+            <InputNumber v-model="form.amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" placeholder="Importe" class="w-full" />
+          </div>
+          <div class="flex items-end">
+            <Button label="Agregar" icon="pi pi-plus" :loading="saving" @click="submitDebt" />
+          </div>
         </div>
         <InputText v-model="form.label" maxlength="120" placeholder="Detalle (opcional): Gratificación de diciembre 2025" class="w-full" />
       </div>

@@ -38,7 +38,7 @@
         <div class="lg:col-span-2 space-y-6">
           <!-- Header Card -->
           <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <div class="flex items-start justify-between mb-4">
+            <div class="flex items-start justify-between gap-4 mb-4">
               <div>
                 <h2 class="text-xl font-bold text-gray-900">
                   {{ sub.tienda_nombre || `Tienda #${sub.tienda_id}` }}
@@ -273,7 +273,6 @@
               <Button
                 label="Registrar Pago"
                 icon="pi pi-wallet"
-                severity="info"
                 size="small"
                 class="w-full"
                 @click="showPaymentDialog = true"

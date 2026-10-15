@@ -41,9 +41,9 @@
       <a
         v-if="lead.email"
         :href="`mailto:${lead.email}`"
-        class="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-blue-50 transition-colors text-sm text-blue-700"
+        class="flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-gray-50 transition-colors text-sm text-gray-700"
       >
-        <i class="pi pi-envelope text-blue-500"></i>
+        <i class="pi pi-envelope text-gray-400"></i>
         Enviar email
       </a>
     </div>

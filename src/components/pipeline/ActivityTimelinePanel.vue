@@ -23,7 +23,6 @@
         <Button
           label="Agregar"
           icon="pi pi-plus"
-          size="small"
           :loading="isSaving"
           :disabled="!newNote.trim()"
           @click="handleAddNote"

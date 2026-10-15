@@ -6,9 +6,7 @@
     :style="{ width: '960px' }"
     :pt="{
       root: { class: 'broadcast-form-dialog' },
-      header: { class: 'px-8 pt-6 pb-4' },
-      content: { class: 'px-8 pb-6' },
-      footer: { class: 'px-8 pb-6 pt-4 border-t border-gray-100' }
+      footer: { class: 'pt-4 border-t border-gray-100' }
     }"
     @update:visible="$emit('update:visible', $event)"
   >
