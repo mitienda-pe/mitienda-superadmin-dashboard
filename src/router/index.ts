@@ -336,6 +336,19 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Qué le preguntan los comerciantes al asistente del panel. Área platform.
+    path: '/assistant-questions',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'AssistantQuestions',
+        component: () => import('@/views/assistant/AssistantQuestionsView.vue')
+      }
+    ]
+  },
+  {
     path: '/broadcasts',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },
