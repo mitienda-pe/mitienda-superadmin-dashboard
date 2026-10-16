@@ -314,6 +314,7 @@ export type ReconcileInput =
   | { kind: 'pago'; expense_id: number; amount?: number }
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
   | { kind: 'otro'; label: string; note?: string }
+  | { kind: 'transferencia'; counterpart_id: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[] }
 
 /** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */

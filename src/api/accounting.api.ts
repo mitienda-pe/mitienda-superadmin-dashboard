@@ -172,6 +172,21 @@ export async function reconcileBankMovement(movementId: number, payload: Reconci
   return res.data
 }
 
+/** El otro lado de una transferencia entre cuentas propias (con la comisión que se llevó el banco). */
+export interface TransferCandidate {
+  id: number
+  account_name: string
+  op_date: string
+  description: string
+  amount: number
+  fee: number
+}
+
+export async function getTransferCandidates(movementId: number) {
+  const res = await api.get<{ data: TransferCandidate[] }>(`${BASE}/bank-movements/${movementId}/transfer-candidates`)
+  return res.data.data
+}
+
 /** Todo lo que el cliente tiene sin cobrar en la moneda del movimiento. */
 export async function getCustomerOpenInvoices(movementId: number, customerDocument: string) {
   const res = await api.post<{ data: CustomerOpenInvoices }>(`${BASE}/bank-movements/${movementId}/reconcile`, {

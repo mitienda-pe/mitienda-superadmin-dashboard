@@ -388,6 +388,29 @@
               <label class="block text-sm font-medium text-gray-600 mb-1">Qué es *</label>
               <Dropdown v-model="other.label" :options="otherOptions" optionLabel="label" optionValue="value" placeholder="Elige" class="w-full" />
             </div>
+            <div v-if="other.label === 'transferencia'" class="rounded-lg border border-gray-200 p-3 space-y-2">
+              <div class="text-sm font-medium text-gray-700">El otro lado, en la otra cuenta</div>
+              <div v-if="transferLoading" class="text-sm text-gray-400">Buscando…</div>
+              <template v-else>
+                <label v-for="c in transferCandidates" :key="c.id" class="flex items-start gap-2 text-sm cursor-pointer">
+                  <RadioButton v-model="other.counterpart" :value="c.id" class="mt-0.5" />
+                  <span>
+                    <span class="font-medium text-gray-800">{{ c.account_name }}</span>
+                    · {{ formatDate(c.op_date) }} · {{ c.description }}
+                    · <span class="tabular-nums">{{ money(Math.abs(c.amount), current?.currency ?? 'PEN') }}</span>
+                    <span v-if="c.fee > 0" class="text-xs text-gray-500"> (comisión del banco {{ money(c.fee, current?.currency ?? 'PEN') }})</span>
+                  </span>
+                </label>
+                <label class="flex items-center gap-2 text-sm cursor-pointer text-gray-600">
+                  <RadioButton v-model="other.counterpart" :value="null" />
+                  Marcar solo este lado (el otro no está importado o es de otra moneda)
+                </label>
+                <p class="text-xs text-gray-500">
+                  Se concilian los dos movimientos; si el que sale es mayor, la diferencia queda como comisión del banco
+                  (llega facturada por el SIRE). Deshacer un lado deshace los dos.
+                </p>
+              </template>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">Nota</label>
               <InputText v-model="other.note" maxlength="255" class="w-full" placeholder="Opcional" />
@@ -554,7 +577,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
   markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
-  getCustomerOpenInvoices
+  getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
@@ -725,7 +748,25 @@ const undoingId = ref<number | null>(null)
 const payees = ref<Payee[]>([])
 const categories = ref<ExpenseCategory[]>([])
 const newExpense = reactive({ payee_id: null as number | null, category_id: null as number | null, period: '', description: '' })
-const other = reactive({ label: null as string | null, note: '' })
+const other = reactive({ label: null as string | null, note: '', counterpart: null as number | null })
+
+// Transferencia entre cuentas propias: el otro lado, para conciliar los dos a la vez.
+const transferCandidates = ref<TransferCandidate[]>([])
+const transferLoading = ref(false)
+watch(() => other.label, async (label) => {
+  transferCandidates.value = []
+  other.counterpart = null
+  if (label !== 'transferencia' || !current.value) return
+  transferLoading.value = true
+  try {
+    transferCandidates.value = await getTransferCandidates(current.value.id)
+    if (transferCandidates.value.length === 1) other.counterpart = transferCandidates.value[0].id
+  } catch {
+    transferCandidates.value = []
+  } finally {
+    transferLoading.value = false
+  }
+})
 let changed = false
 
 // Quien solo concilia (ventas) cruza ingresos con comprobantes; lo demás es de contabilidad.
@@ -810,6 +851,7 @@ function resetChoice() {
   newExpense.description = ''
   other.label = null
   other.note = ''
+  other.counterpart = null
 }
 
 async function loadSuggestions() {
@@ -938,7 +980,9 @@ async function submitReconcile() {
     }
   } else {
     if (!other.label) return warn('Indica qué es el movimiento')
-    payload = { kind: 'otro', label: other.label, note: other.note.trim() || undefined }
+    payload = other.label === 'transferencia' && other.counterpart
+      ? { kind: 'transferencia', counterpart_id: other.counterpart }
+      : { kind: 'otro', label: other.label, note: other.note.trim() || undefined }
   }
 
   saving.value = true
