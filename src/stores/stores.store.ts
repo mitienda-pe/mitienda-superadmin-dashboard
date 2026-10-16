@@ -85,11 +85,11 @@ export const useStoresStore = defineStore('stores', () => {
     if (store) store.flag = flag
   }
 
-  async function saveStoreConfig(storeId: number, data: StoreConfigUpdate) {
+  async function saveStoreConfig(storeId: number, data: StoreConfigUpdate, reason?: string) {
     isSavingConfig.value = true
     configError.value = null
     try {
-      await apiUpdateStoreConfig(storeId, data)
+      await apiUpdateStoreConfig(storeId, data, reason)
       if (currentStore.value?.config) {
         Object.assign(currentStore.value.config, data)
       }

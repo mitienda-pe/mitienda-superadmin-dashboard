@@ -5,7 +5,7 @@ import type {
   SubscriptionHistory, TopProduct, StoreFlag,
   StoreConfigUpdate, StorePlanConfigUpdate,
   AvailablePlan, CreateStorePayload, CreateStoreResult,
-  PlanChangesResult, PlanPaymentUpdate, StoreTeam
+  PlanChangesResult, PlanPaymentUpdate, StoreTeam, StoreAdminEvent
 } from '@/types/store.types'
 
 export async function getStoresList(filters: Partial<StoreListFilters> = {}) {
@@ -95,10 +95,19 @@ export async function updateStoreFlag(storeId: number, flag: StoreFlag) {
   return res.data
 }
 
-export async function updateStoreConfig(storeId: number, data: StoreConfigUpdate) {
+/** `reason` es obligatorio si cambia el bloqueo: queda en la bitácora de la tienda. */
+export async function updateStoreConfig(storeId: number, data: StoreConfigUpdate, reason?: string) {
   const res = await api.put<{ success: boolean; message: string }>(
     `/superadmin/dashboard/stores/${storeId}/config`,
-    data
+    reason ? { ...data, reason } : data
+  )
+  return res.data
+}
+
+/** Bitácora de bloqueos, estado, configuración y módulos de la tienda. */
+export async function getStoreAdminEvents(storeId: number) {
+  const res = await api.get<{ success: boolean; data: StoreAdminEvent[] }>(
+    `/superadmin/dashboard/stores/${storeId}/admin-events`
   )
   return res.data
 }
@@ -113,7 +122,7 @@ export async function updateStorePlanConfig(storeId: number, data: StorePlanConf
 
 export async function getAvailablePlans() {
   const res = await api.get<{ success: boolean; data: AvailablePlan[] }>(
-    '/superadmin/dashboard/plans'
+    '/superadmin/dashboard/plans/available'
   )
   return res.data
 }

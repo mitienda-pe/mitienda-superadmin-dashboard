@@ -33,6 +33,20 @@
             <label class="text-sm text-gray-600">Directorio</label>
           </div>
         </div>
+        <div v-if="blockedChanged" class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-600 mb-1">
+            Motivo {{ configForm.blocked ? 'del bloqueo' : 'del desbloqueo' }} *
+          </label>
+          <InputText
+            v-model="statusReason"
+            class="w-full"
+            :placeholder="configForm.blocked ? 'Ej.: fraude con tarjetas, pedido legal' : 'Ej.: aclarado con el comercio'"
+          />
+          <p class="text-xs text-gray-400 mt-1">
+            {{ configForm.blocked ? 'La tienda online deja de verse al guardar.' : 'La tienda online vuelve a verse al guardar.' }}
+            Queda registrado con tu usuario.
+          </p>
+        </div>
       </div>
       <div class="flex justify-end mt-4">
         <Button
@@ -314,7 +328,12 @@
             </div>
           </div>
         </div>
-        <div class="flex justify-end mt-6">
+        <div class="flex flex-wrap items-center justify-end gap-3 mt-6">
+          <InputText
+            v-model="modulesReason"
+            placeholder="Motivo (opcional), ej.: POS vendido aparte"
+            class="w-full md:w-80 text-sm"
+          />
           <Button
             label="Guardar Modulos"
             icon="pi pi-save"
@@ -331,6 +350,8 @@
         <Button label="Reintentar" text size="small" icon="pi pi-refresh" class="mt-2" @click="loadStoreModules" />
       </div>
     </div>
+
+    <StoreAdminEventsCard ref="eventsCard" :store-id="storeId" />
 
     <RenewPlanDialog
       v-model:visible="renewDialogVisible"
@@ -398,6 +419,7 @@ import { usePlansStore } from '@/stores/plans.store'
 import { plansApi } from '@/api/plans.api'
 import { expireStorePlan } from '@/api/stores.api'
 import RenewPlanDialog from '@/components/stores/RenewPlanDialog.vue'
+import StoreAdminEventsCard from '@/components/stores/StoreAdminEventsCard.vue'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
 import { parseLocalDate, toIsoDate } from '@/utils/dates'
 
@@ -421,6 +443,9 @@ const storeModulesLoaded = ref(false)
 const modulesError = ref<string | null>(null)
 const selectedStoreModuleIds = ref(new Set<number>())
 const showOnlyMigrated = ref(true)
+const statusReason = ref('')
+const modulesReason = ref('')
+const eventsCard = ref<InstanceType<typeof StoreAdminEventsCard> | null>(null)
 
 const filteredModules = computed(() => {
   const data = plansStore.storeModulesData
@@ -510,6 +535,7 @@ async function togglePosAddon(enabled: boolean) {
   savingSection.value = 'modules'
   try {
     await plansStore.saveStoreModules(props.storeId, Array.from(next))
+    eventsCard.value?.load()
     toast.add({
       severity: 'success',
       summary: enabled ? 'POS activado' : 'POS desactivado',
@@ -552,7 +578,9 @@ async function loadStoreModules() {
 async function saveStoreModules() {
   savingSection.value = 'modules'
   try {
-    await plansStore.saveStoreModules(props.storeId, Array.from(selectedStoreModuleIds.value))
+    await plansStore.saveStoreModules(props.storeId, Array.from(selectedStoreModuleIds.value), modulesReason.value.trim() || undefined)
+    modulesReason.value = ''
+    eventsCard.value?.load()
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Modulos actualizados', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: 'Error al guardar modulos', life: 5000 })
@@ -565,6 +593,7 @@ async function resetToDefaults() {
   savingSection.value = 'reset'
   try {
     await plansStore.resetStoreModules(props.storeId)
+    eventsCard.value?.load()
     if (plansStore.storeModulesData) {
       selectedStoreModuleIds.value = new Set(
         plansStore.storeModulesData.modules.filter(m => m.enabled).map(m => m.id)
@@ -668,7 +697,13 @@ watch(() => props.plan, (p) => {
 }, { deep: true })
 
 
+const blockedChanged = computed(() => configForm.blocked !== props.config.blocked)
+
 async function saveStatus() {
+  if (blockedChanged.value && !statusReason.value.trim()) {
+    toast.add({ severity: 'warn', summary: 'Falta el motivo', detail: 'Indica por qué se bloquea o desbloquea la tienda', life: 5000 })
+    return
+  }
   savingSection.value = 'status'
   try {
     await storesStore.saveStoreConfig(props.storeId, {
@@ -677,7 +712,9 @@ async function saveStatus() {
       blocked: configForm.blocked,
       marketplace: configForm.marketplace,
       directory: configForm.directory
-    })
+    }, blockedChanged.value ? statusReason.value.trim() : undefined)
+    statusReason.value = ''
+    eventsCard.value?.load()
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Estado actualizado', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: storesStore.configError || 'Error al guardar', life: 5000 })
@@ -698,6 +735,7 @@ async function saveConfig() {
       group_id: configForm.group_id,
       umami_website_id: configForm.umami_website_id || null
     })
+    eventsCard.value?.load()
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Configuración actualizada', life: 3000 })
   } catch {
     toast.add({ severity: 'error', summary: 'Error', detail: storesStore.configError || 'Error al guardar', life: 5000 })

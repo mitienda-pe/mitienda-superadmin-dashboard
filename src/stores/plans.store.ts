@@ -90,8 +90,8 @@ export const usePlansStore = defineStore('plans', () => {
     }
   }
 
-  async function saveStoreModules(storeId: number, moduleIds: number[]) {
-    const response = await plansApi.updateStoreModules(storeId, moduleIds)
+  async function saveStoreModules(storeId: number, moduleIds: number[], reason?: string) {
+    const response = await plansApi.updateStoreModules(storeId, moduleIds, reason)
     if (response.success) {
       await fetchStoreModules(storeId)
     }

@@ -232,6 +232,18 @@ export interface PlanChange {
   created_at: string
 }
 
+/** Cambio de la tienda fuera de su plan, hecho desde el superadmin. */
+export interface StoreAdminEvent {
+  id: number
+  action: 'config' | 'blocked' | 'modules'
+  /** config/blocked: {columna: [antes, después]}; modules: {added: [...], removed: [...]} */
+  changes: Record<string, unknown>
+  reason: string | null
+  usuario_id: number | null
+  user_name: string | null
+  created_at: string
+}
+
 export interface PlanChangesResult {
   granted_days: number
   removed_days: number

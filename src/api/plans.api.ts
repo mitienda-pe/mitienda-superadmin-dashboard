@@ -33,8 +33,8 @@ export const plansApi = {
     return response.data
   },
 
-  async updateStoreModules(storeId: number, moduleIds: number[]): Promise<ApiResponse> {
-    const response = await apiClient.put(`/superadmin/dashboard/stores/${storeId}/modules`, { module_ids: moduleIds })
+  async updateStoreModules(storeId: number, moduleIds: number[], reason?: string): Promise<ApiResponse> {
+    const response = await apiClient.put(`/superadmin/dashboard/stores/${storeId}/modules`, { module_ids: moduleIds, reason })
     return response.data
   },
 
