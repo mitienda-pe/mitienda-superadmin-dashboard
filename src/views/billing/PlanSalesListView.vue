@@ -549,9 +549,8 @@ const tabOptions = [
 // Recién renovada: la venta ya existe, se pasa directo a la vista previa del
 // comprobante. Si se cancela ahí, queda pendiente en "Ventas registradas".
 function onRenewed(result: RenewStorePlanResult) {
-  // La venta nueva tiene fecha de hoy: el filtro por defecto (mes anterior) la escondería.
-  const now = new Date()
-  periodFilter.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  // La venta nueva tiene fecha de hoy: que el filtro esté en el mes en curso.
+  periodFilter.value = getCurrentMonth()
   applyFilters()
   openEmitDialog({ id: result.tiendaplan_id })
 }
@@ -691,16 +690,15 @@ async function confirmEmit() {
   }
 }
 
-function getPreviousMonth(): string {
+// Por defecto el mes en curso: las renovaciones se registran a diario y con el
+// mes anterior una venta de hoy no aparecía hasta cambiar el filtro.
+function getCurrentMonth(): string {
   const now = new Date()
-  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const y = prev.getFullYear()
-  const m = String(prev.getMonth() + 1).padStart(2, '0')
-  return `${y}-${m}`
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
 const searchQuery = ref('')
-const periodFilter = ref(getPreviousMonth())
+const periodFilter = ref(getCurrentMonth())
 const invoicedFilter = ref('all')
 const planFilter = ref('')
 
