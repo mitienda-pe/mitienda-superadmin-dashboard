@@ -83,9 +83,8 @@
               </p>
               <div v-if="sub.price > 0 && sub.raw_status !== 9" class="mt-2 flex gap-2">
                 <Button
-                  v-if="sub.payment.status !== 'cobrado' || sub.payment.source === 'backfill'"
-                  label="Confirmar cobro"
-                  icon="pi pi-check"
+                  :label="sub.payment.status === 'cobrado' && sub.payment.source !== 'backfill' ? 'Editar cobro' : 'Confirmar cobro'"
+                  :icon="sub.payment.status === 'cobrado' && sub.payment.source !== 'backfill' ? 'pi pi-pencil' : 'pi pi-check'"
                   size="small"
                   text
                   @click="openPaymentDialog(sub, 'cobrado')"
@@ -377,7 +376,8 @@ function defaultDueDate(): Date {
 function openPaymentDialog(row: SubscriptionHistory, status: 'cobrado' | 'pendiente') {
   paymentDialog.row = row
   paymentDialog.status = status
-  paymentDialog.date = new Date()
+  // Al editar un cobro ya registrado (p. ej. para agregar el n.º de operación) se conserva su fecha.
+  paymentDialog.date = row.payment.status === 'cobrado' && row.payment.date ? parseLocalDate(row.payment.date) : new Date()
   paymentDialog.dueDate = row.payment.due_date ? parseLocalDate(row.payment.due_date) : defaultDueDate()
   paymentDialog.method = row.payment.method ?? ''
   paymentDialog.reference = row.payment.reference ?? ''
