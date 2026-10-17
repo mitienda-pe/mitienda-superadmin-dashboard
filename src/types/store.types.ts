@@ -45,6 +45,10 @@ export interface StoreListItem {
   seniority_months: number
   owner_name: string | null
   owner_email: string | null
+  /** Quien paga: razón social y documento de su última renovación. */
+  billing_customer_id?: number | null
+  billing_name?: string | null
+  billing_document?: string | null
   plan: string
   plan_detail: string
   plan_category: 'large' | 'medium' | 'small' | 'micro'

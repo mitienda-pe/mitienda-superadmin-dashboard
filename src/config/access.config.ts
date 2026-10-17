@@ -32,6 +32,9 @@ const RECONCILE_PATHS = ['/accounting/banks']
 /** Contabilidad de la empresa: gastos, planilla, resultados, flujo de caja. */
 const ACCOUNTING_PATHS = ['/accounting']
 
+/** Directorio de clientes (quien paga) y sus tiendas: lo ve quien trabaja con comprobantes. */
+const CUSTOMERS_PATHS = ['/customers']
+
 /** Programas de convenio (Tu Empresa) y sus tiendas inscritas. */
 const PROGRAMS_PATHS = ['/programs']
 
@@ -44,6 +47,7 @@ export function areaOfPath(path: string): PanelArea {
   if (under(path, STORES_PATHS)) return 'stores'
   if (under(path, BILLING_PATHS)) return 'billing'
   if (under(path, FINANCE_PATHS)) return 'finance'
+  if (under(path, CUSTOMERS_PATHS)) return 'finance'
   if (under(path, RECONCILE_PATHS)) return 'reconcile'
   if (under(path, ACCOUNTING_PATHS)) return 'accounting'
   if (under(path, PROGRAMS_PATHS)) return 'programs'

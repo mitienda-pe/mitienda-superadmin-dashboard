@@ -21,7 +21,7 @@
             <i class="pi pi-search" />
             <InputText
               v-model="searchQuery"
-              placeholder="Buscar por ID, nombre, slug o correo..."
+              placeholder="Buscar por ID, nombre, dominio, correo completo, RUC o razón social..."
               class="w-full"
               @keyup.enter="applySearch"
             />
@@ -126,6 +126,9 @@
                 <div class="min-w-0">
                   <span class="font-medium text-gray-800 truncate block">{{ row.name }}</span>
                   <div class="text-xs text-gray-400 truncate">{{ row.domain || `${row.slug}.mitienda.pe` }}</div>
+                  <div v-if="row.billing_name" class="text-xs text-gray-500 truncate" :title="`Se le factura a ${row.billing_name} (${row.billing_document})`">
+                    <i class="pi pi-id-card text-[10px] mr-0.5"></i>{{ row.billing_name }} · {{ row.billing_document }}
+                  </div>
                 </div>
               </router-link>
               <div class="flex items-center gap-1 flex-shrink-0">

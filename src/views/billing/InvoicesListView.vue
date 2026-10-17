@@ -66,7 +66,7 @@
             <i class="pi pi-search" />
             <InputText
               v-model="searchQuery"
-              placeholder="Buscar comprobante, RUC, razón social..."
+              placeholder="Buscar comprobante, RUC, razón social, tienda o dominio..."
               class="w-full"
               @keyup.enter="applySearch"
             />
@@ -178,6 +178,9 @@
             </router-link>
             <span v-else class="text-sm text-gray-700">{{ row.customer_name || '(sin nombre)' }}</span>
             <div class="text-xs text-gray-400 font-mono">{{ row.customer_document }}</div>
+            <div v-if="row.store_names" class="text-xs text-gray-500 truncate max-w-xs" :title="row.store_names">
+              <i class="pi pi-shop text-[10px] mr-0.5"></i>{{ row.store_names }}
+            </div>
           </template>
         </Column>
 

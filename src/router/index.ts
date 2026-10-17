@@ -195,6 +195,16 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Directorio de clientes: quien paga (RUC/razón social) y sus tiendas.
+    path: '/customers',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      { path: '', name: 'Customers', component: () => import('@/views/customers/CustomersView.vue') },
+      { path: ':id', name: 'CustomerDetail', component: () => import('@/views/customers/CustomerDetailView.vue') }
+    ]
+  },
+  {
     // Programas de convenio (Tu Empresa): el partner solo ve el suyo.
     path: '/programs',
     component: DashboardLayout,
