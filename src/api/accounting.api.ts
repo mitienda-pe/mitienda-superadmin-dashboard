@@ -328,6 +328,16 @@ export async function getPayrollPeriods(year: number) {
   return res.data.data
 }
 
+/** Lo que se digita en el PLAME Web del mes, por trabajador y código. */
+export interface PlameConcept { code: string; name: string; group: 'ingreso' | 'aporte_trabajador' | 'aporte_empleador'; amount: number; confirm?: boolean }
+export interface PlameWorker { document: string; name: string; days: number; hours: number; concepts: PlameConcept[]; net: number }
+export interface PlameData { period: string; workers: PlameWorker[]; totals: PlameConcept[] }
+
+export async function getPayrollPlame(period: string) {
+  const res = await api.get<{ data: PlameData }>(`${PAYROLL}/periods/${period}/plame`)
+  return res.data.data
+}
+
 export async function getPayroll(period: string) {
   const res = await api.get<{ data: Payroll }>(`${PAYROLL}/periods/${period}`)
   return res.data.data

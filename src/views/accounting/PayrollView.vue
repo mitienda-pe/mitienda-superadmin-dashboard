@@ -114,6 +114,7 @@
               />
             </template>
             <Button v-else label="Reabrir" icon="pi pi-lock-open" severity="secondary" outlined :loading="working" @click="reopen" />
+            <Button label="Datos para PLAME" icon="pi pi-file" severity="secondary" outlined @click="plameVisible = true" />
           </div>
         </div>
 
@@ -421,6 +422,7 @@
     <PayrollEmployeesDialog v-model:visible="employeesVisible" @changed="load" />
     <PayrollSettingsDialog v-model:visible="settingsVisible" :year="year" @changed="load" />
     <BenefitDebtsDialog v-model:visible="debtsVisible" />
+    <PlameDialog v-model:visible="plameVisible" :period="period" />
   </div>
 </template>
 
@@ -429,6 +431,7 @@ import SectionTabs from '@/components/layout/SectionTabs.vue'
 import PayrollEmployeesDialog from '@/components/accounting/PayrollEmployeesDialog.vue'
 import PayrollSettingsDialog from '@/components/accounting/PayrollSettingsDialog.vue'
 import BenefitDebtsDialog from '@/components/accounting/BenefitDebtsDialog.vue'
+import PlameDialog from '@/components/accounting/PlameDialog.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, onMounted } from 'vue'
 import InputText from 'primevue/inputtext'
@@ -448,6 +451,7 @@ const toast = useToast()
 const confirm = useConfirm()
 
 const now = new Date()
+const plameVisible = ref(false)
 const period = ref(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
 const data = ref<Payroll | null>(null)
 const periods = ref<PayrollPeriod[]>([])
