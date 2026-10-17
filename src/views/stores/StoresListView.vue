@@ -8,7 +8,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Tiendas</h1>
         <p class="text-sm text-gray-500 mt-1">{{ storesStore.meta.total }} tiendas registradas</p>
       </div>
-      <router-link to="/stores/create">
+      <router-link v-if="authStore.canPath('/stores/create')" to="/stores/create">
         <Button label="Crear tienda" icon="pi pi-plus" />
       </router-link>
     </div>
@@ -326,10 +326,12 @@ import Button from 'primevue/button'
 import Menu from 'primevue/menu'
 import HealthBadge from '@/components/ui/HealthBadge.vue'
 import { useStoresStore } from '@/stores/stores.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import type { StoreListItem, StoreFlag, StorefrontStatus } from '@/types/store.types'
 
 const storesStore = useStoresStore()
+const authStore = useAuthStore()
 const { formatCurrency, formatNumber, formatDate } = useFormatters()
 
 const searchQuery = ref('')

@@ -34,7 +34,7 @@ export interface Store {
 export interface SuperAdminInfo {
   /** Solo el equipo técnico (Master y desarrollo): impersonar, MCP, asistente. Ver `areas`. */
   is_superadmin: boolean
-  role?: 'master' | 'desarrollo' | 'ventas' | 'contabilidad' | 'contabilidad_lectura' | null
+  role?: 'master' | 'desarrollo' | 'ventas' | 'soporte_ventas' | 'contabilidad' | 'contabilidad_lectura' | 'programa' | null
   /** Partes del panel que puede ver: platform, billing, finance, accounting (ver access.config). */
   areas?: string[]
   /** Áreas donde puede modificar; en las demás de `areas` solo mira. */

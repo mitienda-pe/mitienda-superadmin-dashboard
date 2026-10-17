@@ -59,8 +59,8 @@
       </div>
     </div>
 
-    <!-- Section 2: Technical Config -->
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
+    <!-- Section 2: Technical Config (solo plataforma: dominio, SSL, integraciones) -->
+    <div v-if="authStore.canWrite('platform')" class="bg-white rounded-xl border border-gray-200 p-6">
       <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Configuración Técnica</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div>
@@ -416,6 +416,7 @@ import type { StoreConfig, StorePlan } from '@/types/store.types'
 import type { StoreModule } from '@/types/plans.types'
 import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
+import { useAuthStore } from '@/stores/auth.store'
 import { plansApi } from '@/api/plans.api'
 import { expireStorePlan } from '@/api/stores.api'
 import RenewPlanDialog from '@/components/stores/RenewPlanDialog.vue'
@@ -434,6 +435,7 @@ const emit = defineEmits<{ (e: 'renewed'): void; (e: 'expired'): void }>()
 
 const toast = useToast()
 const storesStore = useStoresStore()
+const authStore = useAuthStore()
 const plansStore = usePlansStore()
 const savingSection = ref<'status' | 'config' | 'plan' | 'modules' | 'reset' | null>(null)
 const loadingModules = ref(false)
