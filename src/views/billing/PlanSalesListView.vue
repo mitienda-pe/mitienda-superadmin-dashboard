@@ -552,7 +552,7 @@ function onRenewed(result: RenewStorePlanResult) {
   // La venta nueva tiene fecha de hoy: que el filtro esté en el mes en curso.
   periodFilter.value = getCurrentMonth()
   applyFilters()
-  openEmitDialog({ id: result.tiendaplan_id })
+  if (result.tiendaplan_id > 0) openEmitDialog({ id: result.tiendaplan_id })
 }
 
 async function openEmitDialog(row: Pick<PlanSaleItem, 'id'>) {
@@ -569,7 +569,7 @@ async function openEmitDialog(row: Pick<PlanSaleItem, 'id'>) {
     toast.add({
       severity: 'error',
       summary: 'No se pudo preparar el comprobante',
-      detail: e?.response?.data?.message || e.message,
+      detail: e?.response?.data?.messages?.error || e?.response?.data?.message || e.message,
       life: 6000
     })
   } finally {

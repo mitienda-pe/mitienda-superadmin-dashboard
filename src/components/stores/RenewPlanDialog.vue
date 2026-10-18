@@ -140,7 +140,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium text-gray-600 mb-1">Fecha del abono *</label>
-            <Calendar v-model="form.payment_date" dateFormat="yy-mm-dd" :maxDate="new Date()" showIcon class="w-full" />
+            <Calendar v-model="form.payment_date" dateFormat="yy-mm-dd" :maxDate="today" showIcon class="w-full" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-600 mb-1">Medio *</label>
@@ -160,7 +160,7 @@
       </template>
       <div v-else-if="form.payment_status === 'pendiente'">
         <label class="block text-sm font-medium text-gray-600 mb-1">Fecha límite de pago *</label>
-        <Calendar v-model="form.due_date" dateFormat="yy-mm-dd" :minDate="new Date()" showIcon class="w-full" />
+        <Calendar v-model="form.due_date" dateFormat="yy-mm-dd" :minDate="today" showIcon class="w-full" />
         <p class="text-xs text-gray-500 mt-1">
           La tienda sigue activa hasta esa fecha. Si es factura, sale a crédito con esa fecha de vencimiento.
         </p>
@@ -210,7 +210,7 @@ import {
   type RenewalContext,
   type RenewStorePlanResult
 } from '@/api/stores.api'
-import { parseLocalDate, toIsoDate } from '@/utils/dates'
+import { parseLocalDate, toIsoDate, limaToday } from '@/utils/dates'
 import { PLAN_PAYMENT_METHODS, CREDIT_DAYS_DEFAULT } from '@/config/plan-payment.config'
 
 /**
@@ -238,6 +238,8 @@ const toast = useToast()
 const loading = ref(false)
 const loadError = ref<string | null>(null)
 const renewing = ref(false)
+// Fechas de Lima, no del dispositivo: el API valida contra Lima.
+const today = limaToday()
 const context = ref<RenewalContext | null>(null)
 const plans = ref<AvailablePlan[]>([])
 
@@ -262,7 +264,7 @@ const form = reactive({
   email: '',
   // Sin valor inicial a propósito: hay que declarar si se cobró.
   payment_status: null as 'cobrado' | 'pendiente' | null,
-  payment_date: new Date() as Date | null,
+  payment_date: limaToday() as Date | null,
   payment_method: '',
   payment_reference: '',
   due_date: null as Date | null,
@@ -315,8 +317,7 @@ const currentExpiryLabel = computed(
 // Inicio del período nuevo: el vencimiento vigente o hoy si ya venció. Es
 // indicativo; el backend calcula la fecha final real.
 const renewalStart = computed(() => {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  const today = limaToday()
   const cur = currentExpiryDate.value
   return cur && cur.getTime() >= today.getTime() ? new Date(cur) : today
 })
@@ -374,7 +375,7 @@ async function load(storeId: number) {
     form.payment_note = ''
     form.apply_program_discount = false
     form.payment_status = null
-    form.payment_date = new Date()
+    form.payment_date = limaToday()
     form.payment_method = ''
     form.payment_reference = ''
     form.due_date = defaultDueDate()

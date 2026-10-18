@@ -24,3 +24,12 @@ export function toIsoDate(d: Date): string {
   const day = String(d.getDate()).padStart(2, '0')
   return `${y}-${m}-${day}`
 }
+
+/**
+ * Hoy en Lima, como Date a medianoche local. El API valida contra la fecha de
+ * Lima: desde otro huso (alguien de viaje en UTC+2) `new Date()` ya es "mañana"
+ * por la tarde de Lima, y una fecha de cobro de mañana se rechaza por futura.
+ */
+export function limaToday(): Date {
+  return parseLocalDate(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' }).format(new Date()))
+}
