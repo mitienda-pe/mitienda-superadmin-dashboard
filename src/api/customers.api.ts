@@ -16,6 +16,8 @@ export interface CustomerStore {
   active: boolean
   /** Se le factura con este documento en su última renovación. */
   is_current?: boolean
+  /** Vínculo puesto a mano (el armado automático lo respeta). */
+  manual?: boolean
   first_seen?: string | null
   last_seen?: string | null
 }
@@ -33,6 +35,12 @@ export interface PlatformCustomer {
   invoice_count: number
   billed: number
   store_count: number
+  address: string | null
+  notes: string | null
+  /** Última consulta a SUNAT (RUC) o RENIEC (DNI). */
+  sunat: { status: string | null; condition: string | null; name: string | null; checked_at: string } | null
+  /** Editado a mano: el armado automático ya no pisa nombre, correo ni teléfono. */
+  edited_at: string | null
   stores: CustomerStore[]
 }
 
@@ -62,4 +70,56 @@ export async function searchCustomers(q: string) {
 export async function getCustomer(id: number) {
   const res = await api.get<{ data: CustomerDetail }>(`/superadmin/customers/${id}`)
   return res.data.data
+}
+
+export interface CustomerInput {
+  name: string
+  address: string
+  email: string
+  phone: string
+  notes: string
+}
+
+export interface DocumentLookup {
+  status: 'found' | 'not_found' | 'unavailable' | 'invalid'
+  name: string
+  address: string
+  estado: string
+  condicion: string
+  message: string | null
+}
+
+export async function createCustomer(document: string) {
+  const res = await api.post<{ data: CustomerDetail }>('/superadmin/customers', { document })
+  return res.data.data
+}
+
+export async function updateCustomer(id: number, input: CustomerInput) {
+  const res = await api.put<{ data: CustomerDetail }>(`/superadmin/customers/${id}`, input)
+  return res.data.data
+}
+
+export async function verifyCustomer(id: number, apply: boolean) {
+  const res = await api.post<{ data: { customer: CustomerDetail; lookup: DocumentLookup } }>(`/superadmin/customers/${id}/verify`, { apply })
+  return res.data.data
+}
+
+export async function assignCustomerStore(id: number, tiendaId: number, current: boolean) {
+  const res = await api.post<{ data: CustomerDetail }>(`/superadmin/customers/${id}/stores`, { tienda_id: tiendaId, current })
+  return res.data.data
+}
+
+export async function unassignCustomerStore(id: number, tiendaId: number) {
+  const res = await api.delete<{ data: CustomerDetail }>(`/superadmin/customers/${id}/stores/${tiendaId}`)
+  return res.data.data
+}
+
+export function customerErrorMessage(e: any, fallback: string): string {
+  const data = e?.response?.data
+  const messages = data?.messages
+  if (messages && typeof messages === 'object') {
+    const first = Object.values(messages)[0]
+    if (typeof first === 'string') return first
+  }
+  return data?.message || fallback
 }

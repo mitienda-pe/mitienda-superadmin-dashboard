@@ -216,7 +216,7 @@ export interface CreditNoteResult {
 // --- Emision manual ---
 
 export interface ManualInvoiceClient {
-  type: 'store' | 'external'
+  type: 'store' | 'external' | 'customer'
   id: number
   document_number: string
   name: string
@@ -239,7 +239,7 @@ export interface ManualInvoiceLineInput {
 
 export interface ManualInvoiceInput {
   document_type: 1 | 2
-  client: { type: 'store' | 'external'; id: number }
+  client: { type: 'store' | 'external' | 'customer'; id: number }
   prices_include_tax: boolean
   lines: ManualInvoiceLineInput[]
   observations: string

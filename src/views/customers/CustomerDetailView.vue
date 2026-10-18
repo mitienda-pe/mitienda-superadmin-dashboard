@@ -11,7 +11,28 @@
           <h1 class="text-2xl font-bold text-gray-900">{{ customer.name }}</h1>
           <div class="text-sm text-gray-500 font-mono">{{ customer.document_type }} {{ customer.document }}</div>
           <div v-if="customer.email || customer.phone" class="text-sm text-gray-500 mt-1">{{ [customer.email, customer.phone].filter(Boolean).join(' · ') }}</div>
+          <div v-if="customer.address" class="text-sm text-gray-500 mt-1">{{ customer.address }}</div>
+          <div v-if="customer.sunat" class="text-xs mt-2 flex flex-wrap gap-2 items-center">
+            <span class="rounded px-2 py-0.5" :class="sunatOk ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+              {{ customer.document_type === 'DNI' ? 'RENIEC' : 'SUNAT' }}{{ customer.sunat.status ? `: ${customer.sunat.status}` : '' }}{{ customer.sunat.condition ? ` · ${customer.sunat.condition}` : '' }}
+            </span>
+            <span class="text-gray-400">consultado {{ formatDate(customer.sunat.checked_at) }}</span>
+            <span v-if="customer.sunat.name && customer.sunat.name !== customer.name" class="text-amber-700">
+              Allí figura como "{{ customer.sunat.name }}"
+            </span>
+          </div>
+          <div v-if="customer.notes" class="text-sm text-gray-700 mt-2 whitespace-pre-line bg-amber-50 rounded-lg px-3 py-2 max-w-2xl">{{ customer.notes }}</div>
+          <div v-if="customer.edited_at" class="text-xs text-gray-400 mt-1">Editado a mano el {{ formatDate(customer.edited_at) }}: el armado automático ya no cambia nombre, correo ni teléfono.</div>
         </div>
+        <div v-if="canEdit" class="flex flex-wrap gap-2">
+          <Button v-if="customer.document_type !== 'OTRO'" :label="customer.document_type === 'DNI' ? 'Consultar RENIEC' : 'Consultar SUNAT'" icon="pi pi-search" outlined size="small" :loading="verifying" @click="verify(false)" />
+          <Button label="Editar" icon="pi pi-pencil" outlined size="small" @click="openEdit" />
+        </div>
+      </div>
+
+      <div v-if="lookupNote" class="rounded-xl border p-3 text-sm flex flex-wrap items-center justify-between gap-3" :class="lookupNote.cls">
+        <span>{{ lookupNote.text }}</span>
+        <Button v-if="lookupNote.canApply" label="Usar razón social y domicilio fiscal" size="small" :loading="verifying" @click="verify(true)" />
       </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -34,7 +55,14 @@
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <h2 class="font-semibold text-gray-900 mb-3">Tiendas</h2>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="font-semibold text-gray-900">Tiendas</h2>
+          <form v-if="canEdit" class="flex flex-wrap items-center gap-2 text-sm" @submit.prevent="assign">
+            <InputNumber v-model="link.tienda_id" placeholder="N.º de tienda" :useGrouping="false" inputClass="w-32" />
+            <label class="flex items-center gap-1 text-gray-600"><Checkbox v-model="link.current" binary /> se le factura desde ahora</label>
+            <Button type="submit" label="Vincular" icon="pi pi-link" size="small" outlined :disabled="!link.tienda_id" :loading="linking" />
+          </form>
+        </div>
         <div v-if="!customer.stores.length" class="text-sm text-gray-500">Sin tienda vinculada: sus comprobantes se emitieron a mano.</div>
         <table v-else class="w-full text-sm">
           <thead>
@@ -44,6 +72,7 @@
               <th class="py-2 text-left">Plan</th>
               <th class="py-2 text-left">Vence</th>
               <th class="py-2 text-left">Se le factura</th>
+              <th v-if="canEdit"></th>
             </tr>
           </thead>
           <tbody>
@@ -60,6 +89,11 @@
               <td class="py-2" :class="s.active ? 'text-gray-700' : 'text-red-600'">{{ s.expires_at ? formatDate(s.expires_at) : '—' }}</td>
               <td class="py-2 text-xs" :class="s.is_current ? 'text-green-700' : 'text-gray-400'">
                 {{ s.is_current ? 'Con este documento' : 'Antes; hoy con otro' }}
+                <span v-if="s.manual" class="text-gray-400"> · a mano</span>
+              </td>
+              <td v-if="canEdit" class="py-2 text-right whitespace-nowrap">
+                <Button v-if="!s.is_current" v-tooltip.left="'Facturarle esta tienda a este cliente desde ahora'" icon="pi pi-check-circle" text rounded size="small" severity="secondary" @click="assignExisting(s.tienda_id)" />
+                <Button v-if="s.manual" v-tooltip.left="'Quitar el vínculo puesto a mano'" icon="pi pi-times" text rounded size="small" severity="secondary" @click="unassign(s.tienda_id)" />
               </td>
             </tr>
           </tbody>
@@ -95,13 +129,55 @@
         </table>
       </div>
     </template>
+
+    <Dialog v-model:visible="editing" header="Editar ficha" modal :style="{ width: '32rem' }">
+      <div class="space-y-3">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Razón social o nombre *</label>
+          <InputText v-model="form.name" maxlength="500" class="w-full" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Domicilio fiscal</label>
+          <InputText v-model="form.address" maxlength="500" class="w-full" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Correo para comprobantes</label>
+            <InputText v-model="form.email" type="email" maxlength="255" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Teléfono</label>
+            <InputText v-model="form.phone" maxlength="40" class="w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Notas internas</label>
+          <Textarea v-model="form.notes" rows="3" maxlength="1000" class="w-full" placeholder="Ej.: factura a nombre del holding; pide orden de compra" />
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text @click="editing = false" />
+        <Button label="Guardar" icon="pi pi-check" :loading="saving" @click="save" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getCustomer, type CustomerDetail } from '@/api/customers.api'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Textarea from 'primevue/textarea'
+import Checkbox from 'primevue/checkbox'
+import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores/auth.store'
+import {
+  getCustomer, updateCustomer, verifyCustomer, assignCustomerStore, unassignCustomerStore, customerErrorMessage,
+  type CustomerDetail, type CustomerInput
+} from '@/api/customers.api'
 
 const PAYMENT: Record<number, { label: string; cls: string }> = {
   0: { label: 'Pendiente', cls: 'text-amber-700' },
@@ -127,6 +203,95 @@ function formatDate(value: string): string {
   const [y, m, d] = value.slice(0, 10).split('-')
   return `${d}/${m}/${y}`
 }
+const toast = useToast()
+const authStore = useAuthStore()
+const canEdit = computed(() => authStore.canWrite('billing') || authStore.canWrite('finance'))
+
+const sunatOk = computed(() => {
+  const s = customer.value?.sunat
+  if (!s) return false
+  if (customer.value?.document_type === 'DNI') return true
+  return (s.status ?? '').toUpperCase() === 'ACTIVO' && (s.condition ?? '').toUpperCase() === 'HABIDO'
+})
+
+const editing = ref(false)
+const saving = ref(false)
+const form = reactive<CustomerInput>({ name: '', address: '', email: '', phone: '', notes: '' })
+function openEdit() {
+  const c = customer.value
+  if (!c) return
+  Object.assign(form, { name: c.name, address: c.address ?? '', email: c.email ?? '', phone: c.phone ?? '', notes: c.notes ?? '' })
+  editing.value = true
+}
+async function save() {
+  if (!customer.value) return
+  saving.value = true
+  try {
+    customer.value = await updateCustomer(customer.value.id, { ...form })
+    editing.value = false
+    toast.add({ severity: 'success', summary: 'Ficha guardada', life: 3000 })
+  } catch (e: any) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo guardar'), life: 5000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+const verifying = ref(false)
+const lookupNote = ref<{ text: string; cls: string; canApply: boolean } | null>(null)
+async function verify(apply: boolean) {
+  if (!customer.value) return
+  verifying.value = true
+  try {
+    const { customer: updated, lookup } = await verifyCustomer(customer.value.id, apply)
+    customer.value = updated
+    if (lookup.status !== 'found') {
+      lookupNote.value = { text: lookup.message || 'No se encontró el documento', cls: 'border-amber-200 bg-amber-50 text-amber-800', canApply: false }
+    } else if (apply) {
+      lookupNote.value = null
+      toast.add({ severity: 'success', summary: 'Datos tomados de ' + (updated.document_type === 'DNI' ? 'RENIEC' : 'SUNAT'), life: 3000 })
+    } else {
+      const differs = lookup.name !== updated.name || (lookup.address !== '' && lookup.address !== (updated.address ?? ''))
+      lookupNote.value = differs
+        ? { text: `Figura como "${lookup.name}"${lookup.address ? ` — ${lookup.address}` : ''}.`, cls: 'border-gray-200 bg-gray-50 text-gray-700', canApply: true }
+        : { text: 'Coincide con lo registrado.', cls: 'border-green-200 bg-green-50 text-green-800', canApply: false }
+    }
+  } catch (e: any) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo consultar'), life: 5000 })
+  } finally {
+    verifying.value = false
+  }
+}
+
+const link = reactive<{ tienda_id: number | null; current: boolean }>({ tienda_id: null, current: true })
+const linking = ref(false)
+async function assignStore(tiendaId: number, current: boolean) {
+  if (!customer.value) return
+  linking.value = true
+  try {
+    customer.value = await assignCustomerStore(customer.value.id, tiendaId, current)
+    link.tienda_id = null
+  } catch (e: any) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo vincular'), life: 5000 })
+  } finally {
+    linking.value = false
+  }
+}
+function assign() {
+  if (link.tienda_id) assignStore(link.tienda_id, link.current)
+}
+function assignExisting(tiendaId: number) {
+  assignStore(tiendaId, true)
+}
+async function unassign(tiendaId: number) {
+  if (!customer.value) return
+  try {
+    customer.value = await unassignCustomerStore(customer.value.id, tiendaId)
+  } catch (e: any) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo quitar'), life: 5000 })
+  }
+}
+
 function storeName(id: number | null): string {
   if (!id) return '—'
   return customer.value?.stores.find(s => s.tienda_id === id)?.name ?? `#${id}`
@@ -136,6 +301,7 @@ watch(() => route.params.id, async (id) => {
   if (!id) return
   loading.value = true
   error.value = null
+  lookupNote.value = null
   try {
     customer.value = await getCustomer(Number(id))
   } catch (e: any) {

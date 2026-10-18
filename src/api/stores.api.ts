@@ -163,6 +163,8 @@ export interface RenewalContext {
   /** Descuento de un programa de convenio (Tu Empresa): solo plan anual, una vez. */
   program_discount?: { enrollment_id: number; program: string; percent: number } | null
   billing: PlanBillingData
+  /** A quién se le factura esta tienda según el directorio de clientes. */
+  customer?: { id: number; document: string; document_type: 'RUC' | 'DNI' | 'OTRO'; name: string; email: string | null } | null
 }
 
 export async function getRenewalContext(storeId: number) {

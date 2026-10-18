@@ -108,6 +108,13 @@
         <p v-if="!form.document_number.trim()" class="text-xs text-amber-600">
           Sin documento la venta se registra igual, pero no se podrá emitir el comprobante.
         </p>
+        <div v-if="directoryCustomer && directoryDiffers" class="flex flex-wrap items-center justify-between gap-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600">
+          <span>
+            El directorio factura esta tienda a <strong>{{ directoryCustomer.name }}</strong>
+            ({{ directoryCustomer.document_type }} {{ directoryCustomer.document }}).
+          </span>
+          <button type="button" class="text-primary hover:underline" @click="useDirectoryCustomer">Usar estos datos</button>
+        </div>
       </div>
 
       <div>
@@ -273,6 +280,21 @@ const selectedDetail = computed(() => {
 
 // Mismo criterio que el emisor: 11 dígitos = RUC = factura (13 en Ecuador).
 const documentDigits = computed(() => form.document_number.replace(/\D/g, ''))
+const directoryCustomer = computed(() => context.value?.customer ?? null)
+const directoryDiffers = computed(() => directoryCustomer.value !== null && documentDigits.value !== directoryCustomer.value.document)
+function useDirectoryCustomer() {
+  const c = directoryCustomer.value
+  if (!c) return
+  form.document_number = c.document
+  if (c.document_type === 'RUC') {
+    form.business_name = c.name
+  } else {
+    form.business_name = ''
+    form.first_name = c.name
+    form.last_name = ''
+  }
+  if (c.email) form.email = c.email
+}
 const isCompany = computed(() => [11, 13].includes(documentDigits.value.length))
 const documentKindLabel = computed(() => {
   if (!documentDigits.value) return ''

@@ -14,6 +14,11 @@
       <InputText v-model="query" placeholder="RUC, razón social, tienda, dominio, correo o teléfono…" class="w-full pl-10" autofocus />
     </div>
 
+    <div v-if="canCreate" class="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-gray-300 p-3 text-sm text-gray-600 max-w-2xl">
+      <span>{{ candidateDocument }} no está en el directorio.</span>
+      <Button :label="`Dar de alta con datos de ${candidateDocument.length === 8 ? 'RENIEC' : 'SUNAT'}`" icon="pi pi-plus" size="small" :loading="creating" @click="create" />
+    </div>
+
     <div v-if="loading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Buscando…</div>
     <div v-else-if="error" class="text-sm text-red-600">{{ error }}</div>
     <div v-else-if="searched && !results.customers.length && !results.stores_without_customer.length" class="text-sm text-gray-500">
@@ -73,10 +78,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import InputText from 'primevue/inputtext'
-import { searchCustomers, type PlatformCustomer, type CustomerStore } from '@/api/customers.api'
+import Button from 'primevue/button'
+import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores/auth.store'
+import { searchCustomers, createCustomer, customerErrorMessage, type PlatformCustomer, type CustomerStore } from '@/api/customers.api'
 
 const route = useRoute()
 const router = useRouter()
@@ -85,6 +93,33 @@ const searched = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const results = reactive<{ customers: PlatformCustomer[]; stores_without_customer: CustomerStore[] }>({ customers: [], stores_without_customer: [] })
+
+const toast = useToast()
+const authStore = useAuthStore()
+const creating = ref(false)
+
+/** Lo buscado, si es un RUC o DNI que todavía no tiene ficha. */
+const candidateDocument = computed(() => {
+  const digits = searched.value.replace(/\D/g, '')
+  return /^\d{8}$|^\d{11}$/.test(searched.value.trim()) ? digits : ''
+})
+const canCreate = computed(() =>
+  (authStore.canWrite('billing') || authStore.canWrite('finance'))
+  && !loading.value
+  && candidateDocument.value !== ''
+  && !results.customers.some(c => c.document === candidateDocument.value)
+)
+async function create() {
+  creating.value = true
+  try {
+    const customer = await createCustomer(candidateDocument.value)
+    router.push(`/customers/${customer.id}`)
+  } catch (e: any) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo dar de alta'), life: 5000 })
+  } finally {
+    creating.value = false
+  }
+}
 
 function money(value: number): string {
   return `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
