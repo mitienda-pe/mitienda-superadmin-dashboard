@@ -89,6 +89,7 @@ const navGroups: NavGroup[] = [
     items: [
       { path: '/billing/emit', label: 'Emitir comprobante', icon: 'pi pi-file-plus' },
       { path: '/billing/plan-sales', label: 'Ventas de planes', icon: 'pi pi-receipt' },
+      { path: '/billing/payment-links', label: 'Links de pago', icon: 'pi pi-credit-card' },
       { path: '/billing/commission-period', label: 'Cierre de comisiones', icon: 'pi pi-calendar-clock' },
       { path: '/billing/invoices', label: 'Comprobantes', icon: 'pi pi-file-edit', also: siblings(INVOICES_TABS) },
       { path: '/billing/ledger', label: 'Líneas facturadas', icon: 'pi pi-list' },

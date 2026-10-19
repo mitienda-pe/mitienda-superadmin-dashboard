@@ -155,6 +155,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/billing/ManualEmitView.vue')
       },
       {
+        // Links de pago con tarjeta (Culqi): la página que cobra sigue en el legacy.
+        path: 'payment-links',
+        name: 'BillingPaymentLinks',
+        component: () => import('@/views/billing/PaymentLinksView.vue')
+      },
+      {
         path: 'plan-sales',
         name: 'BillingPlanSales',
         component: () => import('@/views/billing/PlanSalesListView.vue')

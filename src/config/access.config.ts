@@ -19,7 +19,7 @@ const STORES_PATHS = ['/stores']
 const STORES_PLATFORM_PATHS = ['/stores/create']
 
 /** Emitir: ventas de planes (y su renovación), comisiones, emisión manual. */
-const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/commission-period']
+const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/commission-period', '/billing/payment-links']
 
 /** Lo emitido y lo cobrado: comprobantes, abonos, líneas, conceptos, etiquetas, ingresos. */
 const FINANCE_PATHS = [
