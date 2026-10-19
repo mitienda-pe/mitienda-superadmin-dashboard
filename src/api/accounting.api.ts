@@ -47,13 +47,30 @@ export async function savePayee(id: number | null, payload: PayeeInput) {
 
 // --- Gastos ---
 
-export async function getExpenses(filters: ExpenseFilters) {
+function expenseParams(filters: ExpenseFilters): Record<string, string | number> {
   const params: Record<string, string | number> = { payment: filters.payment, page: filters.page }
   if (filters.period) params.period = filters.period
   if (filters.category_id) params.category_id = filters.category_id
   if (filters.kind) params.kind = filters.kind
   if (filters.search) params.search = filters.search
   if (filters.include_voided) params.include_voided = '1'
+  return params
+}
+
+/** Baja en CSV (se abre en Excel) todos los gastos de esos filtros, sin paginar. */
+export async function downloadExpensesCsv(filters: ExpenseFilters): Promise<void> {
+  const { page: _page, ...params } = expenseParams(filters)
+  const res = await api.get<Blob>(`${BASE}/expenses/export`, { params, responseType: 'blob' })
+  const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `gastos-${filters.period || 'todos'}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export async function getExpenses(filters: ExpenseFilters) {
+  const params = expenseParams(filters)
 
   const res = await api.get<{
     data: Expense[]

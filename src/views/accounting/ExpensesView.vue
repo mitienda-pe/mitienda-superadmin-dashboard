@@ -13,6 +13,15 @@
       </div>
       <div class="flex gap-2">
         <Button
+          v-tooltip.bottom="'Con los filtros actuales, todas las páginas. Se abre en Excel.'"
+          label="Exportar"
+          icon="pi pi-download"
+          severity="secondary"
+          outlined
+          :loading="exporting"
+          @click="exportCsv"
+        />
+        <Button
           v-if="authStore.canWriteFinance"
           label="Importar comprobantes"
           icon="pi pi-upload"
@@ -558,7 +567,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getExpenses, getExpenseCategories, getPayees, saveExpense, voidExpense,
-  getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage
+  getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage, downloadExpensesCsv
 } from '@/api/accounting.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { parseLocalDate, toIsoDate } from '@/utils/dates'
@@ -582,6 +591,18 @@ const meta = ref({ current_page: 1, per_page: 25, total: 0, total_pages: 1 })
 const categories = ref<ExpenseCategory[]>([])
 const payees = ref<Payee[]>([])
 const loading = ref(false)
+const exporting = ref(false)
+
+async function exportCsv() {
+  exporting.value = true
+  try {
+    await downloadExpensesCsv(filters)
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo exportar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    exporting.value = false
+  }
+}
 const error = ref<string | null>(null)
 const showCategories = ref(true)
 
