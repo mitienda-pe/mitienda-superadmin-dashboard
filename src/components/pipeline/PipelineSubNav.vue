@@ -23,6 +23,7 @@ const route = useRoute()
 const navItems = [
   { to: '/pipeline', label: 'Dashboard', icon: 'pi pi-chart-bar' },
   { to: '/pipeline/leads', label: 'Leads', icon: 'pi pi-list' },
+  { to: '/pipeline/unverified', label: 'Sin verificar', icon: 'pi pi-envelope' },
 ]
 
 function isActive(path: string): boolean {

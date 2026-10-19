@@ -174,3 +174,53 @@ export const PIPELINE_STAGES: { value: PipelineStage; label: string; color: stri
   { value: 'expired', label: 'Expirado', color: '#6b7280', icon: 'pi pi-times-circle' },
   { value: 'converted', label: 'Convertido', color: '#16a34a', icon: 'pi pi-trophy' },
 ]
+
+// Registros que pidieron el código OTP y nunca lo verificaron (no tienen cuenta,
+// así que no están en leads). Fuente: mtservicios vía /superadmin/pipeline/unverified-signups.
+export type UnverifiedSignupReason = 'never_typed' | 'retried' | 'wrong_code'
+
+export type UnverifiedSignupSource = 'landing_trial' | 'trial_phone' | 'pos_register' | 'store_create'
+
+export interface UnverifiedSignup {
+  channel: 'email' | 'whatsapp'
+  recipient: string
+  name: string | null
+  email: string | null
+  phone: string | null
+  country: string | null
+  sources: UnverifiedSignupSource[]
+  sessions: number
+  attempts: number
+  first_at: string
+  last_at: string
+  reason: UnverifiedSignupReason
+  suspicious: boolean
+  typo_suggestion: string | null
+  has_account: boolean
+  usuario_id: number | null
+}
+
+export interface UnverifiedSignupSummary {
+  total: number
+  actionable: number
+  with_account: number
+  suspicious: number
+  typos: number
+  never_typed: number
+  retried: number
+  wrong_code: number
+}
+
+export const UNVERIFIED_SOURCE_LABELS: Record<UnverifiedSignupSource | 'unknown', string> = {
+  landing_trial: 'Landing',
+  trial_phone: 'Registro por teléfono',
+  pos_register: 'POS',
+  store_create: 'Nueva tienda (backoffice)',
+  unknown: 'Sin origen',
+}
+
+export const UNVERIFIED_REASON_LABELS: Record<UnverifiedSignupReason, string> = {
+  never_typed: 'No escribió el código',
+  retried: 'Pidió el código varias veces',
+  wrong_code: 'Escribió un código incorrecto',
+}

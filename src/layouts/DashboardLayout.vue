@@ -107,6 +107,7 @@ const pageTitle = computed(() => {
     Users: 'Usuarios',
     PipelineDashboard: 'Pipeline de Trials',
     PipelineLeads: 'Pipeline - Leads',
+    PipelineUnverified: 'Pipeline - Registros sin verificar',
     PipelineDetail: 'Detalle de Lead',
     Revenue: 'MRR y retención',
     StoreSales: 'Ventas de tiendas',

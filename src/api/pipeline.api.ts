@@ -3,7 +3,7 @@ import type {
   PipelineLead, PipelineLeadDetail, PipelineListMeta, PipelineLeadFilters,
   PipelineDashboard, PipelineNote, PipelineFollowUp,
   AddNoteRequest, ChangeStageRequest, AddFollowUpRequest, UpdateTagsRequest,
-  SuperAdminUser
+  SuperAdminUser, UnverifiedSignup, UnverifiedSignupSummary
 } from '@/types/pipeline.types'
 
 export async function getDashboard() {
@@ -81,5 +81,18 @@ export async function listSuperAdmins() {
   const res = await api.get<{ success: boolean; data: SuperAdminUser[] }>(
     '/superadmin/pipeline/superadmins'
   )
+  return res.data
+}
+
+export async function getUnverifiedSignups(params: { since: string; until: string; source?: string[] }) {
+  const query: Record<string, string> = { since: params.since, until: params.until }
+  if (params.source?.length) query.source = params.source.join(',')
+
+  const res = await api.get<{
+    success: boolean
+    data: UnverifiedSignup[]
+    summary: UnverifiedSignupSummary
+    meta: { since: string; until: string }
+  }>('/superadmin/pipeline/unverified-signups', { params: query })
   return res.data
 }

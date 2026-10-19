@@ -123,6 +123,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/pipeline/PipelineLeadsView.vue')
       },
       {
+        path: 'unverified',
+        name: 'PipelineUnverified',
+        component: () => import('@/views/pipeline/PipelineUnverifiedView.vue')
+      },
+      {
         path: ':id',
         name: 'PipelineDetail',
         component: () => import('@/views/pipeline/PipelineDetailView.vue')
