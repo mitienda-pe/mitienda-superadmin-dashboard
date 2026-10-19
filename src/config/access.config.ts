@@ -4,15 +4,15 @@
 //
 //   master                → todo
 //   desarrollo            → plataforma, emisión y cobros (no contabilidad)
-//   ventas                → emisión, ver comprobantes y conciliar ingresos en Bancos
+//   ventas                → emisión, ver comprobantes, conciliar ingresos en Bancos y el pipeline de trials
 //   soporte_ventas        → lo de ventas más la ficha de las tiendas (sin lo técnico)
 //   contabilidad          → cobros y contabilidad
 //   contabilidad_lectura  → cobros y contabilidad, sin modificar
 //   programa              → solo las tiendas del programa de su partner (Tu Empresa)
 
-export type PanelArea = 'platform' | 'stores' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting' | 'programs'
+export type PanelArea = 'platform' | 'stores' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting' | 'programs' | 'pipeline'
 
-export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs']
+export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs', 'pipeline']
 
 /** La ficha de las tiendas y lo comercial de su plan. Crear una tienda sigue siendo de la plataforma. */
 const STORES_PATHS = ['/stores']
@@ -38,6 +38,9 @@ const CUSTOMERS_PATHS = ['/customers']
 /** Programas de convenio (Tu Empresa) y sus tiendas inscritas. */
 const PROGRAMS_PATHS = ['/programs']
 
+/** Pipeline de trials: seguimiento comercial de las pruebas gratis. */
+const PIPELINE_PATHS = ['/pipeline']
+
 function under(path: string, bases: string[]): boolean {
   return bases.some(base => path === base || path.startsWith(`${base}/`))
 }
@@ -51,6 +54,7 @@ export function areaOfPath(path: string): PanelArea {
   if (under(path, RECONCILE_PATHS)) return 'reconcile'
   if (under(path, ACCOUNTING_PATHS)) return 'accounting'
   if (under(path, PROGRAMS_PATHS)) return 'programs'
+  if (under(path, PIPELINE_PATHS)) return 'pipeline'
   return 'platform'
 }
 
