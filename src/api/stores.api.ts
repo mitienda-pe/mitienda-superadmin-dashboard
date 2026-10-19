@@ -133,6 +133,8 @@ export interface RenewStorePlanPayload {
   payment_note?: string
   /** Precio de lista con el descuento del programa; el API lo calcula y lo marca como usado. */
   apply_program_discount?: boolean
+  /** 3 o 6: se vende por esa cantidad de meses partiendo del precio mensual. */
+  months?: number
   /**
    * Obligatorio: registrar la renovación ya no la da por pagada. Pendiente =
    * activa hasta la fecha límite y se factura a crédito.
@@ -157,6 +159,8 @@ export interface RenewalContext {
   plan_id: number
   plan: string
   frequency: 'monthly' | 'annual'
+  /** Duración del plan vigente en meses (1, 3, 6, 12…). */
+  months?: number
   price: number
   is_trial: boolean
   expires_at: string | null

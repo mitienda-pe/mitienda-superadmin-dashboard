@@ -90,7 +90,7 @@
           <template #body="{ data: row }">
             <span class="text-sm text-gray-700">{{ row.plan }}</span>
             <div class="text-xs text-gray-400">
-              {{ row.is_trial ? 'Prueba gratis' : row.frequency === 'annual' ? 'Anual' : 'Mensual' }}
+              {{ row.is_trial ? 'Prueba gratis' : periodLabel(row) }}
             </div>
           </template>
         </Column>
@@ -284,4 +284,10 @@ function onRenewed(result: RenewStorePlanResult) {
 onMounted(fetch)
 
 defineExpose({ fetch })
+
+// "trimestral"/"semestral" vienen del API (3 y 6 meses se venden desde el superadmin).
+function periodLabel(row: { frequency: string; period_label?: string }): string {
+  const label = row.period_label || (row.frequency === 'annual' ? 'anual' : 'mensual')
+  return label.charAt(0).toUpperCase() + label.slice(1)
+}
 </script>

@@ -186,7 +186,8 @@ async function prefill() {
     form.document = b.document_number || c?.document || ''
     form.email = b.email || c?.email || ''
     form.amount = ctx.price > 0 ? ctx.price : form.amount
-    form.concept = `Renovación ${ctx.frequency === 'annual' ? 'anual' : 'mensual'} del plan ${ctx.plan} — ${ctx.store_name} (#${ctx.store_id})`
+    const period = ctx.months === 3 ? 'trimestral' : ctx.months === 6 ? 'semestral' : ctx.frequency === 'annual' ? 'anual' : 'mensual'
+    form.concept = `Renovación ${period} del plan ${ctx.plan} — ${ctx.store_name} (#${ctx.store_id})`
     prefillNote.value = 'Revisa la moneda y el monto antes de generar.'
   } catch (e: any) {
     prefillNote.value = errorMessage(e, 'No se pudo leer la tienda')

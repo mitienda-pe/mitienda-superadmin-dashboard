@@ -48,6 +48,9 @@
         <p v-if="selectedPlan && !selectedDetail" class="text-xs text-amber-600 mt-1">
           Este plan no tiene precio {{ form.frequency === 'annual' ? 'anual' : 'mensual' }} publicado.
         </p>
+        <p v-if="months > 1 && months < 12" class="text-xs text-gray-500 mt-1">
+          Solo se vende desde aquí (la web ofrece mensual y anual). Se propone {{ months }} × el precio mensual; ajústalo si hay descuento.
+        </p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-600 mb-1">Precio (PEN, con IGV)</label>
@@ -70,8 +73,8 @@
             (S/ {{ discountedPrice.toFixed(2) }})
           </label>
         </div>
-        <p v-if="selectedDetail && form.price !== selectedDetail.precio" class="text-xs text-gray-500 mt-1">
-          Precio de lista: S/ {{ selectedDetail.precio.toFixed(2) }}. Se propone lo que la tienda venía pagando.
+        <p v-if="selectedDetail && form.price !== listPrice" class="text-xs text-gray-500 mt-1">
+          Precio de lista: S/ {{ listPrice.toFixed(2) }}. Se propone lo que la tienda venía pagando.
         </p>
       </div>
 
@@ -243,10 +246,19 @@ const today = limaToday()
 const context = ref<RenewalContext | null>(null)
 const plans = ref<AvailablePlan[]>([])
 
+type Frequency = 'monthly' | 'quarterly' | 'semiannual' | 'annual'
 const frequencyOptions = [
   { label: 'Mensual', value: 'monthly' as const },
+  { label: '3 meses', value: 'quarterly' as const },
+  { label: '6 meses', value: 'semiannual' as const },
   { label: 'Anual', value: 'annual' as const }
 ]
+const MONTHS: Record<Frequency, number> = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 }
+function frequencyFor(months: number | undefined, fallback: 'monthly' | 'annual'): Frequency {
+  if (months === 3) return 'quarterly'
+  if (months === 6) return 'semiannual'
+  return fallback
+}
 const paymentStatusOptions = [
   { label: 'Cobrado', value: 'cobrado' as const },
   { label: 'Pendiente de cobro', value: 'pendiente' as const }
@@ -254,7 +266,7 @@ const paymentStatusOptions = [
 
 const form = reactive({
   plan_id: null as number | null,
-  frequency: 'monthly' as 'monthly' | 'annual',
+  frequency: 'monthly' as Frequency,
   price: 0,
   apply_program_discount: false,
   document_number: '',
@@ -278,6 +290,13 @@ const selectedDetail = computed(() => {
   const p = selectedPlan.value
   if (!p) return null
   return form.frequency === 'annual' ? p.annual : p.monthly
+})
+const months = computed(() => MONTHS[form.frequency])
+// 3 y 6 meses parten del precio mensual del plan.
+const listPrice = computed(() => {
+  const d = selectedDetail.value
+  if (!d) return 0
+  return form.frequency === 'annual' ? d.precio : Math.round(d.precio * months.value * 100) / 100
 })
 
 // Mismo criterio que el emisor: 11 dígitos = RUC = factura (13 en Ecuador).
@@ -325,7 +344,7 @@ const renewalStart = computed(() => {
 const previewExpiryLabel = computed(() => {
   const base = new Date(renewalStart.value)
   if (form.frequency === 'annual') base.setFullYear(base.getFullYear() + 1)
-  else base.setMonth(base.getMonth() + 1)
+  else base.setMonth(base.getMonth() + months.value)
   return formatDateLabel(base)
 })
 
@@ -350,8 +369,8 @@ watch([useProgramDiscount, discountedPrice], ([on, price]) => {
 // El precio sigue al plan/frecuencia elegidos, salvo en la carga inicial,
 // donde se propone lo que la tienda venía pagando.
 let prefilling = false
-watch(selectedDetail, (detail) => {
-  if (detail && !prefilling) form.price = detail.precio
+watch([selectedDetail, months], ([detail]) => {
+  if (detail && !prefilling) form.price = listPrice.value
 })
 
 async function load(storeId: number) {
@@ -368,9 +387,9 @@ async function load(storeId: number) {
 
     prefilling = true
     form.plan_id = ctx.data.plan_id
-    form.frequency = ctx.data.frequency
+    form.frequency = frequencyFor(ctx.data.months, ctx.data.frequency)
     const sameDetail = !ctx.data.is_trial && selectedDetail.value
-    form.price = sameDetail && ctx.data.price > 0 ? ctx.data.price : (selectedDetail.value?.precio ?? 0)
+    form.price = sameDetail && ctx.data.price > 0 ? ctx.data.price : listPrice.value
     Object.assign(form, ctx.data.billing)
     form.payment_note = ''
     form.apply_program_discount = false
@@ -455,6 +474,7 @@ async function submit() {
   try {
     const res = await renewStorePlan(props.storeId, {
       plandetalle_id: detail.plandetalle_id,
+      months: months.value > 1 && months.value < 12 ? months.value : undefined,
       price: form.price,
       apply_program_discount: useProgramDiscount.value || undefined,
       payment_note: form.payment_note || undefined,
