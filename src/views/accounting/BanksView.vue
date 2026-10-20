@@ -525,6 +525,7 @@
             <span class="text-gray-500">Movimientos nuevos</span>
             <span class="font-semibold text-gray-900 tabular-nums">{{ preview.created }} de {{ preview.read }}</span>
           </div>
+          <p v-for="w in preview.warnings ?? []" :key="w" class="text-xs text-amber-700">{{ w }}</p>
           <div v-if="preview.duplicates > 0" class="flex justify-between">
             <span class="text-gray-500">Ya importados (se saltan)</span>
             <span class="tabular-nums text-gray-800">{{ preview.duplicates }}</span>

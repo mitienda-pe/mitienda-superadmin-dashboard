@@ -273,6 +273,8 @@ export interface BankImportResult {
   to: string | null
   inflow: number
   outflow: number
+  /** Lo que el archivo trae y no se carga (p. ej. ventas de Culqi en otra moneda). */
+  warnings?: string[]
 }
 
 export interface InvoiceSuggestion {
