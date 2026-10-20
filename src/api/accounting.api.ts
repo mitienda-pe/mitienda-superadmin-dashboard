@@ -199,6 +199,12 @@ export interface TransferCandidate {
   fee: number
 }
 
+/** Gastos por pagar para juntar en un pago (proveedor, descripción o número). */
+export async function searchBankExpenses(movementId: number, q: string) {
+  const res = await api.get<{ data: ExpenseSuggestion[] }>(`${BASE}/bank-movements/${movementId}/expenses`, { params: { q } })
+  return res.data.data
+}
+
 export async function getTransferCandidates(movementId: number) {
   const res = await api.get<{ data: TransferCandidate[] }>(`${BASE}/bank-movements/${movementId}/transfer-candidates`)
   return res.data.data

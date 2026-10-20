@@ -323,33 +323,64 @@
             </template>
           </template>
 
-          <!-- Pago de un gasto ya registrado -->
+          <!-- Pago de uno o varios gastos ya registrados -->
           <template v-else-if="mode === 'pago'">
+            <div class="flex gap-2">
+              <InputText
+                v-model="expenseSearch"
+                placeholder="Buscar gasto por proveedor, descripción o número"
+                class="flex-1"
+                @keydown.enter.prevent="searchExpenses"
+              />
+              <Button icon="pi pi-search" outlined :loading="loadingSuggestions" @click="searchExpenses" />
+            </div>
             <p v-if="loadingSuggestions" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Buscando gastos…</p>
             <template v-else>
-              <p v-if="expenseOptions.length === 0" class="text-sm text-gray-500">
-                No hay un gasto por pagar que calce por importe o por nombre. Si el gasto no está registrado, usa "Gasto nuevo".
+              <p v-if="expenseRows.length === 0" class="text-sm text-gray-500">
+                No hay un gasto por pagar que calce por importe o por nombre. Búscalo arriba o, si no está registrado, usa "Gasto nuevo".
               </p>
-              <div v-else class="max-h-64 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100">
-                <label
-                  v-for="expense in expenseOptions"
+              <div v-else class="max-h-72 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100">
+                <div
+                  v-for="expense in expenseRows"
                   :key="expense.id"
-                  class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50"
-                  :class="{ 'bg-primary-50': pickedExpense === expense.id }"
+                  class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
+                  :class="{ 'bg-primary-50': expensePlan[expense.id] !== undefined }"
                 >
-                  <RadioButton v-model="pickedExpense" :value="expense.id" @change="onPickExpense(expense)" />
-                  <div class="flex-1 min-w-0">
+                  <Checkbox :modelValue="expensePlan[expense.id] !== undefined" binary @update:modelValue="toggleExpense(expense, $event)" />
+                  <div class="flex-1 min-w-0 cursor-pointer" @click="toggleExpense(expense, expensePlan[expense.id] === undefined)">
                     <div class="text-sm text-gray-800">
                       <span class="font-medium">{{ expense.payee_name }}</span> · {{ expense.category_name }}
                     </div>
-                    <div class="text-xs text-gray-500">
-                      {{ expense.document_number || formatMonthYear(expense.period) }}
+                    <div class="text-xs text-gray-500 truncate">
+                      {{ formatDate(expense.issue_date) }} · {{ expense.document_number || formatMonthYear(expense.period) }}
+                      <span v-if="expense.description"> · {{ expense.description }}</span>
                       <span v-if="expense.same_amount" class="text-green-700"> · mismo importe</span>
                       <span v-if="expense.name_match" class="text-green-700"> · el nombre está en la glosa</span>
                     </div>
                   </div>
-                  <div class="text-sm tabular-nums text-gray-800 whitespace-nowrap">{{ money(expense.open_amount, expense.currency) }}</div>
-                </label>
+                  <div class="text-right whitespace-nowrap">
+                    <InputNumber
+                      v-if="expensePlan[expense.id] !== undefined"
+                      v-model="expensePlan[expense.id]"
+                      :minFractionDigits="2"
+                      :maxFractionDigits="2"
+                      :min="0"
+                      :max="expense.open_amount"
+                      inputClass="w-28 text-right text-sm"
+                    />
+                    <div class="text-xs tabular-nums text-gray-500">saldo {{ money(expense.open_amount, expense.currency) }}</div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="expenseSummary.count > 0" class="flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-gray-600">
+                <span>Se aplican <strong>{{ money(expenseSummary.applied, current.currency) }}</strong> a {{ expenseSummary.count }} {{ expenseSummary.count === 1 ? 'gasto' : 'gastos' }}</span>
+                <span v-if="expenseSummary.left > 0.004" class="text-amber-700">
+                  Faltan {{ money(expenseSummary.left, current.currency) }} del movimiento (queda abierto para otra parte)
+                </span>
+                <span v-else-if="expenseSummary.left < -0.004" class="text-red-600">
+                  Te pasas por {{ money(-expenseSummary.left, current.currency) }}
+                </span>
+                <span v-else class="text-green-700">Cuadra con el movimiento</span>
               </div>
             </template>
           </template>
@@ -418,7 +449,7 @@
           </template>
 
           <!-- Importe de esta parte: solo cuando se cruza con un comprobante o un gasto -->
-          <div v-if="(mode === 'cobro' && !customerOpen) || mode === 'pago'" class="flex items-end gap-3">
+          <div v-if="mode === 'cobro' && !customerOpen" class="flex items-end gap-3">
             <div class="w-48">
               <label class="block text-sm font-medium text-gray-600 mb-1">Importe a aplicar</label>
               <InputNumber v-model="partAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
@@ -577,6 +608,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
   markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
+  searchBankExpenses,
   getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
@@ -741,7 +773,35 @@ const loadingSuggestions = ref(false)
 const invoiceOptions = ref<InvoiceSuggestion[]>([])
 const expenseOptions = ref<ExpenseSuggestion[]>([])
 const pickedInvoice = ref<number | null>(null)
-const pickedExpense = ref<number | null>(null)
+// Gasto → importe que se le aplica. Varios gastos pueden salir de un solo pago.
+const expensePlan = ref<Record<number, number>>({})
+const pickedExpenseRows = ref<Record<number, ExpenseSuggestion>>({})
+const expenseSearch = ref('')
+// Los marcados se quedan visibles aunque una búsqueda nueva no los traiga.
+const expenseRows = computed(() => {
+  const shown = new Set(expenseOptions.value.map(e => e.id))
+  const kept = Object.values(pickedExpenseRows.value).filter(e => !shown.has(e.id))
+  return [...kept, ...expenseOptions.value]
+})
+const expenseSummary = computed(() => {
+  const amounts = Object.values(expensePlan.value).map(v => Number(v) || 0)
+  const applied = Math.round(amounts.reduce((a, b) => a + b, 0) * 100) / 100
+  return { count: amounts.length, applied, left: Math.round(((current.value?.remaining ?? 0) - applied) * 100) / 100 }
+})
+function toggleExpense(expense: ExpenseSuggestion, on: boolean) {
+  const plan = { ...expensePlan.value }
+  const rows = { ...pickedExpenseRows.value }
+  if (on) {
+    const left = (current.value?.remaining ?? 0) - Object.values(plan).reduce((a, b) => a + (Number(b) || 0), 0)
+    plan[expense.id] = Math.round(Math.max(Math.min(expense.open_amount, left), 0) * 100) / 100 || expense.open_amount
+    rows[expense.id] = expense
+  } else {
+    delete plan[expense.id]
+    delete rows[expense.id]
+  }
+  expensePlan.value = plan
+  pickedExpenseRows.value = rows
+}
 const partAmount = ref<number | null>(null)
 const invoiceSearch = ref('')
 const undoingId = ref<number | null>(null)
@@ -843,7 +903,9 @@ function resetChoice() {
   customerOpen.value = null
   customerChosen.value = []
   pickedInvoice.value = null
-  pickedExpense.value = null
+  expensePlan.value = {}
+  pickedExpenseRows.value = {}
+  expenseSearch.value = ''
   partAmount.value = current.value?.remaining ?? null
   newExpense.payee_id = null
   newExpense.category_id = null
@@ -871,8 +933,7 @@ async function loadSuggestions() {
     }
     const sureExpense = res.expenses.filter(e => e.same_amount && e.name_match)
     if (sureExpense.length === 1) {
-      pickedExpense.value = sureExpense[0].id
-      onPickExpense(sureExpense[0])
+      toggleExpense(sureExpense[0], true)
     }
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudieron cargar las sugerencias', detail: accountingErrorMessage(e), life: 6000 })
@@ -908,8 +969,17 @@ function onPickInvoice(invoice: InvoiceSuggestion) {
   partAmount.value = Math.min(current.value?.remaining ?? 0, invoice.open_amount)
 }
 
-function onPickExpense(expense: ExpenseSuggestion) {
-  partAmount.value = Math.min(current.value?.remaining ?? 0, expense.open_amount)
+// Buscar a mano gastos que las sugerencias no trajeron (p. ej. lo que se le reembolsa a alguien).
+async function searchExpenses() {
+  if (!current.value) return
+  loadingSuggestions.value = true
+  try {
+    expenseOptions.value = await searchBankExpenses(current.value.id, expenseSearch.value.trim())
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo buscar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    loadingSuggestions.value = false
+  }
 }
 
 function onPayee() {
@@ -966,9 +1036,11 @@ async function submitReconcile() {
     if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
     payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }
   } else if (mode.value === 'pago') {
-    if (!pickedExpense.value) return warn('Elige el gasto que se pagó')
-    if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
-    payload = { kind: 'pago', expense_id: pickedExpense.value, amount: partAmount.value }
+    const items = Object.entries(expensePlan.value).map(([id, amount]) => ({ expense_id: Number(id), amount: Number(amount) || 0 }))
+    if (items.length === 0) return warn('Marca el gasto o los gastos que se pagaron')
+    if (items.some(i => i.amount <= 0)) return warn('Cada gasto marcado necesita un importe')
+    if (expenseSummary.value.left < -0.004) return warn('Los gastos marcados suman más que el movimiento')
+    payload = { kind: 'pagos', items }
   } else if (mode.value === 'gasto') {
     if (!newExpense.payee_id || !newExpense.category_id) return warn('Indica a quién se pagó y la categoría')
     payload = {
