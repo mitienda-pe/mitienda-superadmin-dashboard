@@ -294,6 +294,16 @@ export interface InvoiceSuggestion {
   document_match?: boolean
   name_match: boolean
   number_match: boolean
+  /** El depósito en soles es la detracción de esta factura en dólares. */
+  usd_detraction?: {
+    usd: number
+    pct: number
+    implied_rate: number
+    invoice_rate: number
+    official_rate: number | null
+    /** Con el TC oficial de la fecha de la factura sale exacto el depósito. */
+    rate_match: boolean
+  }
 }
 
 export interface ExpenseSuggestion {
@@ -319,6 +329,7 @@ export type ReconcileInput =
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
   | { kind: 'otro'; label: string; note?: string }
   | { kind: 'transferencia'; counterpart_id: number }
+  | { kind: 'detraccion_usd'; invoice_id: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[] }
 
 /** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */

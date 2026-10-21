@@ -263,7 +263,14 @@
                       <span v-if="invoice.same_amount" class="text-green-700"> · mismo importe</span>
                       <span v-else-if="invoice.net_of_detraction" class="text-amber-700"> · calza con el neto de detracción</span>
                       <span v-if="invoice.document_match" class="text-green-700"> · mismo RUC</span>
-                      <span v-if="invoice.detraction_match" class="text-green-700"> · el importe es su detracción</span>
+                      <span v-if="invoice.detraction_match && !invoice.usd_detraction" class="text-green-700"> · el importe es su detracción</span>
+                    </div>
+                    <div v-if="invoice.usd_detraction" class="text-xs">
+                      <span class="text-gray-700">
+                        Detracción de factura en dólares: se abonan {{ money(invoice.usd_detraction.usd, 'USD') }}
+                        (TC {{ invoice.usd_detraction.implied_rate.toFixed(3) }}; la factura, a {{ invoice.usd_detraction.invoice_rate.toFixed(3) }})
+                      </span>
+                      <span v-if="invoice.usd_detraction.rate_match" class="text-green-700"> · calza con el TC oficial de su fecha</span>
                     </div>
                   </div>
                   <div class="text-sm tabular-nums text-gray-800 whitespace-nowrap">{{ money(invoice.open_amount, invoice.currency) }}</div>
@@ -449,7 +456,7 @@
           </template>
 
           <!-- Importe de esta parte: solo cuando se cruza con un comprobante o un gasto -->
-          <div v-if="mode === 'cobro' && !customerOpen" class="flex items-end gap-3">
+          <div v-if="mode === 'cobro' && !customerOpen && !pickedUsdDetraction" class="flex items-end gap-3">
             <div class="w-48">
               <label class="block text-sm font-medium text-gray-600 mb-1">Importe a aplicar</label>
               <InputNumber v-model="partAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
@@ -804,6 +811,8 @@ function toggleExpense(expense: ExpenseSuggestion, on: boolean) {
   pickedExpenseRows.value = rows
 }
 const partAmount = ref<number | null>(null)
+// Depósito en soles que paga la detracción de una factura en dólares: va completo, sin importe.
+const pickedUsdDetraction = computed(() => invoiceOptions.value.find(i => i.id === pickedInvoice.value)?.usd_detraction ?? null)
 const invoiceSearch = ref('')
 const undoingId = ref<number | null>(null)
 const payees = ref<Payee[]>([])
@@ -1034,8 +1043,12 @@ async function submitReconcile() {
     payload = { kind: 'cliente', customer_document: customerOpen.value.customer_document, invoice_ids: ids }
   } else if (mode.value === 'cobro') {
     if (!pickedInvoice.value) return warn('Elige el comprobante que se cobró')
-    if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
-    payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }
+    if (pickedUsdDetraction.value) {
+      payload = { kind: 'detraccion_usd', invoice_id: pickedInvoice.value }
+    } else {
+      if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
+      payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }
+    }
   } else if (mode.value === 'pago') {
     const items = Object.entries(expensePlan.value).map(([id, amount]) => ({ expense_id: Number(id), amount: Number(amount) || 0 }))
     if (items.length === 0) return warn('Marca el gasto o los gastos que se pagaron')
