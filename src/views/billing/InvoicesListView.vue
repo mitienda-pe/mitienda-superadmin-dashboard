@@ -611,9 +611,10 @@ function paymentBadge(row: LedgerInvoice): { label: string; class: string } {
 
   switch (row.payment_status) {
     case 'cobrado':
-      return row.payment_source === 'supuesto'
-        ? { label: 'Cobrado (supuesto)', class: 'bg-green-50 text-green-600' }
-        : { label: 'Cobrado', class: 'bg-green-100 text-green-700' }
+      if (row.payment_source === 'supuesto') return { label: 'Cobrado (supuesto)', class: 'bg-green-50 text-green-600' }
+      // Anotado (a mano o desde la hoja de ingresos) sin depósito del banco que lo respalde.
+      if (unconfirmed(row) > 0.99) return { label: 'Cobrado · sin confirmar en banco', class: 'bg-amber-50 text-amber-700' }
+      return { label: 'Cobrado', class: 'bg-green-100 text-green-700' }
     case 'pendiente':
       return row.is_overdue
         ? { label: 'Vencido', class: 'bg-red-100 text-red-700' }
@@ -635,7 +636,16 @@ function paymentBadge(row: LedgerInvoice): { label: string; class: string } {
   }
 }
 
+/** Lo cobrado que ningún movimiento del banco confirma todavía. */
+function unconfirmed(row: LedgerInvoice): number {
+  if (row.paid_amount == null || row.bank_confirmed == null) return 0
+  return Math.max(row.paid_amount - row.bank_confirmed, 0)
+}
+
 function paymentDetail(row: LedgerInvoice): string {
+  if (row.payment_status === 'cobrado' && unconfirmed(row) > 0.99) {
+    return `confirmado en banco ${money(row.bank_confirmed ?? 0, row.currency)} de ${money(row.paid_amount ?? 0, row.currency)}`
+  }
   if (row.payment_status === 'cobrado') {
     const parts = [
       row.payment_date ? formatDate(row.payment_date) : '',

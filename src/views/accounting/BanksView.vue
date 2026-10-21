@@ -264,6 +264,9 @@
                       <span v-else-if="invoice.net_of_detraction" class="text-amber-700"> · calza con el neto de detracción</span>
                       <span v-if="invoice.document_match" class="text-green-700"> · mismo RUC</span>
                       <span v-if="invoice.detraction_match && !invoice.usd_detraction" class="text-green-700"> · el importe es su detracción</span>
+                      <span v-if="invoice.confirms_payment" class="text-green-700">
+                        · confirma el cobro anotado el {{ formatDate(invoice.confirms_payment.paid_at) }}{{ invoice.confirms_payment.method ? ` (${invoice.confirms_payment.method})` : '' }}
+                      </span>
                     </div>
                     <div v-if="invoice.usd_detraction" class="text-xs">
                       <span class="text-gray-700">

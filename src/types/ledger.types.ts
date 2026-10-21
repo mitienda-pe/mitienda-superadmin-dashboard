@@ -176,6 +176,8 @@ export interface LedgerInvoice {
   payment_reference: string | null
   /** Suma de los abonos detallados; null si no tiene ninguno. */
   paid_amount: number | null
+  /** De lo cobrado, lo que un movimiento del banco confirma (null si no hay abonos detallados). */
+  bank_confirmed?: number | null
   payment_note: string | null
   is_overdue: boolean
   days_since_issue: number | null
