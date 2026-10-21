@@ -190,3 +190,41 @@ export async function deleteInvoiceInstallment(paymentId: number) {
 export function ledgerErrorMessage(e: any): string {
   return e?.response?.data?.messages?.error || e?.response?.data?.message || e?.message || 'Error inesperado'
 }
+
+/** Una fila del resultado de comparar con SUNAT. */
+export interface SunatAuditRow {
+  number: string
+  type: number
+  issue_date: string
+  customer_name: string
+  currency: string
+  sunat_total?: number
+  ledger_total?: number
+  ledger_status?: number
+  sunat_status?: number
+}
+
+export interface SunatImportResult {
+  executed: boolean
+  period: { from: string; to: string }
+  total: number
+  matched: number
+  /** En SUNAT y no en el libro: se importan. */
+  missing: SunatAuditRow[]
+  amount_diff: SunatAuditRow[]
+  status_diff: SunatAuditRow[]
+  /** En el libro y no en SUNAT. */
+  extra: SunatAuditRow[]
+  imported: number
+}
+
+/** El CSV del registro de ventas del SIRE o el XML de un comprobante emitido en la web de SUNAT. */
+export async function importFromSunat(file: File, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('execute', execute ? '1' : '0')
+  const res = await api.post<{ message: string; data: SunatImportResult }>('/superadmin/platform-ledger/import-sunat', form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data
+}

@@ -3,13 +3,71 @@
     <SectionTabs :tabs="INVOICES_TABS" />
 
     <!-- Header -->
-    <div>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
       <h1 class="text-2xl font-bold text-gray-900">Comprobantes</h1>
       <p class="text-sm text-gray-500 mt-1 max-w-3xl">
         Todo lo que MiTienda emitió, incluido lo emitido directo en Nubefact, con su estado de cobro. Lo anterior a
         2026 se dio por cobrado; lo de este año queda "por confirmar" hasta que se registre su cobro.
       </p>
+      </div>
+      <Button
+        v-if="authStore.canWrite('finance')"
+        v-tooltip.left="'El registro de ventas del SIRE (trae lo emitido en la web de SUNAT y compara todo con SUNAT) o el XML de un comprobante'"
+        label="Importar de SUNAT"
+        icon="pi pi-upload"
+        severity="secondary"
+        outlined
+        @click="sunatVisible = true"
+      />
     </div>
+
+    <Dialog v-model:visible="sunatVisible" header="Importar de SUNAT" modal :style="{ width: '46rem' }" @hide="resetSunat">
+      <div class="space-y-4">
+        <p class="text-sm text-gray-600">
+          Sube el <strong>registro de ventas del SIRE</strong> (la propuesta del RVIE exportada a CSV): entra lo que el libro no
+          tiene —como lo emitido en la web de SUNAT (E001)— y se compara todo lo demás con SUNAT. También acepta el
+          <strong>XML</strong> de un comprobante suelto emitido en la web de SUNAT.
+        </p>
+        <input type="file" accept=".csv,.txt,.xml" class="block w-full text-sm text-gray-600" @change="onSunatFile" />
+        <div v-if="sunatResult" class="space-y-3 text-sm">
+          <div class="rounded-lg bg-gray-50 p-3 grid grid-cols-2 gap-x-6 gap-y-1">
+            <span class="text-gray-500">Período del archivo</span>
+            <span class="text-gray-800">{{ formatDate(sunatResult.period.from) }} al {{ formatDate(sunatResult.period.to) }}</span>
+            <span class="text-gray-500">Comprobantes en SUNAT</span><span class="text-gray-800">{{ sunatResult.total }}</span>
+            <span class="text-gray-500">Coinciden con el libro</span><span class="text-green-700">{{ sunatResult.matched }}</span>
+            <span class="text-gray-500">Faltan en el libro</span>
+            <span :class="sunatResult.missing.length ? 'text-amber-700 font-medium' : 'text-gray-800'">
+              {{ sunatResult.missing.length }}<template v-if="sunatResult.executed"> · importados {{ sunatResult.imported }}</template>
+            </span>
+            <span class="text-gray-500">Monto distinto</span><span :class="sunatResult.amount_diff.length ? 'text-red-600' : 'text-gray-800'">{{ sunatResult.amount_diff.length }}</span>
+            <span class="text-gray-500">Anulado en uno y no en otro</span><span :class="sunatResult.status_diff.length ? 'text-red-600' : 'text-gray-800'">{{ sunatResult.status_diff.length }}</span>
+            <span class="text-gray-500">En el libro y no en SUNAT</span><span :class="sunatResult.extra.length ? 'text-red-600' : 'text-gray-800'">{{ sunatResult.extra.length }}</span>
+          </div>
+          <div v-for="group in sunatGroups" :key="group.title">
+            <div class="font-medium text-gray-700 mb-1">{{ group.title }}</div>
+            <div class="max-h-40 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100">
+              <div v-for="row in group.rows" :key="group.title + row.number + row.type" class="flex justify-between gap-3 px-3 py-1.5 text-xs">
+                <span class="font-mono text-gray-800">{{ row.type === 3 ? 'NC ' : '' }}{{ row.number }}</span>
+                <span class="text-gray-500">{{ formatDate(row.issue_date) }}</span>
+                <span class="flex-1 truncate text-gray-600">{{ row.customer_name }}</span>
+                <span class="tabular-nums text-gray-800">{{ group.amount(row) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cerrar" text @click="sunatVisible = false" />
+        <Button
+          v-if="sunatResult && !sunatResult.executed && sunatResult.missing.length > 0"
+          :label="`Importar ${sunatResult.missing.length} que faltan`"
+          icon="pi pi-check"
+          :loading="sunatLoading"
+          @click="runSunat(true)"
+        />
+      </template>
+    </Dialog>
 
     <!-- Cuentas por cobrar: no cambian al filtrar por estado de cobro -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" :class="{ 'opacity-60': loading }">
@@ -488,7 +546,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getLedgerInvoices, registerInvoicePayment, getInvoiceInstallments, addInvoiceInstallment, deleteInvoiceInstallment,
-  ledgerErrorMessage
+  ledgerErrorMessage, importFromSunat, type SunatImportResult, type SunatAuditRow
 } from '@/api/ledger.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
@@ -499,6 +557,49 @@ import type {
 
 const toast = useToast()
 const authStore = useAuthStore()
+
+// --- Importar de SUNAT (registro de ventas del SIRE o XML) ---
+const sunatVisible = ref(false)
+const sunatFile = ref<File | null>(null)
+const sunatResult = ref<SunatImportResult | null>(null)
+const sunatLoading = ref(false)
+
+function resetSunat() {
+  sunatFile.value = null
+  sunatResult.value = null
+}
+function onSunatFile(event: Event) {
+  sunatFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
+  sunatResult.value = null
+  if (sunatFile.value) runSunat(false)
+}
+async function runSunat(execute: boolean) {
+  if (!sunatFile.value) return
+  sunatLoading.value = true
+  try {
+    const res = await importFromSunat(sunatFile.value, execute)
+    sunatResult.value = res.data
+    if (execute) {
+      toast.add({ severity: 'success', summary: res.message, life: 4000 })
+      load()
+    }
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo leer el archivo', detail: ledgerErrorMessage(e), life: 7000 })
+  } finally {
+    sunatLoading.value = false
+  }
+}
+const sunatGroups = computed(() => {
+  const r = sunatResult.value
+  if (!r) return []
+  const sunat = (row: SunatAuditRow) => money(row.sunat_total ?? 0, row.currency)
+  return [
+    { title: r.executed ? 'Importados (estaban en SUNAT y no en el libro)' : 'Faltan en el libro (se importan)', rows: r.missing, amount: sunat },
+    { title: 'Monto distinto (SUNAT · libro)', rows: r.amount_diff, amount: (row: SunatAuditRow) => `${sunat(row)} · ${money(row.ledger_total ?? 0, row.currency)}` },
+    { title: 'Anulado en uno y no en el otro', rows: r.status_diff, amount: (row: SunatAuditRow) => (row.sunat_status === 2 ? 'anulado en SUNAT' : 'anulado en el libro') },
+    { title: 'En el libro y no en SUNAT', rows: r.extra, amount: (row: SunatAuditRow) => money(row.ledger_total ?? 0, row.currency) },
+  ].filter(g => g.rows.length > 0)
+})
 const { formatDate, formatNumber } = useFormatters()
 
 const invoices = ref<LedgerInvoice[]>([])
