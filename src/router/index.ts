@@ -257,6 +257,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/accounting/CashFlowView.vue')
       },
       {
+        // Liquidación de impuestos del mes (control contra el PDT 621 y el PLAME) y retenciones recibidas.
+        path: 'taxes',
+        name: 'AccountingTaxes',
+        component: () => import('@/views/accounting/TaxesView.vue')
+      },
+      {
         path: 'journal',
         name: 'AccountingJournal',
         component: () => import('@/views/accounting/JournalView.vue')

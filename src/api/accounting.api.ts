@@ -418,3 +418,59 @@ export async function getPayslipUrl(lineId: number) {
 export function accountingErrorMessage(e: any): string {
   return e?.response?.data?.messages?.error || e?.response?.data?.message || e?.message || 'Error inesperado'
 }
+
+// --- Impuestos ---
+
+export interface TaxRetention {
+  id: number
+  document_number: string
+  issue_date: string
+  agent_document: string
+  agent_name: string
+  total_pen: number
+  note: string | null
+  items: { invoice_id: number | null; invoice_number: string; currency: string; invoice_total: number; retained: number; retained_pen: number; applied: boolean }[]
+}
+
+export interface TaxRetentionInput {
+  document_number: string
+  issue_date: string
+  agent_document?: string
+  agent_name?: string
+  note?: string
+  items: { invoice_number: string; retained?: number | null; retained_pen?: number | null }[]
+}
+
+export interface TaxSettlement {
+  period: string
+  igv: {
+    sales_base: number; sales_tax: number; sales_count: number
+    exports_base: number; exports_count: number
+    purchases_base: number; purchases_tax: number; purchases_count: number
+    month_tax: number; previous_igv_credit: number; previous_retention_credit: number
+    retentions: number; to_pay: number; next_igv_credit: number; next_retention_credit: number
+  }
+  renta: { income: number; rate: number; tax: number; credit: number; to_pay: number; income_year_to_date: number; limit_300_uit: number }
+  payroll: { essalud: number; fifth: number; closed: boolean }
+  total: number
+}
+
+export async function getTaxSettlement(period: string, rentaCredit = 0) {
+  const res = await api.get<{ data: TaxSettlement }>(`${BASE}/tax-settlement`, { params: { period, renta_credit: rentaCredit || undefined } })
+  return res.data.data
+}
+
+export async function getTaxRetentions(period: string) {
+  const res = await api.get<{ data: TaxRetention[] }>(`${BASE}/retentions`, { params: { period } })
+  return res.data.data
+}
+
+export async function createTaxRetention(input: TaxRetentionInput) {
+  const res = await api.post<{ message: string; data: TaxRetention }>(`${BASE}/retentions`, input)
+  return res.data
+}
+
+export async function deleteTaxRetention(id: number) {
+  const res = await api.delete<{ message: string }>(`${BASE}/retentions/${id}`)
+  return res.data
+}
