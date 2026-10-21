@@ -54,7 +54,20 @@ function expenseParams(filters: ExpenseFilters): Record<string, string | number>
   if (filters.kind) params.kind = filters.kind
   if (filters.search) params.search = filters.search
   if (filters.include_voided) params.include_voided = '1'
+  if (filters.status) params.status = filters.status
   return params
+}
+
+/** Compras personales con factura a nombre de la empresa: dejan de ser gasto. */
+export async function markPersonalExpenses(ids: number[], note: string) {
+  const res = await api.post<{ message: string; data: { affected: number } }>(`${BASE}/expenses/personal`, { expense_ids: ids, note })
+  return res.data
+}
+
+/** Deshace "compra personal": vuelve a ser un gasto de la empresa. */
+export async function unmarkPersonalExpense(id: number) {
+  const res = await api.post<{ message: string }>(`${BASE}/expenses/${id}/company`)
+  return res.data
 }
 
 /** Baja en CSV (se abre en Excel) todos los gastos de esos filtros, sin paginar. */

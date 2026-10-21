@@ -107,6 +107,8 @@ export interface Expense {
   paid_amount: number
   balance: number
   is_overdue: boolean
+  /** Compra personal con factura a nombre de la empresa: no es un gasto de la empresa. */
+  is_personal?: boolean
   source: 'manual' | 'sire' | 'planilla' | 'xml'
   /** Solo en un gasto anulado: por qué, cuándo y quién (null si fue una corrección del sistema). */
   void_reason?: string | null
@@ -141,6 +143,8 @@ export interface ExpenseSummary {
   unpaid: number
   overdue_count: number
   overdue: number
+  /** Compras personales del periodo (no son de la empresa): su IGV se excluye del SIRE. */
+  personal?: { count: number; tax: number; total: number }
   by_category: { group_name: string; name: string; expenses: number; net: number; total: number }[]
 }
 
@@ -153,6 +157,8 @@ export interface ExpenseFilters {
   page: number
   /** Los anulados no salen si no se piden. */
   include_voided?: boolean
+  /** 'personal': solo las compras personales (no son de la empresa). */
+  status?: 'personal' | null
 }
 
 /** Resultado de importar (o previsualizar) el registro de compras del SIRE. */

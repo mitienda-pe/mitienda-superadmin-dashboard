@@ -69,6 +69,27 @@
       </div>
     </div>
 
+    <!-- Compras personales: no son de la empresa; su IGV se excluye del SIRE -->
+    <div
+      v-if="filters.status === 'personal' || (summary.personal?.count ?? 0) > 0"
+      class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-purple-200 bg-purple-50 px-5 py-3 text-sm text-purple-900"
+    >
+      <span v-if="filters.status === 'personal'">
+        Viendo las <strong>compras personales</strong> del período: no son gastos de la empresa.
+        IGV {{ money(summary.personal?.tax ?? 0) }} — exclúyelas de la propuesta del registro de compras del SIRE.
+      </span>
+      <span v-else>
+        {{ summary.personal?.count }} compra{{ summary.personal?.count === 1 ? '' : 's' }} personal{{ summary.personal?.count === 1 ? '' : 'es' }}
+        en el período (IGV {{ money(summary.personal?.tax ?? 0) }}): fuera de los gastos; exclúyelas del SIRE.
+      </span>
+      <Button
+        :label="filters.status === 'personal' ? 'Volver a los gastos' : 'Ver compras personales'"
+        size="small"
+        text
+        @click="togglePersonal"
+      />
+    </div>
+
     <!-- En qué se gasta -->
     <div v-if="groups.length > 0" class="bg-white rounded-xl border border-gray-200 p-5">
       <button type="button" class="flex w-full items-center justify-between text-left" @click="showCategories = !showCategories">
@@ -159,6 +180,15 @@
         />
         <Dropdown v-model="bulkLine" :options="bulkLineOptions" optionLabel="label" optionValue="value" class="w-52" />
         <Button label="Clasificar" icon="pi pi-check" :loading="saving" :disabled="!bulkCategory" @click="submitClassify" />
+        <Button
+          v-if="filters.status !== 'personal'"
+          v-tooltip.top="'Factura a nombre de la empresa que la empresa no pagó ni reembolsa'"
+          label="Compra personal"
+          icon="pi pi-user"
+          severity="secondary"
+          outlined
+          @click="personalVisible = true"
+        />
         <Button label="Quitar selección" text severity="secondary" @click="selected = []" />
       </div>
 
@@ -237,6 +267,9 @@
 
         <Column header="" style="width: 150px">
           <template #body="{ data: row }">
+            <div v-if="row.is_personal && authStore.canWriteFinance" class="flex justify-end">
+              <Button label="Es de la empresa" icon="pi pi-undo" size="small" text :loading="undoingPersonal === row.id" @click="undoPersonal(row)" />
+            </div>
             <div v-if="row.status === 1" class="flex items-center justify-end gap-1">
               <Button
                 v-if="row.total > 0"
@@ -545,6 +578,19 @@
         />
       </template>
     </Dialog>
+    <Dialog v-model:visible="personalVisible" header="Compra personal" modal :style="{ width: '30rem' }">
+      <p class="text-sm text-gray-600 mb-3">
+        {{ selected.length }} comprobante{{ selected.length === 1 ? '' : 's' }} a nombre de la empresa que la empresa no pagó ni
+        reembolsa. Dejan de contar como gasto (por pagar, resultados, flujo y diario) y quedan listados aparte para
+        excluirlos de la propuesta del SIRE. Se puede deshacer.
+      </p>
+      <label class="block text-sm font-medium text-gray-600 mb-1">Nota (opcional)</label>
+      <InputText v-model="personalNote" maxlength="255" class="w-full" placeholder="Ej.: compra de Carlos, no se reembolsa" />
+      <template #footer>
+        <Button label="Cancelar" text @click="personalVisible = false" />
+        <Button label="Marcar como compra personal" icon="pi pi-user" :loading="saving" @click="submitPersonal" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -567,7 +613,8 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getExpenses, getExpenseCategories, getPayees, saveExpense, voidExpense,
-  getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage, downloadExpensesCsv
+  getExpensePayments, addExpensePayment, deleteExpensePayment, classifyExpenses, importSire, accountingErrorMessage, downloadExpensesCsv,
+  markPersonalExpenses, unmarkPersonalExpense
 } from '@/api/accounting.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { parseLocalDate, toIsoDate } from '@/utils/dates'
@@ -701,6 +748,7 @@ const payrollNet = computed(() =>
 const payrollShare = computed(() => share(payrollNet.value))
 
 function paymentBadge(row: Expense): { label: string; class: string } {
+  if (row.is_personal) return { label: 'Compra personal', class: 'bg-purple-100 text-purple-700' }
   if (row.status !== 1) return { label: 'Anulado', class: 'bg-gray-100 text-gray-500' }
   if (row.payment_status === 'pagado') return { label: 'Pagado', class: 'bg-green-100 text-green-700' }
   if (row.is_overdue) return { label: row.payment_status === 'parcial' ? 'Parcial · vencido' : 'Vencido', class: 'bg-red-100 text-red-700' }
@@ -1024,6 +1072,45 @@ async function submitClassify() {
     toast.add({ severity: 'error', summary: 'No se pudo clasificar', detail: accountingErrorMessage(e), life: 6000 })
   } finally {
     saving.value = false
+  }
+}
+
+// --- Compras personales ---
+const personalVisible = ref(false)
+const personalNote = ref('')
+const undoingPersonal = ref<number | null>(null)
+
+function togglePersonal() {
+  filters.status = filters.status === 'personal' ? null : 'personal'
+  selected.value = []
+  reload()
+}
+
+async function submitPersonal() {
+  saving.value = true
+  try {
+    const res = await markPersonalExpenses(selected.value.map(row => row.id), personalNote.value.trim())
+    toast.add({ severity: 'success', summary: res.message, detail: 'Ya no cuentan como gasto. Exclúyelas de la propuesta del SIRE.', life: 5000 })
+    personalVisible.value = false
+    personalNote.value = ''
+    load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo marcar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+async function undoPersonal(row: Expense) {
+  undoingPersonal.value = row.id
+  try {
+    const res = await unmarkPersonalExpense(row.id)
+    toast.add({ severity: 'success', summary: res.message, life: 3000 })
+    load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo deshacer', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    undoingPersonal.value = null
   }
 }
 
