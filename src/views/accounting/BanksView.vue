@@ -494,7 +494,7 @@
           Culqi, o el PDF del estado de cuenta de la tarjeta de crédito BBVA. Primero ves qué entraría; lo que ya se
           importó no se repite.
         </p>
-        <input type="file" accept=".xls,.xlsx,.csv,.pdf" class="block w-full text-sm text-gray-600" @change="onFile" />
+        <input type="file" accept=".xls,.xlsx,.csv,.pdf,.md" class="block w-full text-sm text-gray-600" @change="onFile" />
 
         <div v-if="isPdf">
           <label class="block text-sm font-medium text-gray-600 mb-1">Clave del PDF</label>
