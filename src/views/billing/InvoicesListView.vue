@@ -636,14 +636,24 @@ function paymentBadge(row: LedgerInvoice): { label: string; class: string } {
   }
 }
 
-/** Lo cobrado que ningún movimiento del banco confirma todavía. */
+/**
+ * Lo cobrado que ningún movimiento del banco confirma todavía. Un "Cobrado"
+ * sin abonos detallados (la renovación marcada como cobrada al renovar) no
+ * tiene respaldo hasta que se concilia su depósito: cuenta entero.
+ */
 function unconfirmed(row: LedgerInvoice): number {
-  if (row.paid_amount == null || row.bank_confirmed == null) return 0
+  if (row.payment_status !== 'cobrado' || row.payment_source === 'supuesto') return 0
+  if (row.paid_amount == null) return Math.max(row.total - row.credited, 0)
+  if (row.bank_confirmed == null) return 0
   return Math.max(row.paid_amount - row.bank_confirmed, 0)
 }
 
 function paymentDetail(row: LedgerInvoice): string {
   if (row.payment_status === 'cobrado' && unconfirmed(row) > 0.99) {
+    if (row.paid_amount == null) {
+      const how = [row.payment_date ? formatDate(row.payment_date) : '', row.payment_method ?? ''].filter(Boolean).join(' · ')
+      return `anotado como cobrado${how ? ` (${how})` : ''}; falta conciliar el depósito en Bancos`
+    }
     return `confirmado en banco ${money(row.bank_confirmed ?? 0, row.currency)} de ${money(row.paid_amount ?? 0, row.currency)}`
   }
   if (row.payment_status === 'cobrado') {
