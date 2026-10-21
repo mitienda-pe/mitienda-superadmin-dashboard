@@ -210,6 +210,10 @@ export interface TransferCandidate {
   description: string
   amount: number
   fee: number
+  /** Moneda del otro lado si es distinta (cambio de moneda entre cuentas propias). */
+  currency?: 'PEN' | 'USD'
+  /** TC implícito (soles ÷ dólares) y el oficial del día. */
+  fx?: { rate: number; official: number }
 }
 
 /** Gastos por pagar para juntar en un pago (proveedor, descripción o número). */

@@ -435,13 +435,16 @@
                   <span>
                     <span class="font-medium text-gray-800">{{ c.account_name }}</span>
                     · {{ formatDate(c.op_date) }} · {{ c.description }}
-                    · <span class="tabular-nums">{{ money(Math.abs(c.amount), current?.currency ?? 'PEN') }}</span>
+                    · <span class="tabular-nums">{{ money(Math.abs(c.amount), c.currency ?? current?.currency ?? 'PEN') }}</span>
                     <span v-if="c.fee > 0" class="text-xs text-gray-500"> (comisión del banco {{ money(c.fee, current?.currency ?? 'PEN') }})</span>
+                    <span v-if="c.fx" class="text-xs text-gray-500">
+                      (cambio de moneda: TC {{ c.fx.rate.toFixed(4) }}; oficial {{ c.fx.official.toFixed(3) }}, la diferencia va a diferencia de cambio)
+                    </span>
                   </span>
                 </label>
                 <label class="flex items-center gap-2 text-sm cursor-pointer text-gray-600">
                   <RadioButton v-model="other.counterpart" :value="null" />
-                  Marcar solo este lado (el otro no está importado o es de otra moneda)
+                  Marcar solo este lado (el otro no está importado)
                 </label>
                 <p class="text-xs text-gray-500">
                   Se concilian los dos movimientos; si el que sale es mayor, la diferencia queda como comisión del banco
