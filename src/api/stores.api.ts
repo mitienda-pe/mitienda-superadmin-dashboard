@@ -171,6 +171,24 @@ export interface RenewalContext {
   customer?: { id: number; document: string; document_type: 'RUC' | 'DNI' | 'OTRO'; name: string; email: string | null } | null
 }
 
+/** Un depósito sin conciliar que podría ser el pago de una renovación. */
+export interface RenewalDeposit {
+  id: number
+  op_date: string
+  amount: number
+  reference: string | null
+  description: string
+  account_name: string
+  bank: string
+  /** Calza con el 88 % del precio (el cliente retuvo la detracción). */
+  net_of_detraction: boolean
+}
+
+export async function getRenewalDeposits(storeId: number, amount: number) {
+  const res = await api.get<{ data: RenewalDeposit[] }>(`/superadmin/dashboard/stores/${storeId}/renewal-deposits`, { params: { amount } })
+  return res.data.data
+}
+
 export async function getRenewalContext(storeId: number) {
   const res = await api.get<{ success: boolean; data: RenewalContext }>(
     `/superadmin/dashboard/stores/${storeId}/renewal-context`

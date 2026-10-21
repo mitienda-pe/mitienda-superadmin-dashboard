@@ -140,6 +140,27 @@
         />
       </div>
       <template v-if="form.payment_status === 'cobrado'">
+        <!-- El depósito ya importado en Bancos: queda con su n.º de operación y se concilia solo con el comprobante. -->
+        <div v-if="deposits.length > 0" class="rounded-lg border border-gray-200 p-3 space-y-2">
+          <div class="text-sm font-medium text-gray-700">¿Es alguno de estos depósitos?</div>
+          <label
+            v-for="d in deposits"
+            :key="d.id"
+            class="flex items-start gap-2 text-sm cursor-pointer"
+          >
+            <input type="radio" class="mt-1" :checked="pickedDeposit === d.id" @change="pickDeposit(d)" />
+            <span>
+              <span class="font-medium text-gray-800">{{ d.account_name }}</span>
+              · {{ d.op_date }} · S/ {{ d.amount.toFixed(2) }}
+              <span v-if="d.reference" class="text-gray-500"> · op. {{ d.reference }}</span>
+              <span class="block text-xs text-gray-500">{{ d.description }}<template v-if="d.net_of_detraction"> · neto de detracción</template></span>
+            </span>
+          </label>
+        </div>
+        <p v-else-if="!loadingDeposits" class="text-xs text-gray-500">
+          No hay en Bancos un depósito sin conciliar por este monto en los últimos 20 días. Si el cliente ya pagó,
+          registra lo que informó (fecha, banco y n.º de operación): se confirma solo cuando se importe el estado de cuenta.
+        </p>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-sm font-medium text-gray-600 mb-1">Fecha del abono *</label>
@@ -211,7 +232,9 @@ import {
   renewStorePlan,
   type PlanBillingData,
   type RenewalContext,
-  type RenewStorePlanResult
+  type RenewStorePlanResult,
+  getRenewalDeposits,
+  type RenewalDeposit
 } from '@/api/stores.api'
 import { parseLocalDate, toIsoDate, limaToday } from '@/utils/dates'
 import { PLAN_PAYMENT_METHODS, CREDIT_DAYS_DEFAULT } from '@/config/plan-payment.config'
@@ -458,6 +481,36 @@ function buildBilling(): PlanBillingData | undefined | null {
     last_name: form.last_name.trim(),
     email: form.email.trim()
   }
+}
+
+// --- Depósito del banco que paga esta renovación ---
+const deposits = ref<RenewalDeposit[]>([])
+const pickedDeposit = ref<number | null>(null)
+const loadingDeposits = ref(false)
+let depositSeq = 0
+
+async function loadDeposits() {
+  const seq = ++depositSeq
+  deposits.value = []
+  pickedDeposit.value = null
+  if (!props.storeId || form.payment_status !== 'cobrado' || !(form.price > 0)) return
+  loadingDeposits.value = true
+  try {
+    const list = await getRenewalDeposits(props.storeId, form.price)
+    if (seq === depositSeq) deposits.value = list
+  } catch {
+    // Sin la lista se registra el cobro a mano, como siempre.
+  } finally {
+    if (seq === depositSeq) loadingDeposits.value = false
+  }
+}
+watch(() => [form.payment_status, form.price] as const, loadDeposits)
+
+function pickDeposit(d: RenewalDeposit) {
+  pickedDeposit.value = d.id
+  form.payment_date = parseLocalDate(d.op_date)
+  form.payment_method = d.bank
+  form.payment_reference = d.reference ?? ''
 }
 
 async function submit() {
