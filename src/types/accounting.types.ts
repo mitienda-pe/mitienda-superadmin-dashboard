@@ -302,6 +302,8 @@ export interface InvoiceSuggestion {
   number_match: boolean
   /** Este depósito confirma un cobro ya anotado (hoja de ingresos, a mano): no crea otro abono. */
   confirms_payment?: { paid_at: string; method: string | null; amount: number }
+  /** Hallada con el buscador: factura en dólares en la cuenta de detracciones (soles). */
+  foreign_detraction?: boolean
   /** El depósito en soles es la detracción de esta factura en dólares. */
   usd_detraction?: {
     usd: number

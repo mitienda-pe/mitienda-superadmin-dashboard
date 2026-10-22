@@ -268,6 +268,9 @@
                         · confirma el cobro anotado el {{ formatDate(invoice.confirms_payment.paid_at) }}{{ invoice.confirms_payment.method ? ` (${invoice.confirms_payment.method})` : '' }}
                       </span>
                     </div>
+                    <div v-if="invoice.foreign_detraction && !invoice.usd_detraction" class="text-xs text-gray-700">
+                      Factura en dólares: el depósito se aplica como su detracción, al tipo de cambio implícito.
+                    </div>
                     <div v-if="invoice.usd_detraction" class="text-xs">
                       <span class="text-gray-700">
                         Detracción de factura en dólares: se abonan {{ money(invoice.usd_detraction.usd, 'USD') }}
@@ -1009,8 +1012,10 @@ async function searchInvoices() {
   loadingSuggestions.value = true
   try {
     const res = await getLedgerInvoices({ payment: 'all', period: '', origin: '', search: invoiceSearch.value.trim(), page: 1 })
+    // En la cuenta de detracciones (soles) entra también la detracción de facturas en dólares.
+    const bnSoles = current.value.bank === 'Banco de la Nación' && current.value.currency === 'PEN'
     invoiceOptions.value = res.data
-      .filter(i => i.payment_status !== null && i.currency === current.value!.currency)
+      .filter(i => i.payment_status !== null && (i.currency === current.value!.currency || (bnSoles && i.currency === 'USD')))
       .map(i => ({
         id: i.id,
         number: i.number,
@@ -1024,7 +1029,8 @@ async function searchInvoices() {
         same_amount: false,
         net_of_detraction: false,
         name_match: false,
-        number_match: false
+        number_match: false,
+        foreign_detraction: i.currency !== current.value!.currency
       }))
       .filter(i => i.open_amount > 0)
     pickedInvoice.value = null
@@ -1049,7 +1055,8 @@ async function submitReconcile() {
     payload = { kind: 'cliente', customer_document: customerOpen.value.customer_document, invoice_ids: ids }
   } else if (mode.value === 'cobro') {
     if (!pickedInvoice.value) return warn('Elige el comprobante que se cobró')
-    if (pickedUsdDetraction.value) {
+    const picked = invoiceOptions.value.find(i => i.id === pickedInvoice.value)
+    if (pickedUsdDetraction.value || picked?.foreign_detraction) {
       payload = { kind: 'detraccion_usd', invoice_id: pickedInvoice.value }
     } else {
       if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
