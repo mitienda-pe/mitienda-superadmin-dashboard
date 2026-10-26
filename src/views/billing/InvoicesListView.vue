@@ -359,6 +359,13 @@
           <div class="bg-gray-50 rounded-lg p-3 text-sm">
             <div class="text-gray-700">{{ single.customer_name }}</div>
             <div class="grid grid-cols-2 gap-x-6 gap-y-1 mt-2 text-gray-500">
+              <span>Emisión</span>
+              <span class="text-right tabular-nums text-gray-800">
+                {{ formatDate(single.issue_date) }}
+                <span v-if="single.due_date && single.due_date !== single.issue_date" :class="single.is_overdue ? 'text-red-600' : 'text-gray-400'">
+                  · vence {{ formatDate(single.due_date) }}
+                </span>
+              </span>
               <span>Total del comprobante</span>
               <span class="text-right tabular-nums text-gray-800">{{ money(single.total, single.currency) }}</span>
               <template v-if="single.credited > 0">
