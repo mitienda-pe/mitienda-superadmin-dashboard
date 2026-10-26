@@ -11,8 +11,17 @@
         2026 se dio por cobrado; lo de este año queda "por confirmar" hasta que se registre su cobro.
       </p>
       </div>
+      <div v-if="authStore.canWrite('finance')" class="flex flex-wrap gap-2">
       <Button
-        v-if="authStore.canWrite('finance')"
+        v-tooltip.left="'Trae ahora lo emitido desde el superadmin y el panel (renovaciones, comisiones). Se hace solo cada hora, al minuto 40.'"
+        label="Sincronizar"
+        icon="pi pi-refresh"
+        severity="secondary"
+        outlined
+        :loading="syncing"
+        @click="runSync"
+      />
+      <Button
         v-tooltip.left="'El registro de ventas del SIRE (trae lo emitido en la web de SUNAT y compara todo con SUNAT) o el XML de un comprobante'"
         label="Importar de SUNAT"
         icon="pi pi-upload"
@@ -20,6 +29,7 @@
         outlined
         @click="sunatVisible = true"
       />
+      </div>
     </div>
 
     <Dialog v-model:visible="sunatVisible" header="Importar de SUNAT" modal :style="{ width: '46rem' }" @hide="resetSunat">
@@ -546,7 +556,7 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useFormatters } from '@/composables/useFormatters'
 import {
   getLedgerInvoices, registerInvoicePayment, getInvoiceInstallments, addInvoiceInstallment, deleteInvoiceInstallment,
-  ledgerErrorMessage, importFromSunat, type SunatImportResult, type SunatAuditRow
+  ledgerErrorMessage, importFromSunat, syncLedger, type SunatImportResult, type SunatAuditRow
 } from '@/api/ledger.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
@@ -557,6 +567,28 @@ import type {
 
 const toast = useToast()
 const authStore = useAuthStore()
+
+// --- Sincronizar a demanda (lo mismo que el cron horario) ---
+const syncing = ref(false)
+
+async function runSync() {
+  syncing.value = true
+  try {
+    const res = await syncLedger()
+    const added = res.added.length
+    toast.add({
+      severity: 'success',
+      summary: added > 0 ? `${added} comprobante${added === 1 ? '' : 's'} nuevo${added === 1 ? '' : 's'} en el libro` : 'El libro ya estaba al día',
+      detail: added > 0 ? res.added.slice(0, 10).join(', ') + (added > 10 ? '…' : '') : undefined,
+      life: 6000
+    })
+    if (added > 0 || res.payments > 0) await load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo sincronizar', detail: ledgerErrorMessage(e), life: 7000 })
+  } finally {
+    syncing.value = false
+  }
+}
 
 // --- Importar de SUNAT (registro de ventas del SIRE o XML) ---
 const sunatVisible = ref(false)

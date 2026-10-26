@@ -228,3 +228,18 @@ export async function importFromSunat(file: File, execute: boolean) {
   })
   return res.data
 }
+
+export interface LedgerSyncResult {
+  /** Comprobantes que entraron al libro en esta corrida (F002-6864…). */
+  added: string[]
+  /** Comprobantes cuyo cobro se actualizó desde planes y comisiones. */
+  payments: number
+  /** Filas emitidas que no pueden entrar al libro y hay que revisar a mano. */
+  skipped: string[]
+}
+
+/** Copia al libro lo emitido desde planes, comisiones y otros conceptos (lo mismo que el cron horario). */
+export async function syncLedger() {
+  const res = await api.post<{ data: LedgerSyncResult }>('/superadmin/platform-ledger/sync')
+  return res.data.data
+}
