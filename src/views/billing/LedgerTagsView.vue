@@ -103,7 +103,7 @@
     </div>
 
     <!-- Dimension -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="dimensionDialogVisible"
       :header="dimensionForm.id ? 'Editar dimensión' : 'Nueva dimensión'"
       modal
@@ -138,7 +138,7 @@
     </Dialog>
 
     <!-- Valor -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="valueDialogVisible"
       :header="valueForm.id ? 'Editar valor' : `Nuevo valor en ${valueForm.dimensionName}`"
       modal

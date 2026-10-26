@@ -130,7 +130,7 @@
       </div>
     </template>
 
-    <Dialog v-model:visible="editing" header="Editar ficha" modal :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="editing" header="Editar ficha" modal :style="{ width: '32rem' }">
       <div class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Razón social o nombre *</label>

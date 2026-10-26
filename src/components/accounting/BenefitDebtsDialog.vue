@@ -1,5 +1,5 @@
 <template>
-  <Dialog :visible="visible" modal header="Beneficios adeudados" :style="{ width: '56rem' }" @update:visible="emit('update:visible', $event)">
+  <Dialog :draggable="false" :visible="visible" modal header="Beneficios adeudados" :style="{ width: '56rem' }" @update:visible="emit('update:visible', $event)">
     <div v-if="loading && !data" class="py-10 text-center text-gray-400"><i class="pi pi-spin pi-spinner text-2xl"></i></div>
 
     <div v-else-if="data" class="space-y-5">
@@ -71,7 +71,7 @@
     </div>
 
     <!-- Pago -->
-    <Dialog v-model:visible="paymentVisible" modal :header="paymentTitle" :style="{ width: '28rem' }">
+    <Dialog :draggable="false" v-model:visible="paymentVisible" modal :header="paymentTitle" :style="{ width: '28rem' }">
       <div v-if="paying" class="space-y-3">
         <p class="text-sm text-gray-500">Saldo: {{ money(paying.balance) }}. Si el pago ya está en Bancos, mejor concílialo desde ahí: queda enlazado al movimiento.</p>
         <div class="grid grid-cols-2 gap-3">

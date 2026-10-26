@@ -1,5 +1,5 @@
 <template>
-  <Dialog
+  <Dialog :draggable="false"
     :visible="visible"
     modal
     :header="storeName ? `Renovar plan · ${storeName}` : 'Renovar plan'"

@@ -122,7 +122,7 @@
     </div>
 
     <!-- Etiquetar concepto -->
-    <Dialog v-model:visible="assignVisible" header="Etiquetar concepto" modal :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="assignVisible" header="Etiquetar concepto" modal :style="{ width: '32rem' }">
       <template v-if="assignConcept">
         <p class="text-sm text-gray-600 mb-4">
           <strong class="font-mono">{{ assignConcept.code || '(sin código)' }}</strong>

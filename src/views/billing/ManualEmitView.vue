@@ -257,7 +257,7 @@
     </div>
 
     <!-- Confirmacion -->
-    <Dialog v-model:visible="previewVisible" header="Confirmar emisión" modal :style="{ width: '34rem' }">
+    <Dialog :draggable="false" v-model:visible="previewVisible" header="Confirmar emisión" modal :style="{ width: '34rem' }">
       <template v-if="preview">
         <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
           <dt class="text-gray-500">Comprobante</dt>
@@ -325,7 +325,7 @@
     </Dialog>
 
     <!-- Resultado -->
-    <Dialog v-model:visible="resultVisible" header="Comprobante emitido" modal :closable="false" :style="{ width: '30rem' }">
+    <Dialog :draggable="false" v-model:visible="resultVisible" header="Comprobante emitido" modal :closable="false" :style="{ width: '30rem' }">
       <template v-if="result">
         <p class="text-lg font-semibold text-gray-900">{{ result.comprobante }}</p>
         <p class="mt-1 text-sm text-gray-600">
@@ -347,7 +347,7 @@
     </Dialog>
 
     <!-- Nuevo cliente -->
-    <Dialog v-model:visible="newClientVisible" header="Nuevo cliente" modal :style="{ width: '30rem' }">
+    <Dialog :draggable="false" v-model:visible="newClientVisible" header="Nuevo cliente" modal :style="{ width: '30rem' }">
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">RUC o DNI</label>

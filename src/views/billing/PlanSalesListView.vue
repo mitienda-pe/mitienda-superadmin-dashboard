@@ -324,7 +324,7 @@
       (consume correlativo y llega a SUNAT), asi que el superadmin ve tipo de
       documento, receptor y total ANTES de apretar.
     -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="emitDialogVisible"
       modal
       header="Emitir comprobante"
@@ -429,7 +429,7 @@
     </Dialog>
 
     <!-- Resultado del lote: detalle por item, para que quede claro que salio -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="batchResultVisible"
       modal
       header="Resultado de la emision"

@@ -280,7 +280,7 @@ onMounted(loadCatalog)
     </section>
 
     <!-- Dialog: asignar plugin -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showAssignDialog"
       header="Asignar plugin a tienda"
       modal
@@ -318,7 +318,7 @@ onMounted(loadCatalog)
     </Dialog>
 
     <!-- Dialog: nuevo plugin -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showPluginDialog"
       header="Registrar nuevo plugin"
       modal

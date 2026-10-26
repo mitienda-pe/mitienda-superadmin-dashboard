@@ -151,7 +151,7 @@
       </div>
     </div>
 
-    <Dialog v-model:visible="retentionVisible" header="Registrar comprobante de retención" modal :style="{ width: '36rem' }">
+    <Dialog :draggable="false" v-model:visible="retentionVisible" header="Registrar comprobante de retención" modal :style="{ width: '36rem' }">
       <div class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
           <div>

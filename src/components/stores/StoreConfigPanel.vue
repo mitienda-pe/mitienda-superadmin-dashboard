@@ -361,7 +361,7 @@
     />
 
     <!-- Dar de baja dialog -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="expireDialogVisible"
       modal
       header="Dar de baja la tienda"

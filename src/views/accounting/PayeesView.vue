@@ -83,7 +83,7 @@
       </DataTable>
     </div>
 
-    <Dialog v-model:visible="visible" modal :header="editing ? 'Editar' : 'Agregar proveedor o persona'" :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="visible" modal :header="editing ? 'Editar' : 'Agregar proveedor o persona'" :style="{ width: '32rem' }">
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Tipo *</label>

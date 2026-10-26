@@ -1,5 +1,5 @@
 <template>
-  <Dialog :visible="visible" modal :header="`Datos para el PLAME Web · ${periodLabel}`" :style="{ width: '52rem' }" @update:visible="v => emit('update:visible', v)">
+  <Dialog :draggable="false" :visible="visible" modal :header="`Datos para el PLAME Web · ${periodLabel}`" :style="{ width: '52rem' }" @update:visible="v => emit('update:visible', v)">
     <p class="text-sm text-gray-500 mb-4">
       Lo que se digita en el Formulario Virtual 0601 (PLAME Web), trabajador por trabajador, en el orden del reporte
       "Datos de boleta de pago". Las comisiones van dentro del 0121 y las condiciones de trabajo no se declaran, como

@@ -307,7 +307,7 @@
     </template>
 
     <!-- Suspend Dialog -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showSuspendDialog"
       header="Suspender Suscripción"
       :modal="true"
@@ -333,7 +333,7 @@
     </Dialog>
 
     <!-- Record Payment Dialog -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showPaymentDialog"
       header="Registrar Pago Manual"
       :modal="true"

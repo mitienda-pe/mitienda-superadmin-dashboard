@@ -46,7 +46,7 @@
       </div>
     </div>
 
-    <Dialog v-model:visible="visible" modal :header="editing ? 'Editar categoría' : 'Nueva categoría'" :style="{ width: '28rem' }">
+    <Dialog :draggable="false" v-model:visible="visible" modal :header="editing ? 'Editar categoría' : 'Nueva categoría'" :style="{ width: '28rem' }">
       <div class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-600 mb-1">Nombre *</label>

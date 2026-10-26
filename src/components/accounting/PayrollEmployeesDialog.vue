@@ -1,5 +1,5 @@
 <template>
-  <Dialog :visible="visible" modal header="Personal" :style="{ width: '56rem' }" @update:visible="emit('update:visible', $event)">
+  <Dialog :draggable="false" :visible="visible" modal header="Personal" :style="{ width: '56rem' }" @update:visible="emit('update:visible', $event)">
     <div v-if="loading" class="py-10 text-center text-gray-400"><i class="pi pi-spin pi-spinner text-2xl"></i></div>
 
     <div v-else-if="employees.length === 0" class="py-8 text-center text-sm text-gray-500">

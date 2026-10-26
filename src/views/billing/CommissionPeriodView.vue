@@ -223,7 +223,7 @@
     </div>
 
     <!-- Confirmacion de emision individual -->
-    <Dialog v-model:visible="emitDialogVisible" header="Emitir comprobante" modal :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="emitDialogVisible" header="Emitir comprobante" modal :style="{ width: '32rem' }">
       <div v-if="preview" class="space-y-3 text-sm">
         <div
           v-if="!preview.serie_active"
@@ -274,7 +274,7 @@
     </Dialog>
 
     <!-- Exoneracion -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="settingsVisible"
       :header="settingsRow?.exonerated ? 'Quitar exoneracion' : 'Exonerar de comision'"
       modal
@@ -320,7 +320,7 @@
     </Dialog>
 
     <!-- Resultado del lote -->
-    <Dialog v-model:visible="batchResultVisible" header="Resultado del lote" modal :style="{ width: '38rem' }">
+    <Dialog :draggable="false" v-model:visible="batchResultVisible" header="Resultado del lote" modal :style="{ width: '38rem' }">
       <div v-if="batchResult" class="space-y-3 text-sm">
         <p class="text-gray-700">
           {{ batchResult.emitted }} emitida{{ batchResult.emitted === 1 ? '' : 's' }},

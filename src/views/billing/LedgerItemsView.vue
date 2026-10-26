@@ -252,7 +252,7 @@
     </div>
 
     <!-- Nota de credito -->
-    <Dialog v-model:visible="creditVisible" header="Nota de crédito" modal :style="{ width: '34rem' }">
+    <Dialog :draggable="false" v-model:visible="creditVisible" header="Nota de crédito" modal :style="{ width: '34rem' }">
       <div v-if="creditLoading" class="py-6 text-center text-sm text-gray-500">Cargando el comprobante…</div>
       <template v-else-if="creditPreview">
         <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
@@ -318,7 +318,7 @@
     </Dialog>
 
     <!-- Etiquetar -->
-    <Dialog v-model:visible="assignVisible" header="Etiquetar líneas" modal :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="assignVisible" header="Etiquetar líneas" modal :style="{ width: '32rem' }">
       <p v-if="assignScope === 'filter'" class="text-sm text-gray-600 mb-4">
         Se etiquetan <strong>las {{ formatNumber(assignAllTotal) }} líneas del filtro</strong>
         ({{ formatCurrency(totalNet, 2) }} sin IGV), no solo las de esta página:

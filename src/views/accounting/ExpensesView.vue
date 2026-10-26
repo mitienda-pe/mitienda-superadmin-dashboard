@@ -307,7 +307,7 @@
     </div>
 
     <!-- Registrar / editar gasto -->
-    <Dialog v-model:visible="expenseVisible" modal :header="editing ? 'Editar gasto' : 'Registrar gasto'" :style="{ width: '38rem' }">
+    <Dialog :draggable="false" v-model:visible="expenseVisible" modal :header="editing ? 'Editar gasto' : 'Registrar gasto'" :style="{ width: '38rem' }">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
           <div>
@@ -441,7 +441,7 @@
     </Dialog>
 
     <!-- Pagos de un gasto -->
-    <Dialog v-model:visible="paymentsVisible" modal :header="`Pagos · ${paying?.payee_name ?? ''}`" :style="{ width: '34rem' }">
+    <Dialog :draggable="false" v-model:visible="paymentsVisible" modal :header="`Pagos · ${paying?.payee_name ?? ''}`" :style="{ width: '34rem' }">
       <div v-if="paying" class="space-y-4">
         <div class="bg-gray-50 rounded-lg p-3 text-sm">
           <div class="text-gray-700">
@@ -521,7 +521,7 @@
     </Dialog>
 
     <!-- Importar el registro de compras de SUNAT -->
-    <Dialog v-model:visible="sireVisible" modal header="Importar comprobantes de compra" :style="{ width: '36rem' }">
+    <Dialog :draggable="false" v-model:visible="sireVisible" modal header="Importar comprobantes de compra" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
           Sube el CSV del registro de compras de SUNAT (SIRE), o el XML de un comprobante suelto, como el Documento
@@ -578,7 +578,7 @@
         />
       </template>
     </Dialog>
-    <Dialog v-model:visible="personalVisible" header="Compra personal" modal :style="{ width: '30rem' }">
+    <Dialog :draggable="false" v-model:visible="personalVisible" header="Compra personal" modal :style="{ width: '30rem' }">
       <p class="text-sm text-gray-600 mb-3">
         {{ selected.length }} comprobante{{ selected.length === 1 ? '' : 's' }} a nombre de la empresa que la empresa no pagó ni
         reembolsa. Dejan de contar como gasto (por pagar, resultados, flujo y diario) y quedan listados aparte para

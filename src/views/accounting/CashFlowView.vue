@@ -242,7 +242,7 @@
       </div>
     </template>
 
-    <Dialog v-model:visible="itemVisible" modal :header="editing ? 'Editar' : 'Programar un pago o cobro'" :style="{ width: '32rem' }">
+    <Dialog :draggable="false" v-model:visible="itemVisible" modal :header="editing ? 'Editar' : 'Programar un pago o cobro'" :style="{ width: '32rem' }">
       <div class="space-y-4">
         <SelectButton v-model="form.kind" :options="KINDS" optionLabel="label" optionValue="value" :allowEmpty="false" />
         <div>

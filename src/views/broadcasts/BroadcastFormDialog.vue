@@ -1,5 +1,5 @@
 <template>
-  <Dialog
+  <Dialog :draggable="false"
     :visible="visible"
     :header="isEdit ? 'Editar broadcast' : 'Nuevo broadcast'"
     :modal="true"

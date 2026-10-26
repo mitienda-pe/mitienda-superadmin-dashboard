@@ -182,7 +182,7 @@
     </template>
 
     <!-- Conciliar -->
-    <Dialog v-model:visible="reconcileVisible" modal header="A qué corresponde este movimiento" :style="{ width: '44rem' }">
+    <Dialog :draggable="false" v-model:visible="reconcileVisible" modal header="A qué corresponde este movimiento" :style="{ width: '44rem' }">
       <div v-if="current" class="space-y-4">
         <div class="bg-gray-50 rounded-lg p-3 text-sm">
           <div class="flex items-start justify-between gap-4">
@@ -490,7 +490,7 @@
     </Dialog>
 
     <!-- Importar -->
-    <Dialog v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
+    <Dialog :draggable="false" v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
           Sube el archivo tal como se descarga: el Excel de movimientos de BBVA o de BCP, el CSV de movimientos de
@@ -571,7 +571,7 @@
     </Dialog>
 
     <!-- Cuenta -->
-    <Dialog v-model:visible="accountVisible" modal :header="editingAccount ? 'Editar cuenta' : 'Nueva cuenta'" :style="{ width: '28rem' }">
+    <Dialog :draggable="false" v-model:visible="accountVisible" modal :header="editingAccount ? 'Editar cuenta' : 'Nueva cuenta'" :style="{ width: '28rem' }">
       <div class="space-y-4">
         <div class="grid grid-cols-2 gap-3">
           <div>

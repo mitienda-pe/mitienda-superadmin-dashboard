@@ -114,7 +114,7 @@
     </div>
 
     <!-- Create Token Dialog -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showCreateDialog"
       header="Crear Token MCP"
       :modal="true"
@@ -155,7 +155,7 @@
     </Dialog>
 
     <!-- Token Created Dialog (shows raw token ONCE) -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showTokenCreated"
       header="Token Creado"
       :modal="true"
@@ -208,7 +208,7 @@ API_BASE_URL=https://api2.mitienda.pe/api/v1</pre>
     </Dialog>
 
     <!-- Revoke Confirmation Dialog -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showRevokeDialog"
       header="Revocar Token"
       :modal="true"

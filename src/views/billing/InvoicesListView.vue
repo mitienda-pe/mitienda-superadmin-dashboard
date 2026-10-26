@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <Dialog v-model:visible="sunatVisible" header="Importar de SUNAT" modal :style="{ width: '46rem' }" @hide="resetSunat">
+    <Dialog :draggable="false" v-model:visible="sunatVisible" header="Importar de SUNAT" modal :style="{ width: '46rem' }" @hide="resetSunat">
       <div class="space-y-4">
         <p class="text-sm text-gray-600">
           Sube el <strong>registro de ventas del SIRE</strong> (la propuesta del RVIE exportada a CSV): entra lo que el libro no
@@ -347,7 +347,7 @@
     </div>
 
     <!-- Registrar cobro -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="paymentVisible"
       modal
       :header="single ? `Cobro de ${single.number}` : `Cobro de ${paymentTargets.length} comprobantes`"

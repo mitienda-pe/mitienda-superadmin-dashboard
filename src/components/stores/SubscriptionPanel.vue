@@ -170,7 +170,7 @@
     </div>
 
     <!-- Confirmar cobro / marcar pendiente -->
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="paymentDialog.visible"
       :header="paymentDialog.status === 'cobrado' ? 'Confirmar cobro' : 'Marcar como pendiente'"
       modal

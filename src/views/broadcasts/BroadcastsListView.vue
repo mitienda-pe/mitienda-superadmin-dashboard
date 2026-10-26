@@ -199,7 +199,7 @@
       @submit="handleSave"
     />
 
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showDeleteDialog"
       header="Eliminar broadcast"
       :modal="true"
@@ -214,7 +214,7 @@
       </template>
     </Dialog>
 
-    <Dialog
+    <Dialog :draggable="false"
       v-model:visible="showResetDialog"
       header="Resetear vistas"
       :modal="true"

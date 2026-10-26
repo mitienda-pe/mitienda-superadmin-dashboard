@@ -262,7 +262,7 @@
     </template>
 
     <!-- Boleta: lo del mes -->
-    <Dialog v-model:visible="lineVisible" modal :header="lineTitle" :style="{ width: '44rem' }">
+    <Dialog :draggable="false" v-model:visible="lineVisible" modal :header="lineTitle" :style="{ width: '44rem' }">
       <div v-if="editingLine" class="space-y-5">
         <div class="grid grid-cols-3 gap-3">
           <div>
