@@ -210,6 +210,8 @@ export interface BankAccount {
   pending: number
   first_date: string | null
   last_date: string | null
+  /** Caja de efectivo: sin estado de cuenta, sus movimientos se anotan a mano; el saldo es la suma de ellos. */
+  is_cash?: boolean
 }
 
 export interface BankMovementLink {
@@ -240,6 +242,8 @@ export interface BankMovement {
   /** Lo que falta conciliar, sin signo. */
   remaining: number
   links: BankMovementLink[]
+  /** Anotado a mano en una caja: se puede borrar mientras no esté conciliado. */
+  manual?: boolean
 }
 
 export interface BankMovementFilters {
@@ -340,6 +344,8 @@ export type ReconcileInput =
   | { kind: 'otro'; label: string; note?: string }
   | { kind: 'transferencia'; counterpart_id: number }
   | { kind: 'detraccion_usd'; invoice_id: number }
+  /** Retiro del banco que fue a la caja (o depósito que salió de ella): crea el otro lado en la caja. */
+  | { kind: 'caja'; cash_account_id: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[] }
 
 /** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */
@@ -628,4 +634,14 @@ export interface BenefitDebtItem {
 export interface BenefitDebts {
   people: { payee_id: number; name: string; owed: number; paid: number; balance: number; items: BenefitDebtItem[] }[]
   totals: { owed: number; paid: number; balance: number }
+}
+
+/** Arqueo de una caja: lo contado contra lo anotado. */
+export interface CashCountResult {
+  date: string
+  system: number
+  counted: number
+  difference: number
+  /** La diferencia, anotada como movimiento por conciliar (null si cuadró). */
+  movement: BankMovement | null
 }

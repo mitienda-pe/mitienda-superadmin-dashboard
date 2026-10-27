@@ -45,18 +45,29 @@
             @click.stop="openAccount(account)"
           ></i>
         </div>
-        <div class="text-xs text-gray-400 font-mono">{{ account.number || 'sin número' }}</div>
-        <div v-if="account.cci" class="text-xs text-gray-400 font-mono">CCI {{ account.cci }}</div>
+        <div v-if="account.is_cash" class="text-xs text-gray-400">Efectivo · se anota a mano</div>
+        <template v-else>
+          <div class="text-xs text-gray-400 font-mono">{{ account.number || 'sin número' }}</div>
+          <div v-if="account.cci" class="text-xs text-gray-400 font-mono">CCI {{ account.cci }}</div>
+        </template>
         <div class="text-2xl font-bold text-gray-900 mt-2">
           {{ account.balance !== null ? money(account.balance, account.currency) : '—' }}
         </div>
         <div class="text-xs text-gray-400 mt-1">
-          <template v-if="account.balance_at">Saldo al {{ formatDate(account.balance_at) }}</template>
+          <template v-if="account.is_cash">Según lo anotado</template>
+          <template v-else-if="account.balance_at">Saldo al {{ formatDate(account.balance_at) }}</template>
           <template v-else>El archivo de este banco no trae saldo</template>
         </div>
         <div class="text-xs mt-1" :class="account.pending > 0 ? 'text-orange-600' : 'text-green-600'">
           {{ account.pending > 0 ? `${account.pending} por conciliar` : 'Todo conciliado' }}
           <span class="text-gray-400">· {{ account.movements }} movimientos</span>
+        </div>
+        <div v-if="account.is_cash && authStore.canWriteFinance" class="flex flex-wrap gap-x-3 gap-y-1 mt-3 text-xs font-medium text-primary">
+          <span role="button" class="hover:underline" @click.stop="openCashMovement(account)"><i class="pi pi-plus text-[10px]"></i> Anotar</span>
+          <span v-if="cashAccounts.some(a => a.currency !== account.currency)" role="button" class="hover:underline" @click.stop="openExchange(account)">
+            <i class="pi pi-sync text-[10px]"></i> Cambio de moneda
+          </span>
+          <span role="button" class="hover:underline" @click.stop="openCount(account)"><i class="pi pi-calculator text-[10px]"></i> Arqueo</span>
         </div>
       </button>
     </div>
@@ -156,8 +167,18 @@
             </template>
           </Column>
 
-          <Column header="" style="width: 130px">
+          <Column header="" style="width: 170px">
             <template #body="{ data: row }">
+              <Button
+                v-if="row.manual && row.links.length === 0 && authStore.canWriteFinance"
+                v-tooltip.top="'Borrar (anotado a mano)'"
+                icon="pi pi-trash"
+                size="small"
+                text
+                severity="danger"
+                :loading="deletingId === row.id"
+                @click="removeCashMovement(row)"
+              />
               <Button
                 v-if="authStore.canWrite('reconcile') || row.links.length > 0"
                 :label="row.remaining > 0 ? 'Conciliar' : 'Ver'"
@@ -448,6 +469,13 @@
                     </span>
                   </span>
                 </label>
+                <label v-for="cash in cashFor(current)" :key="'cash' + cash.id" class="flex items-start gap-2 text-sm cursor-pointer">
+                  <RadioButton v-model="other.counterpart" :value="-cash.id" class="mt-0.5" />
+                  <span>
+                    <span class="font-medium text-gray-800">{{ current && current.amount < 0 ? 'Fue a' : 'Salió de' }} {{ cash.name }}</span>
+                    <span class="text-xs text-gray-500"> (en efectivo: se anota en la caja y quedan conciliados los dos)</span>
+                  </span>
+                </label>
                 <label class="flex items-center gap-2 text-sm cursor-pointer text-gray-600">
                   <RadioButton v-model="other.counterpart" :value="null" />
                   Marcar solo este lado (el otro no está importado)
@@ -588,18 +616,124 @@
           <InputText v-model="accountForm.name" maxlength="80" placeholder="BCP soles" class="w-full" />
           <p class="text-xs text-gray-400 mt-1">Es lo que queda como "medio" en cada cobro o pago que se concilie con esta cuenta.</p>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">Número de cuenta</label>
-          <InputText v-model="accountForm.number" maxlength="40" class="w-full" />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-600 mb-1">CCI</label>
-          <InputText v-model="accountForm.cci" maxlength="40" class="w-full" />
-        </div>
+        <p v-if="accountForm.bank === 'Caja'" class="text-xs text-gray-500">
+          Una caja de efectivo no tiene estado de cuenta: sus movimientos se anotan a mano, y los retiros y depósitos del
+          banco se concilian contra ella. Va a la cuenta contable {{ accountForm.currency === 'USD' ? '1012' : '1011' }}.
+        </p>
+        <template v-else>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Número de cuenta</label>
+            <InputText v-model="accountForm.number" maxlength="40" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">CCI</label>
+            <InputText v-model="accountForm.cci" maxlength="40" class="w-full" />
+          </div>
+        </template>
       </div>
       <template #footer>
         <Button label="Cancelar" text severity="secondary" @click="accountVisible = false" />
         <Button label="Guardar" icon="pi pi-check" :loading="saving" @click="submitAccount" />
+      </template>
+    </Dialog>
+
+    <!-- Caja: anotar un movimiento -->
+    <Dialog :draggable="false" v-model:visible="cashVisible" modal :header="`Anotar en ${cashAccount?.name ?? 'la caja'}`" :style="{ width: '30rem' }">
+      <div class="space-y-4">
+        <SelectButton v-model="cashForm.direction" :options="cashDirections" optionLabel="label" optionValue="value" :allowEmpty="false" />
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Fecha *</label>
+            <InputText v-model="cashForm.date" type="date" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Importe ({{ cashAccount?.currency === 'USD' ? 'US$' : 'S/' }}) *</label>
+            <InputNumber v-model="cashForm.amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Qué fue *</label>
+          <InputText v-model="cashForm.description" maxlength="255" class="w-full" placeholder="Taxi a reunión con cliente, saldo inicial, aporte del socio…" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">N.º de comprobante u operación</label>
+          <InputText v-model="cashForm.reference" maxlength="60" class="w-full" placeholder="Opcional" />
+        </div>
+        <p class="text-xs text-gray-500">
+          Queda por conciliar, como cualquier movimiento: después dices a qué corresponde (un gasto, un cobro…). Los
+          retiros y depósitos del banco no se anotan aquí: se concilian desde el movimiento del banco, eligiendo la caja.
+        </p>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text severity="secondary" @click="cashVisible = false" />
+        <Button label="Anotar" icon="pi pi-check" :loading="saving" @click="submitCashMovement" />
+      </template>
+    </Dialog>
+
+    <!-- Caja: cambio de moneda -->
+    <Dialog :draggable="false" v-model:visible="exchangeVisible" modal header="Cambio de moneda en efectivo" :style="{ width: '32rem' }">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Fecha *</label>
+          <InputText v-model="exchangeForm.date" type="date" class="w-full" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Entregaste, de</label>
+            <Dropdown v-model="exchangeForm.from_account_id" :options="cashAccounts" optionLabel="name" optionValue="id" class="w-full" @change="syncExchangeTarget" />
+            <InputNumber v-model="exchangeForm.from_amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full mt-2" :placeholder="exchangeFrom?.currency === 'USD' ? 'US$' : 'S/'" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Recibiste, en</label>
+            <Dropdown v-model="exchangeForm.to_account_id" :options="exchangeTargets" optionLabel="name" optionValue="id" class="w-full" />
+            <InputNumber v-model="exchangeForm.to_amount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full mt-2" :placeholder="exchangeTo?.currency === 'USD' ? 'US$' : 'S/'" />
+          </div>
+        </div>
+        <p v-if="exchangeRate" class="text-sm text-gray-600">Tipo de cambio: <span class="font-semibold tabular-nums">{{ exchangeRate.toFixed(4) }}</span></p>
+        <div>
+          <label class="block text-sm font-medium text-gray-600 mb-1">Nota</label>
+          <InputText v-model="exchangeForm.note" maxlength="120" class="w-full" placeholder="Casa de cambio, quién lo hizo… (opcional)" />
+        </div>
+        <p class="text-xs text-gray-500">
+          Se anotan los dos lados ya conciliados. La diferencia con el tipo de cambio oficial del día va al diario como
+          diferencia de cambio.
+        </p>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text severity="secondary" @click="exchangeVisible = false" />
+        <Button label="Registrar el cambio" icon="pi pi-check" :loading="saving" @click="submitExchange" />
+      </template>
+    </Dialog>
+
+    <!-- Caja: arqueo -->
+    <Dialog :draggable="false" v-model:visible="countVisible" modal :header="`Arqueo de ${cashAccount?.name ?? 'la caja'}`" :style="{ width: '28rem' }">
+      <div class="space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Fecha</label>
+            <InputText v-model="countForm.date" type="date" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 mb-1">Contado ({{ cashAccount?.currency === 'USD' ? 'US$' : 'S/' }})</label>
+            <InputNumber v-model="countForm.counted" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
+          </div>
+        </div>
+        <div v-if="countResult" class="bg-gray-50 rounded-lg p-3 text-sm space-y-1">
+          <div class="flex justify-between"><span class="text-gray-500">Según lo anotado</span><span class="tabular-nums">{{ money(countResult.system, cashAccount?.currency) }}</span></div>
+          <div class="flex justify-between"><span class="text-gray-500">Contado</span><span class="tabular-nums">{{ money(countResult.counted, cashAccount?.currency) }}</span></div>
+          <div class="flex justify-between font-semibold">
+            <span>Diferencia</span>
+            <span class="tabular-nums" :class="countResult.difference === 0 ? 'text-green-600' : 'text-orange-600'">{{ money(countResult.difference, cashAccount?.currency) }}</span>
+          </div>
+          <p v-if="countResult.movement" class="text-xs text-orange-700 pt-1">
+            La diferencia quedó anotada como un movimiento por conciliar: explícala (un gasto sin anotar, un faltante).
+          </p>
+          <p v-else class="text-xs text-green-700 pt-1">La caja cuadra.</p>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cerrar" text severity="secondary" @click="countVisible = false" />
+        <Button v-if="!countResult" label="Comparar" icon="pi pi-check" :loading="saving" @click="submitCount" />
       </template>
     </Dialog>
   </div>
@@ -626,19 +760,20 @@ import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
   markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
   searchBankExpenses,
-  getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate
+  getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate,
+  createCashMovement, deleteCashMovement, cashExchange, cashCount
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
   BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary, ExpenseCategory,
-  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput
+  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult
 } from '@/types/accounting.types'
 
 const toast = useToast()
 const authStore = useAuthStore()
 const { formatDate, formatNumber, formatMonthYear } = useFormatters()
 
-const BANKS = ['BBVA', 'BCP', 'Interbank', 'Scotiabank', 'Banco de la Nación', 'Culqi', 'Mercado Pago']
+const BANKS = ['BBVA', 'BCP', 'Interbank', 'Scotiabank', 'Banco de la Nación', 'Culqi', 'Mercado Pago', 'Caja']
 const currencyOptions = [
   { label: 'S/', value: 'PEN' },
   { label: 'US$', value: 'USD' }
@@ -840,6 +975,11 @@ watch(() => other.label, async (label) => {
   try {
     transferCandidates.value = await getTransferCandidates(current.value.id)
     if (transferCandidates.value.length === 1) other.counterpart = transferCandidates.value[0].id
+    // Un retiro de cajero o un depósito en ventanilla, sin otro lado importado: va a la caja.
+    const cash = cashFor(current.value)
+    if (transferCandidates.value.length === 0 && cash.length === 1 && CASH_HINT.test(current.value.description)) {
+      other.counterpart = -cash[0].id
+    }
   } catch {
     transferCandidates.value = []
   } finally {
@@ -1079,9 +1219,12 @@ async function submitReconcile() {
     }
   } else {
     if (!other.label) return warn('Indica qué es el movimiento')
-    payload = other.label === 'transferencia' && other.counterpart
-      ? { kind: 'transferencia', counterpart_id: other.counterpart }
-      : { kind: 'otro', label: other.label, note: other.note.trim() || undefined }
+    // Un número negativo es una caja: el otro lado se anota en ella.
+    payload = other.label === 'transferencia' && other.counterpart && other.counterpart < 0
+      ? { kind: 'caja', cash_account_id: -other.counterpart }
+      : other.label === 'transferencia' && other.counterpart
+        ? { kind: 'transferencia', counterpart_id: other.counterpart }
+        : { kind: 'otro', label: other.label, note: other.note.trim() || undefined }
   }
 
   saving.value = true
@@ -1233,6 +1376,139 @@ async function submitAccount() {
     accountVisible.value = false
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo guardar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+// --- Cajas de efectivo ---
+const CASH_HINT = /RET\.?CJ|RETIRO|CAJERO|DEPOS|EFECTIVO|VENTANILLA|VUELTO/i
+const cashAccounts = computed(() => accounts.value.filter(a => a.is_cash && a.is_active))
+/** Las cajas a las que pudo ir (o de las que pudo salir) un movimiento del banco. */
+function cashFor(movement: BankMovement | null): BankAccount[] {
+  if (!movement || movement.bank === 'Caja') return []
+  return cashAccounts.value.filter(a => a.currency === movement.currency)
+}
+function today(): string {
+  return toIsoDate(new Date())
+}
+function toIsoDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+const cashAccount = ref<BankAccount | null>(null)
+const cashVisible = ref(false)
+const cashDirections = [
+  { label: 'Entra a la caja', value: 'in' },
+  { label: 'Sale de la caja', value: 'out' }
+]
+const cashForm = reactive({ direction: 'out' as 'in' | 'out', date: '', amount: null as number | null, description: '', reference: '' })
+
+function openCashMovement(account: BankAccount) {
+  cashAccount.value = account
+  Object.assign(cashForm, { direction: 'out', date: today(), amount: null, description: '', reference: '' })
+  cashVisible.value = true
+}
+
+async function submitCashMovement() {
+  if (!cashAccount.value) return
+  if (!cashForm.date || !cashForm.amount || cashForm.amount <= 0) return warn('Indica la fecha y el importe')
+  if (!cashForm.description.trim()) return warn('Indica qué fue el movimiento')
+  saving.value = true
+  try {
+    await createCashMovement(cashAccount.value.id, {
+      date: cashForm.date,
+      amount: cashForm.direction === 'in' ? cashForm.amount : -cashForm.amount,
+      description: cashForm.description.trim(),
+      reference: cashForm.reference.trim() || undefined
+    })
+    cashVisible.value = false
+    toast.add({ severity: 'success', summary: 'Anotado en la caja', life: 3000 })
+    filters.account_id = cashAccount.value.id
+    filters.status = 'pending'
+    refreshAll()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo anotar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+const deletingId = ref<number | null>(null)
+async function removeCashMovement(row: BankMovement) {
+  deletingId.value = row.id
+  try {
+    await deleteCashMovement(row.id)
+    toast.add({ severity: 'success', summary: 'Movimiento borrado', life: 3000 })
+    refreshAll()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo borrar', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    deletingId.value = null
+  }
+}
+
+const exchangeVisible = ref(false)
+const exchangeForm = reactive({
+  date: '', from_account_id: null as number | null, from_amount: null as number | null,
+  to_account_id: null as number | null, to_amount: null as number | null, note: ''
+})
+const exchangeFrom = computed(() => cashAccounts.value.find(a => a.id === exchangeForm.from_account_id) ?? null)
+const exchangeTo = computed(() => cashAccounts.value.find(a => a.id === exchangeForm.to_account_id) ?? null)
+const exchangeTargets = computed(() => cashAccounts.value.filter(a => a.currency !== exchangeFrom.value?.currency))
+const exchangeRate = computed(() => {
+  const { from_amount: paid, to_amount: got } = exchangeForm
+  if (!paid || !got || !exchangeFrom.value) return null
+  return exchangeFrom.value.currency === 'PEN' ? paid / got : got / paid
+})
+function syncExchangeTarget() {
+  if (!exchangeTargets.value.some(a => a.id === exchangeForm.to_account_id)) {
+    exchangeForm.to_account_id = exchangeTargets.value[0]?.id ?? null
+  }
+}
+function openExchange(account: BankAccount) {
+  Object.assign(exchangeForm, { date: today(), from_account_id: account.id, from_amount: null, to_account_id: null, to_amount: null, note: '' })
+  syncExchangeTarget()
+  exchangeVisible.value = true
+}
+async function submitExchange() {
+  const f = exchangeForm
+  if (!f.date || !f.from_account_id || !f.to_account_id || !f.from_amount || !f.to_amount) return warn('Indica las dos cajas y los dos importes')
+  saving.value = true
+  try {
+    await cashExchange({
+      date: f.date, from_account_id: f.from_account_id, from_amount: f.from_amount,
+      to_account_id: f.to_account_id, to_amount: f.to_amount, note: f.note.trim() || undefined
+    })
+    exchangeVisible.value = false
+    toast.add({ severity: 'success', summary: 'Cambio registrado y conciliado', life: 4000 })
+    refreshAll()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo registrar', detail: accountingErrorMessage(e), life: 8000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+const countVisible = ref(false)
+const countForm = reactive({ date: '', counted: null as number | null })
+const countResult = ref<CashCountResult | null>(null)
+function openCount(account: BankAccount) {
+  cashAccount.value = account
+  countForm.date = today()
+  countForm.counted = null
+  countResult.value = null
+  countVisible.value = true
+}
+async function submitCount() {
+  if (!cashAccount.value || !countForm.date || countForm.counted === null) return warn('Indica la fecha y lo que contaste')
+  saving.value = true
+  try {
+    countResult.value = await cashCount(cashAccount.value.id, countForm.date, countForm.counted)
+    if (countResult.value.movement) refreshAll()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo hacer el arqueo', detail: accountingErrorMessage(e), life: 7000 })
   } finally {
     saving.value = false
   }

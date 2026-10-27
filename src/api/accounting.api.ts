@@ -1,7 +1,7 @@
 import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
-  SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary,
+  SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
   InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
@@ -200,6 +200,31 @@ export async function getBankSuggestions(movementId: number) {
 export async function reconcileBankMovement(movementId: number, payload: ReconcileInput) {
   const res = await api.post<{ message: string; data: BankMovement }>(`${BASE}/bank-movements/${movementId}/reconcile`, payload)
   return res.data
+}
+
+/** Anota a mano un movimiento en una caja: positivo entra, negativo sale. */
+export async function createCashMovement(accountId: number, payload: { date: string; amount: number; description: string; reference?: string }) {
+  const res = await api.post<{ data: BankMovement }>(`${BASE}/bank-accounts/${accountId}/movements`, payload)
+  return res.data.data
+}
+
+/** Borra un movimiento anotado a mano en una caja (sin conciliar). */
+export async function deleteCashMovement(movementId: number) {
+  await api.delete(`${BASE}/bank-movements/${movementId}`)
+}
+
+/** Cambio de moneda en efectivo: sale de una caja y entra en la de la otra moneda, ya conciliados. */
+export async function cashExchange(payload: {
+  date: string; from_account_id: number; from_amount: number; to_account_id: number; to_amount: number; note?: string
+}) {
+  const res = await api.post<{ data: { out: BankMovement; in: BankMovement } }>(`${BASE}/cash-exchange`, payload)
+  return res.data.data
+}
+
+/** Arqueo: compara lo contado con lo anotado; la diferencia queda como movimiento por conciliar. */
+export async function cashCount(accountId: number, date: string, counted: number) {
+  const res = await api.post<{ data: CashCountResult }>(`${BASE}/bank-accounts/${accountId}/cash-count`, { date, counted })
+  return res.data.data
 }
 
 /** El otro lado de una transferencia entre cuentas propias (con la comisión que se llevó el banco). */
