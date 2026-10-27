@@ -164,6 +164,8 @@ export interface LedgerInvoice {
   customer_name: string
   /** Nombre comercial de la tienda del comprobante, o de las del cliente. */
   store_names?: string | null
+  /** Las mismas tiendas, por id: a quién avisarle de un cobro pendiente. */
+  store_ids?: number[]
   concept: string
   line_count: number
   pdf_url: string | null

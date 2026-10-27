@@ -205,6 +205,17 @@
           {{ money(selectedTotal, 'PEN') }}
         </span>
         <Button v-if="authStore.canWrite('collections')" label="Registrar cobro" icon="pi pi-check" size="small" @click="openPayment(selected)" />
+        <Button
+          v-if="authStore.canWrite('platform')"
+          v-tooltip.top="'Crea un aviso en el backoffice de las tiendas de estos clientes'"
+          label="Recordatorio de pago"
+          icon="pi pi-megaphone"
+          size="small"
+          severity="secondary"
+          outlined
+          :loading="reminderLoading"
+          @click="openReminder"
+        />
         <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
       </div>
 
@@ -541,6 +552,7 @@
         />
       </template>
     </Dialog>
+    <BroadcastFormDialog v-model:visible="reminderVisible" :record="reminderDraft" :saving="reminderSaving" @submit="saveReminder" />
   </div>
 </template>
 
@@ -567,6 +579,9 @@ import {
 } from '@/api/ledger.api'
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
+import BroadcastFormDialog from '@/views/broadcasts/BroadcastFormDialog.vue'
+import { createBroadcast, resolveBroadcastStores } from '@/api/broadcasts.api'
+import type { Broadcast, BroadcastFormInput } from '@/types/broadcast.types'
 import type {
   InvoiceInstallments, InvoicePaymentFilter, InvoicePaymentInput, LedgerInvoice, LedgerInvoiceFilters,
   ReceivablesByCurrency, ReceivablesSummary
@@ -574,6 +589,105 @@ import type {
 
 const toast = useToast()
 const authStore = useAuthStore()
+
+// --- Recordatorio de pago: un aviso (broadcast) a las tiendas de los clientes ---
+const reminderLoading = ref(false)
+const reminderVisible = ref(false)
+const reminderSaving = ref(false)
+const reminderDraft = ref<Broadcast | null>(null)
+
+function broadcastDate(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`
+}
+
+/** Un cliente: el detalle de lo que debe. Varios: un texto común (el aviso es el mismo para todos). */
+function reminderBody(rows: LedgerInvoice[]): string {
+  const customers = new Set(rows.map(r => r.customer_document || r.customer_name))
+  const owed = (r: LedgerInvoice) => (r.balance > 0 ? r.balance : r.total - r.credited - (r.paid_amount ?? 0))
+  const closing = 'Si ya realizaste el pago, respóndenos con la constancia para registrarlo. ¡Gracias!'
+  if (customers.size > 1) {
+    return `Tienes comprobantes de MiTienda pendientes de pago. Por favor, regulariza el pago para evitar la suspensión del servicio.\n\n${closing}`
+  }
+  const lines = rows.map(r => `- **${r.number}** · emitido el ${formatDate(r.issue_date)} · ${money(owed(r), r.currency)}`)
+  const totals = ['PEN', 'USD']
+    .map(c => ({ c, sum: rows.filter(r => r.currency === c).reduce((a, r) => a + owed(r), 0) }))
+    .filter(t => t.sum > 0)
+    .map(t => money(t.sum, t.c))
+    .join(' + ')
+  return `Hola, **${rows[0].customer_name}**. Tienes ${rows.length === 1 ? 'un comprobante' : 'comprobantes'} de MiTienda pendiente${rows.length === 1 ? '' : 's'} de pago:\n\n${lines.join('\n')}\n\nTotal pendiente: **${totals}**. Por favor, regulariza el pago para evitar la suspensión del servicio.\n\n${closing}`
+}
+
+async function openReminder() {
+  const rows = selected.value.filter(r => (r.store_ids ?? []).length > 0)
+  const withoutStore = selected.value.filter(r => (r.store_ids ?? []).length === 0)
+  if (rows.length === 0) {
+    toast.add({ severity: 'warn', summary: 'Sin tiendas a quién avisar', detail: 'Ninguno de los comprobantes elegidos está vinculado a una tienda de MiTienda.', life: 7000 })
+    return
+  }
+  reminderLoading.value = true
+  try {
+    const ids = [...new Set(rows.flatMap(r => r.store_ids ?? []))]
+    const res = await resolveBroadcastStores(ids)
+    const now = new Date()
+    const expires = new Date(now.getTime() + 7 * 86400000)
+    reminderDraft.value = {
+      id: 0,
+      target_scope: 'stores',
+      tienda_ids: res.data.found.map(t => t.id),
+      tiendas: res.data.found,
+      target_plans: null,
+      target_status: 'all',
+      title: 'Recordatorio de pago',
+      body: reminderBody(rows),
+      placement: 'modal',
+      severity: 'warning',
+      is_dismissible: true,
+      dismiss_delay_seconds: 15,
+      reshow_after_minutes: 1440,
+      cta_label: null,
+      cta_url: null,
+      image_url: null,
+      published_at: broadcastDate(now),
+      expires_at: broadcastDate(expires),
+      created_by_superadmin_id: null,
+      activo: true,
+      created_at: null,
+      updated_at: null
+    }
+    reminderVisible.value = true
+    if (withoutStore.length > 0) {
+      toast.add({
+        severity: 'warn',
+        summary: `${withoutStore.length} sin tienda vinculada`,
+        detail: `No reciben el aviso: ${withoutStore.map(r => `${r.number} (${r.customer_name})`).join(', ')}`,
+        life: 9000
+      })
+    }
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo preparar el aviso', detail: ledgerErrorMessage(e), life: 7000 })
+  } finally {
+    reminderLoading.value = false
+  }
+}
+
+async function saveReminder(payload: BroadcastFormInput) {
+  reminderSaving.value = true
+  try {
+    await createBroadcast(payload)
+    reminderVisible.value = false
+    toast.add({
+      severity: 'success',
+      summary: 'Recordatorio publicado',
+      detail: `Lo verán ${payload.tienda_ids.length} tienda${payload.tienda_ids.length === 1 ? '' : 's'} en su backoffice. Se edita o desactiva en Avisos a comerciantes.`,
+      life: 7000
+    })
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo publicar', detail: ledgerErrorMessage(e), life: 7000 })
+  } finally {
+    reminderSaving.value = false
+  }
+}
 
 // --- Sincronizar a demanda (lo mismo que el cron horario) ---
 const syncing = ref(false)
