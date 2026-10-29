@@ -443,6 +443,15 @@
           </p>
         </template>
 
+        <!-- Un saldo de céntimos: se cierra como redondeo (va a la 6599), no como cobro -->
+        <div
+          v-if="single && remaining > 0 && remaining <= 1 && authStore.canWrite('collections')"
+          class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm"
+        >
+          <span class="text-amber-800">Queda un saldo de {{ money(remaining, single.currency) }}: probablemente un redondeo.</span>
+          <Button label="Cerrar como redondeo" size="small" severity="secondary" outlined :loading="roundingSaving" @click="closeAsRounding" />
+        </div>
+
         <!-- Varios: solo cambio de estado -->
         <div v-else class="bg-gray-50 rounded-lg p-3 text-sm">
           <div class="flex justify-between text-gray-500">
@@ -1091,6 +1100,29 @@ watch(paymentVisible, visible => {
     load()
   }
 })
+
+// Saldo de céntimos (menos de 1) que dejó un pago: abono "Redondeo", que el diario lleva a la 6599.
+const roundingSaving = ref(false)
+async function closeAsRounding() {
+  if (!single.value) return
+  roundingSaving.value = true
+  try {
+    const res = await addInvoiceInstallment(single.value.id, {
+      date: toIsoDate(new Date()),
+      method: 'Redondeo',
+      amount: remaining.value,
+      note: 'Saldo de céntimos dado por cerrado'
+    })
+    installments.value = res.data
+    paymentsChanged = true
+    resetPaymentForm()
+    toast.add({ severity: 'success', summary: 'Saldo cerrado como redondeo', life: 3000 })
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo cerrar', detail: ledgerErrorMessage(e), life: 6000 })
+  } finally {
+    roundingSaving.value = false
+  }
+}
 
 async function removeInstallment(paymentId: number) {
   deletingId.value = paymentId

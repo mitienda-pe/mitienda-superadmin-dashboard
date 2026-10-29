@@ -225,6 +225,18 @@
           </div>
         </div>
 
+        <!-- Un resto de céntimos tras lo principal: redondeo (7599 a favor, 6599 en contra) -->
+        <div
+          v-if="current.remaining > 0 && current.remaining <= 1 && current.links.length > 0 && authStore.canWriteFinance"
+          class="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm"
+        >
+          <span class="text-amber-800">
+            Falta {{ money(current.remaining, current.currency) }}: si es un redondeo, ciérralo
+            ({{ current.amount >= 0 ? 'a favor' : 'en contra' }}).
+          </span>
+          <Button label="Cerrar como redondeo" size="small" severity="secondary" outlined :loading="saving" @click="closeAsRounding" />
+        </div>
+
         <!-- Lo ya conciliado -->
         <table v-if="current.links.length > 0" class="w-full text-sm">
           <tbody>
@@ -1243,6 +1255,23 @@ async function submitReconcile() {
     }
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo conciliar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+// El resto de céntimos de un movimiento ya cruzado con lo principal.
+async function closeAsRounding() {
+  if (!current.value) return
+  saving.value = true
+  try {
+    const res = await reconcileBankMovement(current.value.id, { kind: 'otro', label: 'redondeo' })
+    current.value = res.data
+    changed = true
+    toast.add({ severity: 'success', summary: 'Cerrado como redondeo', life: 3000 })
+    if (res.data.remaining <= 0) reconcileVisible.value = false
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo cerrar', detail: accountingErrorMessage(e), life: 6000 })
   } finally {
     saving.value = false
   }
