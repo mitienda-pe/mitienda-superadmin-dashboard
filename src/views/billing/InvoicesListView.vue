@@ -90,10 +90,13 @@
         @click="setPayment(card.filter)"
       >
         <div class="text-sm text-gray-500">{{ card.label }}</div>
-        <div class="text-2xl font-bold mt-1" :class="card.color">{{ money(card.amount, 'PEN') }}</div>
+        <!-- Solo dólares (p. ej. un cliente que se factura en US$): el número grande va en dólares -->
+        <div class="text-2xl font-bold mt-1" :class="card.color">
+          {{ card.amount === 0 && card.usd > 0 ? money(card.usd, 'USD') : money(card.amount, 'PEN') }}
+        </div>
         <div class="text-xs text-gray-400 mt-1">
           {{ formatNumber(card.count) }} comprobantes
-          <template v-if="card.usd > 0"> · además {{ money(card.usd, 'USD') }}</template>
+          <template v-if="card.usd > 0 && card.amount !== 0"> · además {{ money(card.usd, 'USD') }}</template>
         </div>
         <div class="text-xs text-gray-400 mt-0.5">{{ card.hint }}</div>
       </button>
