@@ -211,7 +211,7 @@
         <Button
           v-if="authStore.canWrite('platform')"
           v-tooltip.top="'Crea un aviso en el backoffice de las tiendas de estos clientes'"
-          label="Recordatorio de pago"
+          label="Aviso en el panel"
           icon="pi pi-megaphone"
           size="small"
           severity="secondary"
@@ -219,6 +219,18 @@
           :loading="reminderLoading"
           @click="openReminder"
         />
+        <template v-if="authStore.canWrite('collections')">
+          <Button
+            v-tooltip.top="'Un correo por cliente con lo que tiene pendiente y las cuentas donde pagar'"
+            label="Recordatorio por correo"
+            icon="pi pi-envelope"
+            size="small"
+            severity="secondary"
+            outlined
+            @click="openEmail('reminder', selected)"
+          />
+          <Button label="Reenviar por correo" icon="pi pi-send" size="small" severity="secondary" outlined @click="openEmail('invoice', selected)" />
+        </template>
         <Button label="Quitar selección" size="small" text severity="secondary" @click="selected = []" />
       </div>
 
@@ -308,8 +320,18 @@
           </template>
         </Column>
 
-        <Column header="" style="width: 130px">
+        <Column header="" style="width: 170px">
           <template #body="{ data: row }">
+            <Button
+              v-if="row.status === 1 && authStore.canWrite('collections')"
+              v-tooltip.top="'Reenviar por correo'"
+              icon="pi pi-envelope"
+              size="small"
+              text
+              rounded
+              severity="secondary"
+              @click="openEmail('invoice', [row])"
+            />
             <!-- Anotar un cobro a mano; quien solo concilia lo hace desde Bancos -->
             <Button
               v-if="row.payment_status && authStore.canWrite('collections')"
@@ -564,6 +586,7 @@
         />
       </template>
     </Dialog>
+    <InvoiceEmailDialog v-model:visible="emailVisible" :mode="emailMode" :invoice-ids="emailIds" />
     <BroadcastFormDialog v-model:visible="reminderVisible" :record="reminderDraft" :saving="reminderSaving" @submit="saveReminder" />
   </div>
 </template>
@@ -592,6 +615,7 @@ import {
 import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
 import BroadcastFormDialog from '@/views/broadcasts/BroadcastFormDialog.vue'
+import InvoiceEmailDialog from './InvoiceEmailDialog.vue'
 import { createBroadcast, resolveBroadcastStores } from '@/api/broadcasts.api'
 import type { Broadcast, BroadcastFormInput } from '@/types/broadcast.types'
 import type {
@@ -601,6 +625,17 @@ import type {
 
 const toast = useToast()
 const authStore = useAuthStore()
+
+// --- Correos al cliente: reenviar el comprobante o recordarle el pago ---
+const emailVisible = ref(false)
+const emailMode = ref<'invoice' | 'reminder'>('invoice')
+const emailIds = ref<number[]>([])
+
+function openEmail(mode: 'invoice' | 'reminder', rows: LedgerInvoice[]) {
+  emailMode.value = mode
+  emailIds.value = rows.map(r => r.id)
+  emailVisible.value = true
+}
 
 // --- Recordatorio de pago: un aviso (broadcast) a las tiendas de los clientes ---
 const reminderLoading = ref(false)

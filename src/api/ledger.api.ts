@@ -243,3 +243,37 @@ export async function syncLedger() {
   const res = await api.post<{ data: LedgerSyncResult }>('/superadmin/platform-ledger/sync')
   return res.data.data
 }
+
+// --- Correos al cliente: reenviar el comprobante y recordatorio de pago ---
+
+/** A quién va (o fue) un correo: un comprobante, o los pendientes de un cliente. */
+export interface InvoiceEmailResult {
+  customer_name: string
+  customer_document: string
+  invoices: string[]
+  to: string | null
+  /** preview = listo para enviar; skipped = no está pendiente (solo recordatorio). */
+  status: 'preview' | 'sent' | 'failed' | 'no_email' | 'skipped'
+  message: string
+}
+
+export interface InvoiceEmailSummary {
+  sent: number
+  failed: number
+  no_email: number
+  skipped: number
+  ready: number
+  results: InvoiceEmailResult[]
+}
+
+/** Reenvía cada comprobante a su cliente. `email` solo si todos son del mismo cliente. */
+export async function sendInvoiceEmails(invoiceIds: number[], opts: { email?: string; preview?: boolean } = {}) {
+  const res = await api.post<{ data: InvoiceEmailSummary }>(`${BASE}/invoices/send-email`, { invoice_ids: invoiceIds, ...opts })
+  return res.data.data
+}
+
+/** Un correo por cliente con sus comprobantes pendientes y las cuentas donde pagar. */
+export async function sendPaymentReminderEmails(invoiceIds: number[], opts: { preview?: boolean } = {}) {
+  const res = await api.post<{ data: InvoiceEmailSummary }>(`${BASE}/invoices/payment-reminder`, { invoice_ids: invoiceIds, ...opts })
+  return res.data.data
+}
