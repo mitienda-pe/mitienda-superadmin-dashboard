@@ -206,6 +206,13 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Estado de cuenta de un cliente: página suelta (sin menú) para imprimir o guardar en PDF.
+    path: '/customers/:id/statement',
+    name: 'CustomerStatement',
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    component: () => import('@/views/customers/CustomerStatementView.vue')
+  },
+  {
     // Directorio de clientes: quien paga (RUC/razón social) y sus tiendas.
     path: '/customers',
     component: DashboardLayout,

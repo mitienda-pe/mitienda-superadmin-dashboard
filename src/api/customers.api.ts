@@ -123,3 +123,48 @@ export function customerErrorMessage(e: any, fallback: string): string {
   }
   return data?.message || fallback
 }
+
+/** Una línea del estado de cuenta: un cargo (comprobante) o un abono (cobro, nota de crédito, ajuste). */
+export interface StatementRow {
+  date: string
+  document: string
+  kind: 'factura' | 'boleta' | 'nota_credito' | 'cobro' | 'ajuste'
+  description: string
+  debit: number
+  credit: number
+  balance: number
+}
+
+/** Lo que el cliente tiene por cobrar al cierre, con su antigüedad. */
+export interface StatementOpenItem {
+  document: string
+  issue_date: string
+  due_date: string
+  concept: string
+  total: number
+  balance: number
+  days_overdue: number
+}
+
+export interface StatementCurrency {
+  currency: 'PEN' | 'USD'
+  opening: number
+  debit: number
+  credit: number
+  closing: number
+  rows: StatementRow[]
+  open: StatementOpenItem[]
+}
+
+export interface CustomerStatement {
+  customer: { id: number; name: string; document: string; document_type: string | null; address: string | null; email: string | null }
+  from: string
+  to: string
+  currencies: StatementCurrency[]
+}
+
+/** Estado de cuenta del cliente entre dos fechas (AAAA-MM-DD), por moneda. */
+export async function getCustomerStatement(id: number, from: string, to: string) {
+  const res = await api.get<{ data: CustomerStatement }>(`/superadmin/customers/${id}/statement`, { params: { from, to } })
+  return res.data.data
+}

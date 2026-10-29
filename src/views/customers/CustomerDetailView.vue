@@ -24,6 +24,11 @@
           <div v-if="customer.notes" class="text-sm text-gray-700 mt-2 whitespace-pre-line bg-amber-50 rounded-lg px-3 py-2 max-w-2xl">{{ customer.notes }}</div>
           <div v-if="customer.edited_at" class="text-xs text-gray-400 mt-1">Editado a mano el {{ formatDate(customer.edited_at) }}: el armado automático ya no cambia nombre, correo ni teléfono.</div>
         </div>
+        <div class="flex flex-wrap gap-2">
+          <router-link :to="`/customers/${customer.id}/statement`" target="_blank">
+            <Button label="Estado de cuenta" icon="pi pi-file" outlined size="small" />
+          </router-link>
+        </div>
         <div v-if="canEdit" class="flex flex-wrap gap-2">
           <Button v-if="customer.document_type !== 'OTRO'" :label="customer.document_type === 'DNI' ? 'Consultar RENIEC' : 'Consultar SUNAT'" icon="pi pi-search" outlined size="small" :loading="verifying" @click="verify(false)" />
           <Button label="Editar" icon="pi pi-pencil" outlined size="small" @click="openEdit" />
