@@ -336,6 +336,15 @@
                   El depósito se aplica de la factura más antigua a la más nueva. Desmarca las que ya se cobraron por otro
                   lado o las que este pago no cubre.
                 </p>
+                <label class="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+                  <Checkbox v-model="customerRetention" binary class="mt-0.5" />
+                  <span>
+                    Neto de retención 3 %
+                    <span class="block text-xs text-gray-500">
+                      Aplica el 97 % a cada factura. El 3 % queda con saldo hasta registrar el comprobante de retención en Impuestos.
+                    </span>
+                  </span>
+                </label>
                 <div class="max-h-64 overflow-y-auto bg-white border border-gray-100 rounded-lg divide-y divide-gray-100">
                   <label v-for="invoice in customerOpen.invoices" :key="invoice.id" class="flex items-center gap-3 px-3 py-2 cursor-pointer">
                     <Checkbox v-model="customerChosen" :value="invoice.id" />
@@ -354,6 +363,7 @@
                       <div v-else class="text-sm text-gray-300">-</div>
                       <div v-if="customerPlan[invoice.id] && (customerPlan[invoice.id] ?? 0) < invoice.open_amount" class="text-xs text-amber-600">
                         quedan {{ money(invoice.open_amount - (customerPlan[invoice.id] ?? 0), current.currency) }}
+                        <template v-if="customerRetention && (customerPlan[invoice.id] ?? 0) === invoice.net_of_retention"> de retención</template>
                       </div>
                     </div>
                   </label>
@@ -1021,6 +1031,7 @@ const categoryOptions = computed(() =>
 // --- Reparto entre lo pendiente de un cliente ---
 const customerOpen = ref<CustomerOpenInvoices | null>(null)
 const customerChosen = ref<number[]>([])
+const customerRetention = ref(false)
 const loadingCustomer = ref(false)
 
 const pickedCustomer = computed(() => {
@@ -1035,7 +1046,7 @@ const customerPlan = computed<Record<number, number>>(() => {
   for (const invoice of customerOpen.value?.invoices ?? []) {
     if (cents <= 0) break
     if (!customerChosen.value.includes(invoice.id)) continue
-    const apply = Math.min(cents, Math.round(invoice.open_amount * 100))
+    const apply = Math.min(cents, Math.round((customerRetention.value ? invoice.net_of_retention : invoice.open_amount) * 100))
     if (apply <= 0) continue
     plan[invoice.id] = apply / 100
     cents -= apply
@@ -1060,6 +1071,8 @@ async function loadCustomer() {
   try {
     const open = await getCustomerOpenInvoices(current.value.id, pickedCustomer.value.document)
     customerOpen.value = open
+    // El agente retiene en pagos de más de S/ 700; los menores llegan completos.
+    customerRetention.value = open.retention_agent && current.value.currency === 'PEN' && current.value.remaining > 700
     // Lo sin confirmar no entra solo: puede que ya esté cobrado. Lo pendiente o cobrado en parte, sí.
     const sure = open.invoices.filter(invoice => !invoice.unconfirmed).map(invoice => invoice.id)
     customerChosen.value = sure.length > 0 ? sure : (pickedInvoice.value ? [pickedInvoice.value] : [])
@@ -1204,7 +1217,7 @@ async function submitReconcile() {
   if (mode.value === 'cobro' && customerOpen.value) {
     const ids = Object.keys(customerPlan.value).map(Number)
     if (ids.length === 0) return warn('Marca al menos un comprobante con saldo')
-    payload = { kind: 'cliente', customer_document: customerOpen.value.customer_document, invoice_ids: ids }
+    payload = { kind: 'cliente', customer_document: customerOpen.value.customer_document, invoice_ids: ids, retention: customerRetention.value }
   } else if (mode.value === 'cobro') {
     if (!pickedInvoice.value) return warn('Elige el comprobante que se cobró')
     const picked = invoiceOptions.value.find(i => i.id === pickedInvoice.value)

@@ -346,12 +346,14 @@ export type ReconcileInput =
   | { kind: 'detraccion_usd'; invoice_id: number }
   /** Retiro del banco que fue a la caja (o depósito que salió de ella): crea el otro lado en la caja. */
   | { kind: 'caja'; cash_account_id: number }
-  | { kind: 'cliente'; customer_document: string; invoice_ids: number[] }
+  | { kind: 'cliente'; customer_document: string; invoice_ids: number[]; retention?: boolean }
 
 /** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */
 export interface CustomerOpenInvoices {
   customer_name: string
   customer_document: string
+  /** Ya entregó comprobantes de retención. */
+  retention_agent: boolean
   invoices: {
     id: number
     number: string
@@ -359,6 +361,8 @@ export interface CustomerOpenInvoices {
     due_date: string | null
     total: number
     open_amount: number
+    /** Saldo menos el 3 % que retiene un agente; igual al saldo si no aplica. */
+    net_of_retention: number
     /** "Por confirmar": puede que ya esté cobrada y falte registrarlo. */
     unconfirmed: boolean
   }[]
