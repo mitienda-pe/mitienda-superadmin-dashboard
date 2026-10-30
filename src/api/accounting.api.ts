@@ -228,6 +228,26 @@ export async function cashCount(accountId: number, date: string, counted: number
 }
 
 /** El otro lado de una transferencia entre cuentas propias (con la comisión que se llevó el banco). */
+/** Retiro o depósito en efectivo que puede ser parte de un cambio en casa de cambio. */
+export interface CashExchangeLeg {
+  id: number
+  account_name: string
+  currency: string
+  op_date: string
+  description: string
+  amount: number
+}
+
+export async function getCashExchangeCandidates(movementId: number) {
+  const res = await api.get<{ data: CashExchangeLeg[] }>(`${BASE}/bank-movements/${movementId}/cash-exchange-candidates`)
+  return res.data.data
+}
+
+/** Pasa los retiros y depósitos por las cajas y registra el cambio. */
+export async function cashExchangeFromBank(movementIds: number[]) {
+  await api.post(`${BASE}/cash-exchange/from-bank`, { movement_ids: movementIds })
+}
+
 export interface TransferCandidate {
   id: number
   account_name: string

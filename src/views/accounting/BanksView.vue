@@ -476,6 +476,29 @@
               <label class="block text-sm font-medium text-gray-600 mb-1">Qué es *</label>
               <Dropdown v-model="other.label" :options="otherOptions" optionLabel="label" optionValue="value" placeholder="Elige" class="w-full" />
             </div>
+            <!-- Efectivo que pasó por una casa de cambio: varios retiros y depósitos, en las dos monedas -->
+            <div v-if="other.label === 'transferencia' && cashLegs.some(l => l.currency !== current?.currency)" class="rounded-lg border border-gray-200 p-3 space-y-2">
+              <div class="text-sm font-medium text-gray-700">¿Fue un cambio en casa de cambio?</div>
+              <p class="text-xs text-gray-500">
+                Marca el retiro y el depósito. Pasan por las cajas y la diferencia con el TC oficial va a diferencia de cambio.
+              </p>
+              <label v-for="leg in cashLegs" :key="leg.id" class="flex items-start gap-2 text-sm cursor-pointer">
+                <Checkbox v-model="cashChosen" :value="leg.id" class="mt-0.5" />
+                <span>
+                  <span class="font-medium text-gray-800">{{ leg.account_name }}</span>
+                  · {{ formatDate(leg.op_date) }} · {{ leg.description }}
+                  · <span class="tabular-nums">{{ leg.amount < 0 ? '−' : '+' }} {{ money(Math.abs(leg.amount), leg.currency) }}</span>
+                </span>
+              </label>
+              <div class="flex items-center justify-between gap-3">
+                <span v-if="cashPlan" class="text-xs text-gray-600">
+                  Entregaste {{ money(cashPlan.paid, cashPlan.from) }}, recibiste {{ money(cashPlan.received, cashPlan.to) }}
+                  · TC <span class="font-semibold tabular-nums">{{ cashPlan.rate.toFixed(4) }}</span>
+                </span>
+                <span v-else class="text-xs text-gray-400">Marca efectivo que sale en una moneda y entra en la otra.</span>
+                <Button label="Registrar el cambio" size="small" :disabled="!cashPlan" :loading="saving" @click="submitCashLegs" />
+              </div>
+            </div>
             <div v-if="other.label === 'transferencia'" class="rounded-lg border border-gray-200 p-3 space-y-2">
               <div class="text-sm font-medium text-gray-700">El otro lado, en la otra cuenta</div>
               <div v-if="transferLoading" class="text-sm text-gray-400">Buscando…</div>
@@ -784,7 +807,8 @@ import {
   markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
   searchBankExpenses,
   getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate,
-  createCashMovement, deleteCashMovement, cashExchange, cashCount
+  createCashMovement, deleteCashMovement, cashExchange, cashCount,
+  getCashExchangeCandidates, cashExchangeFromBank, type CashExchangeLeg
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
@@ -989,6 +1013,34 @@ const other = reactive({ label: null as string | null, note: '', counterpart: nu
 
 // Transferencia entre cuentas propias: el otro lado, para conciliar los dos a la vez.
 const transferCandidates = ref<TransferCandidate[]>([])
+
+// --- Cambio en casa de cambio con retiros y depósitos del banco ---
+const cashLegs = ref<CashExchangeLeg[]>([])
+const cashChosen = ref<number[]>([])
+
+/** Lo mismo que calculará el servidor: lo neto de cada moneda. */
+const cashPlan = computed(() => {
+  const legs = cashLegs.value.filter(l => cashChosen.value.includes(l.id))
+  const net = (currency: string) => Math.round(legs.filter(l => l.currency === currency).reduce((sum, l) => sum + l.amount, 0) * 100) / 100
+  const pen = net('PEN')
+  const usd = net('USD')
+  if (pen * usd >= 0) return null
+  return { from: pen < 0 ? 'PEN' : 'USD', to: pen < 0 ? 'USD' : 'PEN', paid: Math.abs(pen < 0 ? pen : usd), received: Math.abs(pen < 0 ? usd : pen), rate: Math.abs(pen / usd) }
+})
+
+async function submitCashLegs() {
+  saving.value = true
+  try {
+    await cashExchangeFromBank(cashChosen.value)
+    toast.add({ severity: 'success', summary: 'Cambio registrado', life: 4000 })
+    reconcileVisible.value = false
+    await Promise.all([loadAccounts(), load()])
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo registrar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    saving.value = false
+  }
+}
 const transferLoading = ref(false)
 watch(() => other.label, async (label) => {
   transferCandidates.value = []
@@ -997,6 +1049,8 @@ watch(() => other.label, async (label) => {
   transferLoading.value = true
   try {
     transferCandidates.value = await getTransferCandidates(current.value.id)
+    cashLegs.value = CASH_HINT.test(current.value.description) ? await getCashExchangeCandidates(current.value.id) : []
+    cashChosen.value = current.value ? [current.value.id] : []
     if (transferCandidates.value.length === 1) other.counterpart = transferCandidates.value[0].id
     // Un retiro de cajero o un depósito en ventanilla, sin otro lado importado: va a la caja.
     const cash = cashFor(current.value)
