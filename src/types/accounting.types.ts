@@ -332,6 +332,8 @@ export interface ExpenseSuggestion {
   open_amount: number
   currency: string
   same_amount: boolean
+  /** Fecha del pago anotado sin movimiento que esta salida confirma: no crea otro pago. */
+  unconfirmed_payment?: string
   name_match: boolean
   description?: string | null
 }

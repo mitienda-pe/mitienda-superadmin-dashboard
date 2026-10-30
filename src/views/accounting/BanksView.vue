@@ -411,6 +411,7 @@
                       {{ formatDate(expense.issue_date) }} · {{ expense.document_number || formatMonthYear(expense.period) }}
                       <span v-if="expense.description"> · {{ expense.description }}</span>
                       <span v-if="expense.same_amount" class="text-green-700"> · mismo importe</span>
+                      <span v-if="expense.unconfirmed_payment" class="text-green-700"> · confirma el pago anotado el {{ formatDate(expense.unconfirmed_payment) }}</span>
                       <span v-if="expense.name_match" class="text-green-700"> · el nombre está en la glosa</span>
                     </div>
                   </div>
@@ -424,7 +425,7 @@
                       :max="expense.open_amount"
                       inputClass="w-28 text-right text-sm"
                     />
-                    <div class="text-xs tabular-nums text-gray-500">saldo {{ money(expense.open_amount, expense.currency) }}</div>
+                    <div class="text-xs tabular-nums text-gray-500">{{ expense.unconfirmed_payment ? 'pago' : 'saldo' }} {{ money(expense.open_amount, expense.currency) }}</div>
                   </div>
                 </div>
               </div>
