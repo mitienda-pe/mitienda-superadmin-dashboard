@@ -244,8 +244,8 @@ export async function getCashExchangeCandidates(movementId: number) {
 }
 
 /** Pasa los retiros y depósitos por las cajas y registra el cambio. */
-export async function cashExchangeFromBank(movementIds: number[]) {
-  await api.post(`${BASE}/cash-exchange/from-bank`, { movement_ids: movementIds })
+export async function cashExchangeFromBank(movementIds: number[], confirmRate = false) {
+  await api.post(`${BASE}/cash-exchange/from-bank`, { movement_ids: movementIds, confirm_rate: confirmRate })
 }
 
 export interface TransferCandidate {

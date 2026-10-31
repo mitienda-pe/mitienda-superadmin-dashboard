@@ -490,13 +490,20 @@
                   · <span class="tabular-nums">{{ leg.amount < 0 ? '−' : '+' }} {{ money(Math.abs(leg.amount), leg.currency) }}</span>
                 </span>
               </label>
+              <div v-if="cashRateWarning" class="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 space-y-1">
+                <div>{{ cashRateWarning }}</div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <Checkbox v-model="cashRateConfirmed" binary />
+                  <span>El tipo de cambio es real: registrar igual</span>
+                </label>
+              </div>
               <div class="flex items-center justify-between gap-3">
                 <span v-if="cashPlan" class="text-xs text-gray-600">
                   Entregaste {{ money(cashPlan.paid, cashPlan.from) }}, recibiste {{ money(cashPlan.received, cashPlan.to) }}
                   · TC <span class="font-semibold tabular-nums">{{ cashPlan.rate.toFixed(4) }}</span>
                 </span>
                 <span v-else class="text-xs text-gray-400">Marca efectivo que sale en una moneda y entra en la otra.</span>
-                <Button label="Registrar el cambio" size="small" :disabled="!cashPlan" :loading="saving" @click="submitCashLegs" />
+                <Button label="Registrar el cambio" size="small" :disabled="!cashPlan || (!!cashRateWarning && !cashRateConfirmed)" :loading="saving" @click="submitCashLegs" />
               </div>
             </div>
             <div v-if="other.label === 'transferencia'" class="rounded-lg border border-gray-200 p-3 space-y-2">
@@ -1017,6 +1024,13 @@ const transferCandidates = ref<TransferCandidate[]>([])
 // --- Cambio en casa de cambio con retiros y depósitos del banco ---
 const cashLegs = ref<CashExchangeLeg[]>([])
 const cashChosen = ref<number[]>([])
+const cashRateWarning = ref('')
+const cashRateConfirmed = ref(false)
+
+watch(cashChosen, () => {
+  cashRateWarning.value = ''
+  cashRateConfirmed.value = false
+})
 
 /** Lo mismo que calculará el servidor: lo neto de cada moneda. */
 const cashPlan = computed(() => {
@@ -1031,12 +1045,14 @@ const cashPlan = computed(() => {
 async function submitCashLegs() {
   saving.value = true
   try {
-    await cashExchangeFromBank(cashChosen.value)
+    await cashExchangeFromBank(cashChosen.value, cashRateConfirmed.value)
     toast.add({ severity: 'success', summary: 'Cambio registrado', life: 4000 })
     reconcileVisible.value = false
     await Promise.all([loadAccounts(), load()])
   } catch (e) {
-    toast.add({ severity: 'error', summary: 'No se pudo registrar', detail: accountingErrorMessage(e), life: 7000 })
+    const message = accountingErrorMessage(e)
+    if (message.includes('se aleja')) cashRateWarning.value = message
+    else toast.add({ severity: 'error', summary: 'No se pudo registrar', detail: message, life: 7000 })
   } finally {
     saving.value = false
   }
