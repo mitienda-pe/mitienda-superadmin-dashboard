@@ -591,6 +591,19 @@
 
         <p v-if="importLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
 
+        <div v-if="(preview?.currencies?.length ?? 0) > 1">
+          <label class="block text-sm font-medium text-gray-600 mb-1">Moneda a cargar</label>
+          <SelectButton
+            :modelValue="preview!.currency"
+            :options="[{ label: 'Soles', value: 'PEN' }, { label: 'Dólares', value: 'USD' }]"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+            @update:modelValue="chooseImportCurrency"
+          />
+          <p class="text-xs text-gray-500 mt-1">El archivo trae las dos monedas: cada una va a su cuenta. Carga una y después la otra.</p>
+        </div>
+
         <div v-if="preview?.needs_account">
           <label class="block text-sm font-medium text-gray-600 mb-1">¿De qué cuenta es? *</label>
           <Dropdown
@@ -1390,6 +1403,7 @@ const importVisible = ref(false)
 const importLoading = ref(false)
 const importFile = ref<File | null>(null)
 const importAccountId = ref<number | null>(null)
+const importCurrency = ref<string | null>(null)
 const pdfPassword = ref('')
 const isPdf = computed(() => importFile.value?.name.toLowerCase().endsWith('.pdf') ?? false)
 const preview = ref<BankImportResult | null>(null)
@@ -1401,6 +1415,7 @@ function accountsFor(currency: string): BankAccount[] {
 function openImport() {
   importFile.value = null
   importAccountId.value = null
+  importCurrency.value = null
   preview.value = null
   pdfPassword.value = ''
   importVisible.value = true
@@ -1410,13 +1425,13 @@ async function refreshPreview() {
   if (!importFile.value) return
   importLoading.value = true
   try {
-    preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value)).data
+    preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value, importCurrency.value)).data
     // Con una sola cuenta posible no hay nada que elegir.
     if (preview.value.needs_account && !importAccountId.value) {
       const options = accountsFor(preview.value.currency).filter(a => a.bank === preview.value!.bank)
       if (options.length === 1) {
         importAccountId.value = options[0].id
-        preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value)).data
+        preview.value = (await importBankFile(importFile.value, importAccountId.value, false, pdfPassword.value, importCurrency.value)).data
       }
     }
   } catch (e) {
@@ -1427,9 +1442,17 @@ async function refreshPreview() {
   }
 }
 
+/** Cada moneda va a su cuenta: la elegida antes ya no sirve. */
+function chooseImportCurrency(currency: string) {
+  importCurrency.value = currency
+  importAccountId.value = null
+  refreshPreview()
+}
+
 function onFile(event: Event) {
   importFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
   importAccountId.value = null
+  importCurrency.value = null
   preview.value = null
   pdfPassword.value = ''
   // Un PDF con clave no se puede leer hasta que la escriban.
@@ -1440,7 +1463,7 @@ async function submitImport() {
   if (!importFile.value) return
   saving.value = true
   try {
-    const res = await importBankFile(importFile.value, importAccountId.value, true, pdfPassword.value)
+    const res = await importBankFile(importFile.value, importAccountId.value, true, pdfPassword.value, importCurrency.value)
     toast.add({
       severity: 'success',
       summary: res.message,

@@ -161,10 +161,11 @@ export async function saveBankAccount(
 }
 
 /** Excel de BBVA o BCP, CSV de Culqi o PDF de la tarjeta BBVA. Sin `execute` solo devuelve qué entraría. */
-export async function importBankFile(file: File, accountId: number | null, execute: boolean, pdfPassword = '') {
+export async function importBankFile(file: File, accountId: number | null, execute: boolean, pdfPassword = '', currency: string | null = null) {
   const form = new FormData()
   form.append('file', file)
   if (pdfPassword) form.append('pdf_password', pdfPassword)
+  if (currency) form.append('currency', currency)
   if (accountId) form.append('account_id', String(accountId))
   if (execute) form.append('execute', '1')
 
