@@ -252,6 +252,9 @@ export interface BankMovementFilters {
   status: 'all' | 'pending' | 'done'
   direction: '' | 'in' | 'out'
   search: string
+  /** Columna del orden; sin ella, lo más reciente primero. */
+  sort?: 'op_date' | 'description' | 'amount' | 'status' | 'id'
+  dir?: 'asc' | 'desc'
   page: number
 }
 

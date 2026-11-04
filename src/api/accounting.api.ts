@@ -181,6 +181,8 @@ export async function getBankMovements(filters: BankMovementFilters) {
   if (filters.period) params.period = filters.period
   if (filters.direction) params.direction = filters.direction
   if (filters.search) params.search = filters.search
+  if (filters.sort) params.sort = filters.sort
+  if (filters.dir) params.dir = filters.dir
 
   const res = await api.get<{
     data: BankMovement[]

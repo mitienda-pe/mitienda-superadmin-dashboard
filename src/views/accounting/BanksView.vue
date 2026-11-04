@@ -124,10 +124,13 @@
           <Button label="Quitar selección" text severity="secondary" @click="selected = []" />
         </div>
 
-        <DataTable v-model:selection="selected" :value="movements" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm">
+        <DataTable
+          v-model:selection="selected" :value="movements" :loading="loading" dataKey="id" stripedRows class="p-datatable-sm"
+          lazy removableSort :sortField="filters.sort" :sortOrder="filters.sort ? (filters.dir === 'asc' ? 1 : -1) : 0" @sort="onSort"
+        >
           <Column v-if="authStore.canWriteFinance" selectionMode="multiple" style="width: 3rem" />
 
-          <Column header="Fecha" style="width: 120px">
+          <Column header="Fecha" sortable sortField="op_date" style="width: 120px">
             <template #body="{ data: row }">
               <span class="text-sm text-gray-600">{{ formatDate(row.op_date) }}</span>
               <div v-if="!filters.account_id" class="text-xs text-gray-400">{{ row.account_name }}</div>
@@ -135,14 +138,14 @@
             </template>
           </Column>
 
-          <Column header="Movimiento" style="min-width: 280px">
+          <Column header="Movimiento" sortable sortField="description" style="min-width: 280px">
             <template #body="{ data: row }">
               <span class="text-sm text-gray-800">{{ row.description }}</span>
               <div v-if="row.reference" class="text-xs text-gray-400 font-mono">op. {{ row.reference }}</div>
             </template>
           </Column>
 
-          <Column header="Importe" style="min-width: 130px">
+          <Column header="Importe" sortable sortField="amount" style="min-width: 130px">
             <template #body="{ data: row }">
               <span class="text-sm font-semibold block text-right tabular-nums" :class="row.amount >= 0 ? 'text-green-700' : 'text-gray-800'">
                 {{ row.amount >= 0 ? '+' : '−' }} {{ money(Math.abs(row.amount), row.currency) }}
@@ -153,7 +156,7 @@
             </template>
           </Column>
 
-          <Column header="A qué corresponde" style="min-width: 280px">
+          <Column header="A qué corresponde" sortable sortField="status" style="min-width: 280px">
             <template #body="{ data: row }">
               <template v-if="row.links.length > 0">
                 <div v-for="link in row.links" :key="link.id" class="text-sm text-gray-700">
@@ -810,7 +813,7 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import DataTable from 'primevue/datatable'
+import DataTable, { type DataTableSortEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
@@ -921,6 +924,14 @@ async function loadAccounts() {
 function reload() {
   filters.page = 1
   load()
+}
+
+/** El orden lo hace el servidor: la tabla es paginada. Sin columna vuelve a lo más reciente primero. */
+function onSort(event: DataTableSortEvent) {
+  const field = typeof event.sortField === 'string' ? event.sortField : ''
+  filters.sort = field ? (field as BankMovementFilters['sort']) : undefined
+  filters.dir = field ? (event.sortOrder === 1 ? 'asc' : 'desc') : undefined
+  reload()
 }
 
 function goToPage(page: number) {
