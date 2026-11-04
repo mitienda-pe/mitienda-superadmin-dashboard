@@ -224,6 +224,14 @@ export interface BankMovementLink {
   note: string | null
   invoice_id: number | null
   expense_id: number | null
+  /** Comprobante enlazado (factura cobrada o del gasto) y su fecha de emisión. */
+  doc_number: string | null
+  doc_date: string | null
+  payee_name: string | null
+  /** El otro lado de una transferencia, cambio o pago de tarjeta. */
+  counterpart_movement_id: number | null
+  counterpart_account: string | null
+  counterpart_date: string | null
 }
 
 export interface BankMovement {

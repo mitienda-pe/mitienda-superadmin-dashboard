@@ -164,6 +164,12 @@
                 <div v-for="link in row.links" :key="link.id" class="text-sm text-gray-700">
                   {{ link.text }}
                   <span v-if="row.links.length > 1" class="text-xs text-gray-400">· {{ money(link.amount, row.currency) }}</span>
+                  <RouterLink
+                    v-if="linkRef(link)"
+                    :to="linkRef(link)!.to"
+                    class="block text-xs text-primary hover:underline"
+                    @click.stop
+                  >{{ linkRef(link)!.label }} <i class="pi pi-external-link" style="font-size: 0.65rem"></i></RouterLink>
                 </div>
                 <div v-if="row.remaining > 0" class="text-xs text-orange-600">falta conciliar {{ money(row.remaining, row.currency) }}</div>
               </template>
@@ -249,6 +255,12 @@
             <tr v-for="link in current.links" :key="link.id" class="border-t border-gray-100 first:border-0">
               <td class="py-1.5 text-gray-700">
                 {{ link.text }}
+                <RouterLink
+                  v-if="linkRef(link)"
+                  :to="linkRef(link)!.to"
+                  class="block text-xs text-primary hover:underline"
+                  @click="reconcileVisible = false"
+                >{{ linkRef(link)!.label }} <i class="pi pi-external-link" style="font-size: 0.65rem"></i></RouterLink>
                 <div v-if="link.note" class="text-xs text-gray-400">{{ link.note }}</div>
               </td>
               <td class="py-1.5 text-right tabular-nums text-gray-800 whitespace-nowrap">{{ money(link.amount, current.currency) }}</td>
@@ -815,6 +827,7 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { RouterLink, useRoute, type RouteLocationRaw } from 'vue-router'
 import DataTable, { type DataTableSortEvent } from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
@@ -838,11 +851,12 @@ import {
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
-  BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary, ExpenseCategory,
+  BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementLink, BankMovementSummary, ExpenseCategory,
   CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult
 } from '@/types/accounting.types'
 
 const toast = useToast()
+const route = useRoute()
 const authStore = useAuthStore()
 const { formatDate, formatNumber, formatMonthYear } = useFormatters()
 
@@ -1677,5 +1691,39 @@ async function submitCount() {
   }
 }
 
-onMounted(refreshAll)
+/** Lo que se abre desde un enlace: un movimiento por "#ID". */
+function searchFromRoute(): boolean {
+  const search = typeof route.query.search === 'string' ? route.query.search : ''
+  if (!search) return false
+  searchQuery.value = search
+  filters.search = search
+  reconcileVisible.value = false
+  return true
+}
+
+/** Nombre y enlace de lo conciliado: el otro movimiento, la factura cobrada o el gasto pagado. */
+function linkRef(link: BankMovementLink): { label: string; to: RouteLocationRaw } | null {
+  if (link.counterpart_movement_id) {
+    return {
+      label: `#${link.counterpart_movement_id} · ${link.counterpart_account ?? ''} · ${formatDate(link.counterpart_date ?? '')}`,
+      to: { name: 'AccountingBanks', query: { search: `#${link.counterpart_movement_id}` } }
+    }
+  }
+  const date = link.doc_date ? ` · ${formatDate(link.doc_date)}` : ''
+  if (link.kind === 'cobro' && link.doc_number) {
+    return { label: `${link.doc_number}${date}`, to: { name: 'BillingInvoices', query: { search: link.doc_number } } }
+  }
+  const expenseSearch = link.doc_number ?? link.payee_name
+  if (link.kind === 'pago' && expenseSearch) {
+    return { label: `${link.doc_number ?? 'Sin comprobante'}${date}`, to: { name: 'AccountingExpenses', query: { search: expenseSearch } } }
+  }
+  return null
+}
+
+watch(() => route.query.search, () => { if (searchFromRoute()) reload() })
+
+onMounted(() => {
+  searchFromRoute()
+  refreshAll()
+})
 </script>

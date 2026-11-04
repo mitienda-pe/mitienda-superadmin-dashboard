@@ -595,6 +595,7 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { INVOICES_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
@@ -812,6 +813,7 @@ const showDebtors = ref(false)
 
 // --- Filtros ---
 const currentYear = String(new Date().getFullYear())
+const route = useRoute()
 const searchQuery = ref('')
 const yearFilter = ref(currentYear)
 const monthFilter = ref('')
@@ -1245,5 +1247,17 @@ async function savePayment() {
   }
 }
 
-onMounted(load)
+/** Abierto desde un enlace (p. ej. un movimiento de Bancos): buscar eso en todos los años. */
+function searchFromRoute() {
+  const search = typeof route.query.search === 'string' ? route.query.search : ''
+  if (!search) return
+  searchQuery.value = search
+  filters.search = search
+  yearFilter.value = ALL
+}
+
+onMounted(() => {
+  searchFromRoute()
+  load()
+})
 </script>
