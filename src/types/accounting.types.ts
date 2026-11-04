@@ -249,7 +249,8 @@ export interface BankMovement {
 export interface BankMovementFilters {
   account_id: number | null
   period: string
-  status: 'all' | 'pending' | 'done'
+  /** `unpaired`: transferencias, pagos de tarjeta o retiros conciliados sin enlazar el otro lado. */
+  status: 'all' | 'pending' | 'done' | 'unpaired'
   direction: '' | 'in' | 'out'
   search: string
   /** Columna del orden; sin ella, lo más reciente primero. */

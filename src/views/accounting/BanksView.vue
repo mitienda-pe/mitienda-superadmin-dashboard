@@ -114,6 +114,7 @@
         <i class="pi pi-check-circle text-4xl text-gray-300 mb-3"></i>
         <p class="text-gray-500 font-medium">Nada con estos filtros</p>
         <p v-if="filters.status === 'pending'" class="text-sm text-gray-400 mt-1">No queda ningún movimiento por conciliar.</p>
+        <p v-else-if="filters.status === 'unpaired'" class="text-sm text-gray-400 mt-1">Todas las transferencias, pagos de tarjeta y retiros tienen su otro lado.</p>
       </div>
 
       <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -882,6 +883,7 @@ const filters = reactive<BankMovementFilters>({ account_id: null, period: '', st
 const statusOptions = [
   { label: 'Por conciliar', value: 'pending' },
   { label: 'Conciliados', value: 'done' },
+  { label: 'Sin pareja', value: 'unpaired' },
   { label: 'Todos', value: 'all' }
 ]
 const directionOptions = [
