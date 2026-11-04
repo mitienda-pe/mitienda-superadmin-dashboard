@@ -395,6 +395,18 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/benefits',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'Benefits',
+        component: () => import('@/views/broadcasts/BenefitsListView.vue')
+      }
+    ]
+  },
+  {
     path: '/plugins',
     component: DashboardLayout,
     meta: { requiresAuth: true, requiresSuperAdmin: true },

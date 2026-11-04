@@ -179,6 +179,7 @@ const pageTitle = computed(() => {
     BillingConcepts: 'Conceptos facturados',
     BillingTags: 'Etiquetas de ingresos',
     Broadcasts: 'Avisos a comercios',
+    Benefits: 'Beneficios para comercios',
     Plugins: 'Plugins',
     McpTokens: 'MCP Tokens'
   }

@@ -139,6 +139,7 @@ const navGroups: NavGroup[] = [
     label: 'Plataforma',
     items: [
       { path: '/broadcasts', label: 'Avisos a comercios', icon: 'pi pi-megaphone' },
+      { path: '/benefits', label: 'Beneficios para comercios', icon: 'pi pi-gift' },
       { path: '/assistant-questions', label: 'Preguntas al asistente', icon: 'pi pi-comments' },
       { path: '/plugins', label: 'Plugins', icon: 'pi pi-microchip' },
       { path: '/mcp-tokens', label: 'MCP Tokens', icon: 'pi pi-key' }
