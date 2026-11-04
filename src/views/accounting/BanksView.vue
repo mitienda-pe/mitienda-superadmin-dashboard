@@ -89,7 +89,7 @@
           <div class="flex-1 min-w-[200px]">
             <span class="p-input-icon-left w-full">
               <i class="pi pi-search" />
-              <InputText v-model="searchQuery" placeholder="Buscar en la descripción o la referencia..." class="w-full" @keyup.enter="applySearch" />
+              <InputText v-model="searchQuery" placeholder="Buscar en la descripción, la referencia o #ID..." class="w-full" @keyup.enter="applySearch" />
             </span>
           </div>
           <SelectButton v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" :allowEmpty="false" @change="reload" />
@@ -131,6 +131,7 @@
             <template #body="{ data: row }">
               <span class="text-sm text-gray-600">{{ formatDate(row.op_date) }}</span>
               <div v-if="!filters.account_id" class="text-xs text-gray-400">{{ row.account_name }}</div>
+              <div class="text-xs text-gray-400 font-mono">#{{ row.id }}</div>
             </template>
           </Column>
 
@@ -210,7 +211,7 @@
             <div>
               <div class="text-gray-800 font-medium">{{ current.description }}</div>
               <div class="text-xs text-gray-500 mt-0.5">
-                {{ current.account_name }} · {{ formatDate(current.op_date) }}
+                <span class="font-mono">#{{ current.id }}</span> · {{ current.account_name }} · {{ formatDate(current.op_date) }}
                 <template v-if="current.reference"> · op. {{ current.reference }}</template>
               </div>
             </div>
