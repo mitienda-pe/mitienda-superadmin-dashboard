@@ -1,21 +1,16 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex">
-    <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full">
-      <!-- Logo -->
-      <div class="h-16 flex items-center px-6 border-b border-gray-200">
+  <div class="min-h-screen bg-gray-50">
+    <!-- Menú fijo en pantallas grandes -->
+    <aside class="hidden lg:flex w-64 bg-white border-r border-gray-200 flex-col fixed inset-y-0 left-0 z-20">
+      <div class="h-16 flex items-center px-6 border-b border-gray-200 shrink-0">
         <router-link to="/dashboard" class="flex items-center gap-2">
           <span class="text-xl font-bold text-primary-600">MiTienda</span>
           <span class="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">Admin</span>
         </router-link>
       </div>
-
-      <!-- Navigation -->
       <div class="flex-1 overflow-y-auto p-4">
         <SidebarNav />
       </div>
-
-      <!-- User info -->
       <div class="p-4 border-t border-gray-200">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-semibold">
@@ -36,30 +31,75 @@
       </div>
     </aside>
 
-    <!-- Main content -->
-    <main class="flex-1 ml-64">
-      <!-- Top bar -->
-      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10">
-        <div>
-          <h1 class="text-lg font-semibold text-gray-800">{{ pageTitle }}</h1>
+    <!-- El mismo menú como cajón en tablets y celulares -->
+    <Sidebar
+      v-model:visible="menuOpen"
+      position="left"
+      class="!w-72"
+      :pt="{
+        header: { class: '!px-5 !py-3 border-b border-gray-200' },
+        content: { class: '!p-4 flex flex-col' }
+      }"
+    >
+      <template #header>
+        <router-link to="/dashboard" class="flex items-center gap-2">
+          <span class="text-xl font-bold text-primary-600">MiTienda</span>
+          <span class="text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium">Admin</span>
+        </router-link>
+      </template>
+      <div class="flex-1">
+        <SidebarNav />
+      </div>
+      <div class="mt-4 pt-4 border-t border-gray-200 flex items-center gap-3">
+        <div class="w-8 h-8 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-sm font-semibold">
+          {{ userInitials }}
         </div>
-        <div class="flex items-center gap-4">
-          <span class="text-sm text-gray-500">{{ currentDate }}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-700 truncate">{{ authStore.user?.name }}</p>
+          <p class="text-xs text-gray-500 truncate">{{ authStore.superAdminInfo?.superadmin_type_name || 'Super Admin' }}</p>
+        </div>
+        <button
+          @click="handleLogout"
+          class="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-gray-100"
+          aria-label="Cerrar sesión"
+        >
+          <i class="pi pi-sign-out text-sm"></i>
+        </button>
+      </div>
+    </Sidebar>
+
+    <!-- min-w-0: sin él, una tabla ancha estira todo el contenido más allá de
+         la pantalla y la página entera se desplaza por debajo del menú. -->
+    <main class="lg:ml-64 min-w-0">
+      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 sticky top-0 z-10">
+        <div class="flex items-center gap-2 min-w-0">
+          <button
+            type="button"
+            class="lg:hidden -ml-1 p-2 rounded-lg text-gray-600 hover:bg-gray-100"
+            aria-label="Abrir menú"
+            @click="menuOpen = true"
+          >
+            <i class="pi pi-bars text-lg"></i>
+          </button>
+          <h1 class="text-lg font-semibold text-gray-800 truncate">{{ pageTitle }}</h1>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <span class="hidden md:inline text-sm text-gray-500">{{ currentDate }}</span>
           <!-- El asistente consulta toda la plataforma: solo para el equipo -->
           <button
             v-if="authStore.isSuperAdmin"
             type="button"
             class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-gray-200 text-gray-600 hover:border-primary-500 hover:text-primary-700 transition-colors"
+            aria-label="Asistente"
             @click="assistantOpen = true"
           >
             <i class="pi pi-sparkles text-sm"></i>
-            Asistente
+            <span class="hidden sm:inline">Asistente</span>
           </button>
         </div>
       </header>
 
-      <!-- Page content -->
-      <div class="p-8">
+      <div class="p-4 sm:p-6 lg:p-8">
         <router-view />
       </div>
     </main>
@@ -81,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -96,6 +136,10 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const assistantOpen = ref(false)
+const menuOpen = ref(false)
+
+// Elegir una opción del cajón lo cierra.
+watch(() => route.fullPath, () => { menuOpen.value = false })
 const { reset: resetAssistant } = useAssistant()
 
 const pageTitle = computed(() => {

@@ -458,28 +458,30 @@
         </div>
 
         <div class="max-h-80 overflow-y-auto rounded-lg border border-gray-100">
-          <table class="w-full text-sm">
-            <tbody class="divide-y divide-gray-100">
-              <tr v-for="item in batchResult.results" :key="item.tiendaplan_id">
-                <td class="px-3 py-2 font-mono text-xs text-gray-400">#{{ item.tiendaplan_id }}</td>
-                <td class="px-3 py-2">
-                  <span
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
-                    :class="batchStatusClass(item.status)"
-                  >
-                    {{ batchStatusLabel(item.status) }}
-                  </span>
-                </td>
-                <td class="px-3 py-2 text-gray-700">
-                  <span v-if="item.comprobante" class="font-mono">{{ item.comprobante }}</span>
-                  <span v-else>{{ item.message }}</span>
-                  <span v-if="item.email_error" class="block text-xs text-amber-700">
-                    Comprobante emitido, pero el correo no salio: {{ item.email_error }}
-                  </span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="item in batchResult.results" :key="item.tiendaplan_id">
+                  <td class="px-3 py-2 font-mono text-xs text-gray-400">#{{ item.tiendaplan_id }}</td>
+                  <td class="px-3 py-2">
+                    <span
+                      class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      :class="batchStatusClass(item.status)"
+                    >
+                      {{ batchStatusLabel(item.status) }}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 text-gray-700">
+                    <span v-if="item.comprobante" class="font-mono">{{ item.comprobante }}</span>
+                    <span v-else>{{ item.message }}</span>
+                    <span v-if="item.email_error" class="block text-xs text-amber-700">
+                      Comprobante emitido, pero el correo no salio: {{ item.email_error }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

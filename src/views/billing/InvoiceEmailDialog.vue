@@ -32,28 +32,30 @@
           </small>
         </div>
 
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-              <th class="pb-1">Cliente</th>
-              <th class="pb-1">Comprobantes</th>
-              <th class="pb-1">Correo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, i) in summary.results" :key="i" class="border-t border-gray-100 align-top">
-              <td class="py-1.5 pr-2 text-gray-700">{{ row.customer_name || row.customer_document }}</td>
-              <td class="py-1.5 pr-2 text-gray-600 font-mono text-xs">{{ row.invoices.join(', ') }}</td>
-              <td class="py-1.5">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="badge(row).class">
-                  {{ badge(row).label }}
-                </span>
-                <div v-if="row.to && !canOverride" class="text-xs text-gray-500 mt-0.5 break-all">{{ row.to }}</div>
-                <div v-if="row.status === 'failed' || row.status === 'skipped'" class="text-xs text-gray-400 mt-0.5">{{ row.message }}</div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                <th class="pb-1">Cliente</th>
+                <th class="pb-1">Comprobantes</th>
+                <th class="pb-1">Correo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(row, i) in summary.results" :key="i" class="border-t border-gray-100 align-top">
+                <td class="py-1.5 pr-2 text-gray-700">{{ row.customer_name || row.customer_document }}</td>
+                <td class="py-1.5 pr-2 text-gray-600 font-mono text-xs">{{ row.invoices.join(', ') }}</td>
+                <td class="py-1.5">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="badge(row).class">
+                    {{ badge(row).label }}
+                  </span>
+                  <div v-if="row.to && !canOverride" class="text-xs text-gray-500 mt-0.5 break-all">{{ row.to }}</div>
+                  <div v-if="row.status === 'failed' || row.status === 'skipped'" class="text-xs text-gray-400 mt-0.5">{{ row.message }}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <p v-if="!done && summary.no_email > 0 && !canOverride" class="text-xs text-amber-700">
           {{ summary.no_email }} sin correo: agrégalo en la ficha del cliente (Clientes) y vuelve a intentarlo.

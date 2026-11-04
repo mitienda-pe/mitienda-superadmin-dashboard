@@ -217,22 +217,24 @@
 
       <div class="flex flex-wrap items-start justify-between gap-4 px-5 py-4">
         <Button label="Agregar línea" icon="pi pi-plus" text size="small" @click="addLine" />
-        <table class="text-sm">
-          <tbody>
-            <tr>
-              <td class="pr-6 text-gray-500">Subtotal sin IGV</td>
-              <td class="text-right tabular-nums text-gray-800">{{ money(totals.net) }}</td>
-            </tr>
-            <tr>
-              <td class="pr-6 text-gray-500">IGV</td>
-              <td class="text-right tabular-nums text-gray-800">{{ money(totals.tax) }}</td>
-            </tr>
-            <tr class="font-semibold">
-              <td class="pr-6 pt-1 text-gray-900">Total</td>
-              <td class="pt-1 text-right tabular-nums text-gray-900">{{ money(totals.total) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="text-sm">
+            <tbody>
+              <tr>
+                <td class="pr-6 text-gray-500">Subtotal sin IGV</td>
+                <td class="text-right tabular-nums text-gray-800">{{ money(totals.net) }}</td>
+              </tr>
+              <tr>
+                <td class="pr-6 text-gray-500">IGV</td>
+                <td class="text-right tabular-nums text-gray-800">{{ money(totals.tax) }}</td>
+              </tr>
+              <tr class="font-semibold">
+                <td class="pr-6 pt-1 text-gray-900">Total</td>
+                <td class="pt-1 text-right tabular-nums text-gray-900">{{ money(totals.total) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 

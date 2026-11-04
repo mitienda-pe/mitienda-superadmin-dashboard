@@ -69,69 +69,73 @@
           </form>
         </div>
         <div v-if="!customer.stores.length" class="text-sm text-gray-500">Sin tienda vinculada: sus comprobantes se emitieron a mano.</div>
-        <table v-else class="w-full text-sm">
-          <thead>
-            <tr class="text-xs text-gray-500 border-b border-gray-200">
-              <th class="py-2 text-left">Tienda</th>
-              <th class="py-2 text-left">Contratante</th>
-              <th class="py-2 text-left">Plan</th>
-              <th class="py-2 text-left">Vence</th>
-              <th class="py-2 text-left">Se le factura</th>
-              <th v-if="canEdit"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in customer.stores" :key="s.tienda_id" class="border-b border-gray-100 last:border-0">
-              <td class="py-2">
-                <router-link :to="`/stores/${s.tienda_id}`" class="font-medium text-gray-800 hover:text-primary">{{ s.name }}</router-link>
-                <div class="text-xs text-gray-400">{{ s.domain || `${s.slug}.mitienda.pe` }} · #{{ s.tienda_id }}</div>
-              </td>
-              <td class="py-2 text-gray-700">
-                {{ s.contact || '—' }}
-                <div class="text-xs text-gray-400">{{ [s.contact_email, s.contact_phone].filter(Boolean).join(' · ') }}</div>
-              </td>
-              <td class="py-2 text-gray-700">{{ s.plan || '—' }}<span v-if="s.price" class="text-xs text-gray-400"> · {{ money(s.price) }}</span></td>
-              <td class="py-2" :class="s.active ? 'text-gray-700' : 'text-red-600'">{{ s.expires_at ? formatDate(s.expires_at) : '—' }}</td>
-              <td class="py-2 text-xs" :class="s.is_current ? 'text-green-700' : 'text-gray-400'">
-                {{ s.is_current ? 'Con este documento' : 'Antes; hoy con otro' }}
-                <span v-if="s.manual" class="text-gray-400"> · a mano</span>
-              </td>
-              <td v-if="canEdit" class="py-2 text-right whitespace-nowrap">
-                <Button v-if="!s.is_current" v-tooltip.left="'Facturarle esta tienda a este cliente desde ahora'" icon="pi pi-check-circle" text rounded size="small" severity="secondary" @click="assignExisting(s.tienda_id)" />
-                <Button v-if="s.manual" v-tooltip.left="'Quitar el vínculo puesto a mano'" icon="pi pi-times" text rounded size="small" severity="secondary" @click="unassign(s.tienda_id)" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-200">
+                <th class="py-2 text-left">Tienda</th>
+                <th class="py-2 text-left">Contratante</th>
+                <th class="py-2 text-left">Plan</th>
+                <th class="py-2 text-left">Vence</th>
+                <th class="py-2 text-left">Se le factura</th>
+                <th v-if="canEdit"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in customer.stores" :key="s.tienda_id" class="border-b border-gray-100 last:border-0">
+                <td class="py-2">
+                  <router-link :to="`/stores/${s.tienda_id}`" class="font-medium text-gray-800 hover:text-primary">{{ s.name }}</router-link>
+                  <div class="text-xs text-gray-400">{{ s.domain || `${s.slug}.mitienda.pe` }} · #{{ s.tienda_id }}</div>
+                </td>
+                <td class="py-2 text-gray-700">
+                  {{ s.contact || '—' }}
+                  <div class="text-xs text-gray-400">{{ [s.contact_email, s.contact_phone].filter(Boolean).join(' · ') }}</div>
+                </td>
+                <td class="py-2 text-gray-700">{{ s.plan || '—' }}<span v-if="s.price" class="text-xs text-gray-400"> · {{ money(s.price) }}</span></td>
+                <td class="py-2" :class="s.active ? 'text-gray-700' : 'text-red-600'">{{ s.expires_at ? formatDate(s.expires_at) : '—' }}</td>
+                <td class="py-2 text-xs" :class="s.is_current ? 'text-green-700' : 'text-gray-400'">
+                  {{ s.is_current ? 'Con este documento' : 'Antes; hoy con otro' }}
+                  <span v-if="s.manual" class="text-gray-400"> · a mano</span>
+                </td>
+                <td v-if="canEdit" class="py-2 text-right whitespace-nowrap">
+                  <Button v-if="!s.is_current" v-tooltip.left="'Facturarle esta tienda a este cliente desde ahora'" icon="pi pi-check-circle" text rounded size="small" severity="secondary" @click="assignExisting(s.tienda_id)" />
+                  <Button v-if="s.manual" v-tooltip.left="'Quitar el vínculo puesto a mano'" icon="pi pi-times" text rounded size="small" severity="secondary" @click="unassign(s.tienda_id)" />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <h2 class="font-semibold text-gray-900 mb-3">Comprobantes <span class="text-xs font-normal text-gray-400">(los últimos 100)</span></h2>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-xs text-gray-500 border-b border-gray-200">
-              <th class="py-2 text-left">Número</th>
-              <th class="py-2 text-left">Fecha</th>
-              <th class="py-2 text-left">Concepto</th>
-              <th class="py-2 text-left">Tienda</th>
-              <th class="py-2 text-right">Total</th>
-              <th class="py-2 text-left pl-4">Cobro</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="inv in customer.invoices" :key="inv.id" class="border-b border-gray-100 last:border-0" :class="{ 'opacity-50': inv.voided }">
-              <td class="py-1.5 font-mono text-gray-800">{{ inv.number }}<span v-if="inv.document_type === 3" class="text-xs text-gray-500"> (NC)</span></td>
-              <td class="py-1.5 text-gray-600">{{ formatDate(inv.issue_date) }}</td>
-              <td class="py-1.5 text-gray-600 max-w-xs truncate" :title="inv.concept ?? ''">{{ inv.concept }}</td>
-              <td class="py-1.5 text-gray-600">{{ storeName(inv.tienda_id) }}</td>
-              <td class="py-1.5 text-right tabular-nums">{{ inv.currency === 'USD' ? 'US$' : 'S/' }} {{ number(inv.total) }}</td>
-              <td class="py-1.5 pl-4 text-xs">
-                <span v-if="inv.voided" class="text-red-600">Anulado</span>
-                <span v-else :class="PAYMENT[inv.payment_status ?? -1]?.cls ?? 'text-gray-400'">{{ PAYMENT[inv.payment_status ?? -1]?.label ?? '—' }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-200">
+                <th class="py-2 text-left">Número</th>
+                <th class="py-2 text-left">Fecha</th>
+                <th class="py-2 text-left">Concepto</th>
+                <th class="py-2 text-left">Tienda</th>
+                <th class="py-2 text-right">Total</th>
+                <th class="py-2 text-left pl-4">Cobro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="inv in customer.invoices" :key="inv.id" class="border-b border-gray-100 last:border-0" :class="{ 'opacity-50': inv.voided }">
+                <td class="py-1.5 font-mono text-gray-800">{{ inv.number }}<span v-if="inv.document_type === 3" class="text-xs text-gray-500"> (NC)</span></td>
+                <td class="py-1.5 text-gray-600">{{ formatDate(inv.issue_date) }}</td>
+                <td class="py-1.5 text-gray-600 max-w-xs truncate" :title="inv.concept ?? ''">{{ inv.concept }}</td>
+                <td class="py-1.5 text-gray-600">{{ storeName(inv.tienda_id) }}</td>
+                <td class="py-1.5 text-right tabular-nums">{{ inv.currency === 'USD' ? 'US$' : 'S/' }} {{ number(inv.total) }}</td>
+                <td class="py-1.5 pl-4 text-xs">
+                  <span v-if="inv.voided" class="text-red-600">Anulado</span>
+                  <span v-else :class="PAYMENT[inv.payment_status ?? -1]?.cls ?? 'text-gray-400'">{{ PAYMENT[inv.payment_status ?? -1]?.label ?? '—' }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </template>
 

@@ -103,34 +103,36 @@
               anteriores quedan.
             </p>
           </div>
-          <table v-if="selected.salaries.length" class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-xs text-gray-500 border-b border-gray-200">
-                <th class="py-2 font-medium">Desde</th>
-                <th class="py-2 font-medium text-right">Sueldo</th>
-                <th class="py-2 font-medium text-right">Cond. de trabajo</th>
-                <th class="py-2 font-medium pl-4">Nota</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="salary in selected.salaries" :key="salary.id" class="border-b border-gray-100">
-                <td class="py-2 text-gray-800">
-                  {{ shortDate(salary.effective_from) }}
-                  <span v-if="salary.id === selected.current_salary?.id" class="ml-1 text-[10px] text-emerald-600">vigente</span>
-                </td>
-                <td class="py-2 text-right tabular-nums">{{ money(salary.base_salary) }}</td>
-                <td class="py-2 text-right tabular-nums text-gray-600">{{ money(salary.work_condition) }}</td>
-                <td class="py-2 pl-4 text-xs text-gray-500">
-                  {{ salary.note }}<span v-if="salary.family_allowance"> · asignación familiar</span>
-                </td>
-                <td class="py-2 text-right whitespace-nowrap">
-                  <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="editSalary(salary)" />
-                  <Button icon="pi pi-trash" text rounded size="small" severity="danger" :loading="saving" @click="removeSalary(salary)" />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-if="selected.salaries.length" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-xs text-gray-500 border-b border-gray-200">
+                  <th class="py-2 font-medium">Desde</th>
+                  <th class="py-2 font-medium text-right">Sueldo</th>
+                  <th class="py-2 font-medium text-right">Cond. de trabajo</th>
+                  <th class="py-2 font-medium pl-4">Nota</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="salary in selected.salaries" :key="salary.id" class="border-b border-gray-100">
+                  <td class="py-2 text-gray-800">
+                    {{ shortDate(salary.effective_from) }}
+                    <span v-if="salary.id === selected.current_salary?.id" class="ml-1 text-[10px] text-emerald-600">vigente</span>
+                  </td>
+                  <td class="py-2 text-right tabular-nums">{{ money(salary.base_salary) }}</td>
+                  <td class="py-2 text-right tabular-nums text-gray-600">{{ money(salary.work_condition) }}</td>
+                  <td class="py-2 pl-4 text-xs text-gray-500">
+                    {{ salary.note }}<span v-if="salary.family_allowance"> · asignación familiar</span>
+                  </td>
+                  <td class="py-2 text-right whitespace-nowrap">
+                    <Button icon="pi pi-pencil" text rounded size="small" severity="secondary" @click="editSalary(salary)" />
+                    <Button icon="pi pi-trash" text rounded size="small" severity="danger" :loading="saving" @click="removeSalary(salary)" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p v-else class="text-sm text-amber-600">Sin sueldo registrado: no entra a la planilla.</p>
 
           <div class="bg-gray-50 rounded-lg p-3 space-y-3">

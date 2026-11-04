@@ -16,28 +16,30 @@
           <div class="font-medium text-gray-900">{{ worker.name }} <span class="text-xs text-gray-500">· DNI {{ worker.document || '—' }}</span></div>
           <div class="text-xs text-gray-600">Días laborados {{ worker.days }} · Jornada {{ worker.hours }} h</div>
         </div>
-        <table class="w-full text-sm">
-          <tbody>
-            <template v-for="group in GROUPS" :key="group.key">
-              <tr v-if="worker.concepts.some(c => c.group === group.key)">
-                <td colspan="3" class="px-4 pt-2 text-xs font-medium text-gray-500">{{ group.label }}</td>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <template v-for="group in GROUPS" :key="group.key">
+                <tr v-if="worker.concepts.some(c => c.group === group.key)">
+                  <td colspan="3" class="px-4 pt-2 text-xs font-medium text-gray-500">{{ group.label }}</td>
+                </tr>
+                <tr v-for="c in worker.concepts.filter(c => c.group === group.key)" :key="c.code">
+                  <td class="px-4 py-0.5 w-16 font-mono text-gray-700">{{ c.code }}</td>
+                  <td class="py-0.5 text-gray-700">
+                    {{ c.name }}
+                    <span v-if="c.confirm" class="ml-1 text-xs text-amber-700" title="Código estándar de SUNAT; aún no aparece en una declaración suya para contrastarlo">por confirmar</span>
+                  </td>
+                  <td class="px-4 py-0.5 text-right tabular-nums">{{ money(c.amount) }}</td>
+                </tr>
+              </template>
+              <tr class="border-t border-gray-100">
+                <td class="px-4 py-1.5"></td>
+                <td class="py-1.5 font-medium text-gray-800">Ingreso neto</td>
+                <td class="px-4 py-1.5 text-right tabular-nums font-medium">{{ money(worker.net) }}</td>
               </tr>
-              <tr v-for="c in worker.concepts.filter(c => c.group === group.key)" :key="c.code">
-                <td class="px-4 py-0.5 w-16 font-mono text-gray-700">{{ c.code }}</td>
-                <td class="py-0.5 text-gray-700">
-                  {{ c.name }}
-                  <span v-if="c.confirm" class="ml-1 text-xs text-amber-700" title="Código estándar de SUNAT; aún no aparece en una declaración suya para contrastarlo">por confirmar</span>
-                </td>
-                <td class="px-4 py-0.5 text-right tabular-nums">{{ money(c.amount) }}</td>
-              </tr>
-            </template>
-            <tr class="border-t border-gray-100">
-              <td class="px-4 py-1.5"></td>
-              <td class="py-1.5 font-medium text-gray-800">Ingreso neto</td>
-              <td class="px-4 py-1.5 text-right tabular-nums font-medium">{{ money(worker.net) }}</td>
-            </tr>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="rounded-lg border border-gray-200 p-4">

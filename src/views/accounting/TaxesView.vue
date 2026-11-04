@@ -20,59 +20,61 @@
       <!-- IGV -->
       <div class="bg-white rounded-xl border border-gray-200 p-5 xl:col-span-2">
         <h2 class="font-semibold text-gray-900 mb-3">IGV · PDT 621</h2>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-xs text-gray-500 border-b border-gray-200">
-              <th class="py-1.5 text-left font-medium"></th>
-              <th class="py-1.5 text-right font-medium">Base</th>
-              <th class="py-1.5 text-right font-medium">IGV</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-            <tr>
-              <td class="py-1.5 text-gray-700">Ventas gravadas <span class="text-xs text-gray-400">({{ s.igv.sales_count }} comprobantes)</span></td>
-              <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.sales_base) }}</td>
-              <td class="py-1.5 text-right tabular-nums">{{ whole(s.igv.sales_tax) }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 text-gray-700">Exportaciones (sin IGV) <span class="text-xs text-gray-400">({{ s.igv.exports_count }})</span></td>
-              <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.exports_base) }}</td>
-              <td class="py-1.5 text-right text-gray-300">—</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 text-gray-700">
-                (−) Compras anotadas en el SIRE este mes <span class="text-xs text-gray-400">({{ s.igv.purchases_count }})</span>
-                <div v-if="s.igv.purchases_count === 0" class="text-xs text-amber-700">Sin compras: ¿falta importar el SIRE de compras de este mes en Gastos?</div>
-              </td>
-              <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.purchases_base) }}</td>
-              <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.purchases_tax) }}</td>
-            </tr>
-            <tr class="font-medium">
-              <td class="py-1.5">IGV del mes</td><td></td>
-              <td class="py-1.5 text-right tabular-nums">{{ whole(s.igv.month_tax) }}</td>
-            </tr>
-            <tr v-if="s.igv.previous_igv_credit">
-              <td class="py-1.5 text-gray-700">(−) Saldo a favor del mes anterior</td><td></td>
-              <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.previous_igv_credit) }}</td>
-            </tr>
-            <tr>
-              <td class="py-1.5 text-gray-700">
-                (−) Retenciones
-                <span class="text-xs text-gray-400">del mes{{ s.igv.previous_retention_credit ? ` y ${whole(s.igv.previous_retention_credit)} no aplicadas antes` : '' }}</span>
-              </td><td></td>
-              <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.retentions + s.igv.previous_retention_credit) }}</td>
-            </tr>
-            <tr class="font-semibold text-gray-900 border-t-2 border-gray-200">
-              <td class="py-2">IGV a pagar</td><td></td>
-              <td class="py-2 text-right tabular-nums">{{ whole(s.igv.to_pay) }}</td>
-            </tr>
-            <tr v-if="s.igv.next_igv_credit || s.igv.next_retention_credit" class="text-xs text-gray-500">
-              <td class="py-1" colspan="3">
-                Pasa al mes siguiente: saldo a favor {{ whole(s.igv.next_igv_credit) }} · retenciones no aplicadas {{ whole(s.igv.next_retention_credit) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-xs text-gray-500 border-b border-gray-200">
+                <th class="py-1.5 text-left font-medium"></th>
+                <th class="py-1.5 text-right font-medium">Base</th>
+                <th class="py-1.5 text-right font-medium">IGV</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+              <tr>
+                <td class="py-1.5 text-gray-700">Ventas gravadas <span class="text-xs text-gray-400">({{ s.igv.sales_count }} comprobantes)</span></td>
+                <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.sales_base) }}</td>
+                <td class="py-1.5 text-right tabular-nums">{{ whole(s.igv.sales_tax) }}</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 text-gray-700">Exportaciones (sin IGV) <span class="text-xs text-gray-400">({{ s.igv.exports_count }})</span></td>
+                <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.exports_base) }}</td>
+                <td class="py-1.5 text-right text-gray-300">—</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 text-gray-700">
+                  (−) Compras anotadas en el SIRE este mes <span class="text-xs text-gray-400">({{ s.igv.purchases_count }})</span>
+                  <div v-if="s.igv.purchases_count === 0" class="text-xs text-amber-700">Sin compras: ¿falta importar el SIRE de compras de este mes en Gastos?</div>
+                </td>
+                <td class="py-1.5 text-right tabular-nums">{{ money(s.igv.purchases_base) }}</td>
+                <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.purchases_tax) }}</td>
+              </tr>
+              <tr class="font-medium">
+                <td class="py-1.5">IGV del mes</td><td></td>
+                <td class="py-1.5 text-right tabular-nums">{{ whole(s.igv.month_tax) }}</td>
+              </tr>
+              <tr v-if="s.igv.previous_igv_credit">
+                <td class="py-1.5 text-gray-700">(−) Saldo a favor del mes anterior</td><td></td>
+                <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.previous_igv_credit) }}</td>
+              </tr>
+              <tr>
+                <td class="py-1.5 text-gray-700">
+                  (−) Retenciones
+                  <span class="text-xs text-gray-400">del mes{{ s.igv.previous_retention_credit ? ` y ${whole(s.igv.previous_retention_credit)} no aplicadas antes` : '' }}</span>
+                </td><td></td>
+                <td class="py-1.5 text-right tabular-nums">−{{ whole(s.igv.retentions + s.igv.previous_retention_credit) }}</td>
+              </tr>
+              <tr class="font-semibold text-gray-900 border-t-2 border-gray-200">
+                <td class="py-2">IGV a pagar</td><td></td>
+                <td class="py-2 text-right tabular-nums">{{ whole(s.igv.to_pay) }}</td>
+              </tr>
+              <tr v-if="s.igv.next_igv_credit || s.igv.next_retention_credit" class="text-xs text-gray-500">
+                <td class="py-1" colspan="3">
+                  Pasa al mes siguiente: saldo a favor {{ whole(s.igv.next_igv_credit) }} · retenciones no aplicadas {{ whole(s.igv.next_retention_credit) }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Renta y planilla -->

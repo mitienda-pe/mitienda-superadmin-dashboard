@@ -10,25 +10,27 @@
 
     <div v-else-if="segments.length > 0" class="flex flex-wrap items-center gap-6">
       <v-chart :option="chartOption" :autoresize="true" class="donut-chart" />
-      <table class="flex-1 min-w-[16rem] text-sm">
-        <tbody>
-          <tr v-for="segment in segments" :key="segment.key" class="border-b border-gray-100 last:border-0">
-            <td class="py-1.5 pr-3">
-              <span class="inline-flex items-center gap-2" :class="segment.untagged ? 'text-amber-700' : 'text-gray-700'">
-                <span class="inline-block h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: segment.color }"></span>
-                {{ segment.name }}
-              </span>
-            </td>
-            <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(segment.amount) }}</td>
-            <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ segment.share }}</td>
-          </tr>
-          <tr>
-            <td class="pt-2 pr-3 font-medium text-gray-700">Total</td>
-            <td class="pt-2 text-right tabular-nums font-semibold text-gray-900">{{ formatCurrency(total) }}</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="flex-1 min-w-0 overflow-x-auto">
+        <table class="w-full min-w-[16rem] text-sm">
+          <tbody>
+            <tr v-for="segment in segments" :key="segment.key" class="border-b border-gray-100 last:border-0">
+              <td class="py-1.5 pr-3">
+                <span class="inline-flex items-center gap-2" :class="segment.untagged ? 'text-amber-700' : 'text-gray-700'">
+                  <span class="inline-block h-2.5 w-2.5 rounded-sm" :style="{ backgroundColor: segment.color }"></span>
+                  {{ segment.name }}
+                </span>
+              </td>
+              <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(segment.amount) }}</td>
+              <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ segment.share }}</td>
+            </tr>
+            <tr>
+              <td class="pt-2 pr-3 font-medium text-gray-700">Total</td>
+              <td class="pt-2 text-right tabular-nums font-semibold text-gray-900">{{ formatCurrency(total) }}</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <p v-else class="text-sm text-gray-400 py-6 text-center">Sin ingresos en el rango</p>

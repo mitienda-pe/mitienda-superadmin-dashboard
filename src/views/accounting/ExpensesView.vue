@@ -98,24 +98,26 @@
         </span>
         <i class="pi text-gray-400" :class="showCategories ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
       </button>
-      <table v-if="showCategories" class="w-full text-sm mt-3">
-        <tbody>
-          <template v-for="group in groups" :key="group.name">
-            <tr class="border-t border-gray-200">
-              <td class="py-1.5 font-semibold text-gray-800">{{ group.name }}</td>
-              <td class="py-1.5 text-right tabular-nums font-semibold text-gray-800">{{ money(group.net) }}</td>
-              <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-14">{{ share(group.net) }}</td>
-            </tr>
-            <tr v-for="category in group.categories" :key="category.name" class="border-t border-gray-100">
-              <td class="py-1 pl-4 text-gray-600">
-                {{ category.name }} <span class="text-xs text-gray-400">· {{ category.expenses }}</span>
-              </td>
-              <td class="py-1 text-right tabular-nums text-gray-600">{{ money(category.net) }}</td>
-              <td class="py-1 pl-3 text-right tabular-nums text-gray-400 w-14">{{ share(category.net) }}</td>
-            </tr>
-          </template>
-        </tbody>
-      </table>
+      <div v-if="showCategories" class="overflow-x-auto mt-3">
+        <table class="w-full text-sm">
+          <tbody>
+            <template v-for="group in groups" :key="group.name">
+              <tr class="border-t border-gray-200">
+                <td class="py-1.5 font-semibold text-gray-800">{{ group.name }}</td>
+                <td class="py-1.5 text-right tabular-nums font-semibold text-gray-800">{{ money(group.net) }}</td>
+                <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-14">{{ share(group.net) }}</td>
+              </tr>
+              <tr v-for="category in group.categories" :key="category.name" class="border-t border-gray-100">
+                <td class="py-1 pl-4 text-gray-600">
+                  {{ category.name }} <span class="text-xs text-gray-400">· {{ category.expenses }}</span>
+                </td>
+                <td class="py-1 text-right tabular-nums text-gray-600">{{ money(category.net) }}</td>
+                <td class="py-1 pl-3 text-right tabular-nums text-gray-400 w-14">{{ share(category.net) }}</td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -459,31 +461,33 @@
           </div>
         </div>
 
-        <table v-if="paymentRows.length > 0" class="w-full text-sm">
-          <tbody>
-            <tr v-for="payment in paymentRows" :key="payment.id" class="border-t border-gray-100">
-              <td class="py-1.5 text-gray-600 whitespace-nowrap">{{ formatDate(payment.paid_at) }}</td>
-              <td class="py-1.5 text-gray-600">
-                {{ payment.method }}
-                <span v-if="payment.reference" class="text-xs text-gray-400">· op. {{ payment.reference }}</span>
-              </td>
-              <td class="py-1.5 text-right tabular-nums text-gray-800">{{ money(payment.amount, paying.currency) }}</td>
-              <td class="py-1.5 text-right w-8">
-                <Button
-                  v-if="authStore.canWriteFinance"
-                  icon="pi pi-trash"
-                  text
-                  rounded
-                  size="small"
-                  severity="danger"
-                  :loading="deletingId === payment.id"
-                  v-tooltip.top="'Quitar este pago'"
-                  @click="removePayment(payment.id)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="paymentRows.length > 0" class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr v-for="payment in paymentRows" :key="payment.id" class="border-t border-gray-100">
+                <td class="py-1.5 text-gray-600 whitespace-nowrap">{{ formatDate(payment.paid_at) }}</td>
+                <td class="py-1.5 text-gray-600">
+                  {{ payment.method }}
+                  <span v-if="payment.reference" class="text-xs text-gray-400">· op. {{ payment.reference }}</span>
+                </td>
+                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ money(payment.amount, paying.currency) }}</td>
+                <td class="py-1.5 text-right w-8">
+                  <Button
+                    v-if="authStore.canWriteFinance"
+                    icon="pi pi-trash"
+                    text
+                    rounded
+                    size="small"
+                    severity="danger"
+                    :loading="deletingId === payment.id"
+                    v-tooltip.top="'Quitar este pago'"
+                    @click="removePayment(payment.id)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <template v-if="authStore.canWriteFinance && paying.balance > 0">
           <div class="grid grid-cols-2 gap-3">

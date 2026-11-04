@@ -111,22 +111,24 @@
         </span>
         <i class="pi text-gray-400" :class="showDebtors ? 'pi-chevron-up' : 'pi-chevron-down'"></i>
       </button>
-      <table v-if="showDebtors" class="w-full text-sm mt-3">
-        <tbody>
-          <tr v-for="debtor in summary.debtors" :key="debtor.customer_document + debtor.customer_name" class="border-t border-gray-100">
-            <td class="py-1.5 pr-3">
-              <button type="button" class="text-left text-gray-700 hover:text-primary-600" @click="searchCustomer(debtor)">
-                {{ debtor.customer_name || '(sin nombre)' }}
-              </button>
-              <span class="text-xs text-gray-400 font-mono ml-2">{{ debtor.customer_document }}</span>
-            </td>
-            <td class="py-1.5 text-right text-xs text-gray-400 whitespace-nowrap">
-              {{ debtor.invoices }} comprobantes · el más antiguo del {{ formatDate(debtor.oldest) }}
-            </td>
-            <td class="py-1.5 pl-4 text-right tabular-nums font-semibold text-gray-800 w-32">{{ money(debtor.amount, 'PEN') }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-if="showDebtors" class="overflow-x-auto mt-3">
+        <table class="w-full text-sm">
+          <tbody>
+            <tr v-for="debtor in summary.debtors" :key="debtor.customer_document + debtor.customer_name" class="border-t border-gray-100">
+              <td class="py-1.5 pr-3">
+                <button type="button" class="text-left text-gray-700 hover:text-primary-600" @click="searchCustomer(debtor)">
+                  {{ debtor.customer_name || '(sin nombre)' }}
+                </button>
+                <span class="text-xs text-gray-400 font-mono ml-2">{{ debtor.customer_document }}</span>
+              </td>
+              <td class="py-1.5 text-right text-xs text-gray-400 whitespace-nowrap">
+                {{ debtor.invoices }} comprobantes · el más antiguo del {{ formatDate(debtor.oldest) }}
+              </td>
+              <td class="py-1.5 pl-4 text-right tabular-nums font-semibold text-gray-800 w-32">{{ money(debtor.amount, 'PEN') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -424,39 +426,41 @@
             <i class="pi pi-spin pi-spinner mr-2"></i>Cargando abonos…
           </p>
 
-          <table v-else-if="installments && installments.payments.length > 0" class="w-full text-sm">
-            <thead>
-              <tr class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
-                <th class="pb-1">Abonos</th>
-                <th class="pb-1">Medio</th>
-                <th class="pb-1 text-right">Monto</th>
-                <th class="pb-1 w-8"></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="payment in installments.payments" :key="payment.id" class="border-t border-gray-100">
-                <td class="py-1.5 text-gray-600 whitespace-nowrap">{{ formatDate(payment.paid_at) }}</td>
-                <td class="py-1.5 text-gray-600">
-                  {{ payment.method }}
-                  <span v-if="payment.reference" class="text-xs text-gray-400">· op. {{ payment.reference }}</span>
-                  <div v-if="payment.note" class="text-xs text-gray-400">{{ payment.note }}</div>
-                </td>
-                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ money(payment.amount, single.currency) }}</td>
-                <td class="py-1.5 text-right">
-                  <Button
-                    icon="pi pi-trash"
-                    text
-                    rounded
-                    size="small"
-                    severity="danger"
-                    :loading="deletingId === payment.id"
-                    v-tooltip.top="'Quitar este abono'"
-                    @click="removeInstallment(payment.id)"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div v-else-if="installments && installments.payments.length > 0" class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-xs font-medium uppercase tracking-wide text-gray-400">
+                  <th class="pb-1">Abonos</th>
+                  <th class="pb-1">Medio</th>
+                  <th class="pb-1 text-right">Monto</th>
+                  <th class="pb-1 w-8"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="payment in installments.payments" :key="payment.id" class="border-t border-gray-100">
+                  <td class="py-1.5 text-gray-600 whitespace-nowrap">{{ formatDate(payment.paid_at) }}</td>
+                  <td class="py-1.5 text-gray-600">
+                    {{ payment.method }}
+                    <span v-if="payment.reference" class="text-xs text-gray-400">· op. {{ payment.reference }}</span>
+                    <div v-if="payment.note" class="text-xs text-gray-400">{{ payment.note }}</div>
+                  </td>
+                  <td class="py-1.5 text-right tabular-nums text-gray-800">{{ money(payment.amount, single.currency) }}</td>
+                  <td class="py-1.5 text-right">
+                    <Button
+                      icon="pi pi-trash"
+                      text
+                      rounded
+                      size="small"
+                      severity="danger"
+                      :loading="deletingId === payment.id"
+                      v-tooltip.top="'Quitar este abono'"
+                      @click="removeInstallment(payment.id)"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <p
             v-else-if="installments && single.payment_status === 'cobrado'"

@@ -250,36 +250,38 @@
         </div>
 
         <!-- Lo ya conciliado -->
-        <table v-if="current.links.length > 0" class="w-full text-sm">
-          <tbody>
-            <tr v-for="link in current.links" :key="link.id" class="border-t border-gray-100 first:border-0">
-              <td class="py-1.5 text-gray-700">
-                {{ link.text }}
-                <RouterLink
-                  v-if="linkRef(link)"
-                  :to="linkRef(link)!.to"
-                  class="block text-xs text-primary hover:underline"
-                  @click="reconcileVisible = false"
-                >{{ linkRef(link)!.label }} <i class="pi pi-external-link" style="font-size: 0.65rem"></i></RouterLink>
-                <div v-if="link.note" class="text-xs text-gray-400">{{ link.note }}</div>
-              </td>
-              <td class="py-1.5 text-right tabular-nums text-gray-800 whitespace-nowrap">{{ money(link.amount, current.currency) }}</td>
-              <td class="py-1.5 text-right w-8">
-                <Button
-                  v-if="authStore.canWriteFinance || (authStore.canWrite('reconcile') && link.kind === 'cobro')"
-                  icon="pi pi-undo"
-                  text
-                  rounded
-                  size="small"
-                  severity="danger"
-                  :loading="undoingId === link.id"
-                  v-tooltip.top="link.kind === 'otro' ? 'Deshacer' : 'Deshacer: también quita el cobro o pago que se registró'"
-                  @click="undo(link.id)"
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-if="current.links.length > 0" class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <tbody>
+              <tr v-for="link in current.links" :key="link.id" class="border-t border-gray-100 first:border-0">
+                <td class="py-1.5 text-gray-700">
+                  {{ link.text }}
+                  <RouterLink
+                    v-if="linkRef(link)"
+                    :to="linkRef(link)!.to"
+                    class="block text-xs text-primary hover:underline"
+                    @click="reconcileVisible = false"
+                  >{{ linkRef(link)!.label }} <i class="pi pi-external-link" style="font-size: 0.65rem"></i></RouterLink>
+                  <div v-if="link.note" class="text-xs text-gray-400">{{ link.note }}</div>
+                </td>
+                <td class="py-1.5 text-right tabular-nums text-gray-800 whitespace-nowrap">{{ money(link.amount, current.currency) }}</td>
+                <td class="py-1.5 text-right w-8">
+                  <Button
+                    v-if="authStore.canWriteFinance || (authStore.canWrite('reconcile') && link.kind === 'cobro')"
+                    icon="pi pi-undo"
+                    text
+                    rounded
+                    size="small"
+                    severity="danger"
+                    :loading="undoingId === link.id"
+                    v-tooltip.top="link.kind === 'otro' ? 'Deshacer' : 'Deshacer: también quita el cobro o pago que se registró'"
+                    @click="undo(link.id)"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <template v-if="current.remaining > 0 && authStore.canWrite('reconcile')">
           <SelectButton v-model="mode" :options="modeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />

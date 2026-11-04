@@ -81,15 +81,17 @@
         <!-- Concentracion: de quien viene el ingreso -->
         <div v-if="customers.length > 0">
           <p class="text-sm font-medium text-gray-700 mb-2">Mayores clientes, 12 meses</p>
-          <table class="w-full text-sm">
-            <tbody>
-              <tr v-for="customer in customers" :key="customer.key" class="border-b border-gray-100 last:border-0">
-                <td class="py-1.5 pr-3 text-gray-700 truncate max-w-[12rem]">{{ customer.name || '(sin nombre)' }}</td>
-                <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(customer.total) }}</td>
-                <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ customer.share }}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <tbody>
+                <tr v-for="customer in customers" :key="customer.key" class="border-b border-gray-100 last:border-0">
+                  <td class="py-1.5 pr-3 text-gray-700 truncate max-w-[12rem]">{{ customer.name || '(sin nombre)' }}</td>
+                  <td class="py-1.5 text-right tabular-nums text-gray-800">{{ formatCurrency(customer.total) }}</td>
+                  <td class="py-1.5 pl-3 text-right tabular-nums text-gray-400 w-12">{{ customer.share }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p class="text-xs text-gray-400 mt-2">Juntos son el {{ topShare }} del ingreso del periodo.</p>
         </div>
       </div>

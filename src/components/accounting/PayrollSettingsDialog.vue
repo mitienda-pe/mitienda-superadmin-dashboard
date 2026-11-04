@@ -57,37 +57,39 @@
             Tasas vigentes, en porcentaje. Cambiarlas afecta a las planillas que se calculen desde ahora, no a las cerradas.
           </p>
         </div>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-left text-xs text-gray-500 border-b border-gray-200">
-              <th class="py-2 font-medium">Sistema</th>
-              <th class="py-2 font-medium">Aporte</th>
-              <th class="py-2 font-medium">Seguro</th>
-              <th class="py-2 font-medium">Comisión</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="fund in rows" :key="fund.id" class="border-b border-gray-100">
-              <td class="py-1.5 text-gray-800">{{ fund.name }}</td>
-              <template v-if="fund.kind === 'ninguno'">
-                <td colspan="4" class="py-1.5 text-xs text-gray-400">Sin descuento</td>
-              </template>
-              <template v-else>
-                <td class="py-1.5 pr-2"><InputNumber v-model="fund.contribution" v-bind="pctInput" inputClass="w-20" /></td>
-                <td class="py-1.5 pr-2">
-                  <InputNumber v-if="fund.kind === 'afp'" v-model="fund.insurance" v-bind="pctInput" inputClass="w-20" />
-                </td>
-                <td class="py-1.5 pr-2">
-                  <InputNumber v-if="fund.kind === 'afp'" v-model="fund.commission" v-bind="pctInput" inputClass="w-20" />
-                </td>
-                <td class="py-1.5 text-right">
-                  <Button icon="pi pi-check" text rounded size="small" :loading="savingFund === fund.id" v-tooltip.top="'Guardar tasas'" @click="submitFund(fund)" />
-                </td>
-              </template>
-            </tr>
-          </tbody>
-        </table>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-xs text-gray-500 border-b border-gray-200">
+                <th class="py-2 font-medium">Sistema</th>
+                <th class="py-2 font-medium">Aporte</th>
+                <th class="py-2 font-medium">Seguro</th>
+                <th class="py-2 font-medium">Comisión</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="fund in rows" :key="fund.id" class="border-b border-gray-100">
+                <td class="py-1.5 text-gray-800">{{ fund.name }}</td>
+                <template v-if="fund.kind === 'ninguno'">
+                  <td colspan="4" class="py-1.5 text-xs text-gray-400">Sin descuento</td>
+                </template>
+                <template v-else>
+                  <td class="py-1.5 pr-2"><InputNumber v-model="fund.contribution" v-bind="pctInput" inputClass="w-20" /></td>
+                  <td class="py-1.5 pr-2">
+                    <InputNumber v-if="fund.kind === 'afp'" v-model="fund.insurance" v-bind="pctInput" inputClass="w-20" />
+                  </td>
+                  <td class="py-1.5 pr-2">
+                    <InputNumber v-if="fund.kind === 'afp'" v-model="fund.commission" v-bind="pctInput" inputClass="w-20" />
+                  </td>
+                  <td class="py-1.5 text-right">
+                    <Button icon="pi pi-check" text rounded size="small" :loading="savingFund === fund.id" v-tooltip.top="'Guardar tasas'" @click="submitFund(fund)" />
+                  </td>
+                </template>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </Dialog>

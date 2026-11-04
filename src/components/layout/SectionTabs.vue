@@ -1,10 +1,10 @@
 <template>
-  <div v-if="visibleTabs.length > 1" class="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit">
+  <div v-if="visibleTabs.length > 1" class="flex gap-1 bg-gray-100 rounded-lg p-1 w-fit max-w-full overflow-x-auto">
     <router-link
       v-for="tab in visibleTabs"
       :key="tab.to"
       :to="tab.to"
-      class="px-4 py-2 rounded-md text-sm font-medium transition-colors"
+      class="px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
       :class="route.path === tab.to
         ? 'bg-white text-gray-900 shadow-sm'
         : 'text-gray-500 hover:text-gray-700'"

@@ -50,75 +50,79 @@
             </div>
           </div>
 
-          <table class="w-full">
-            <thead>
-              <tr class="text-xs text-gray-500 border-b border-gray-300">
-                <th class="py-1.5 text-left w-24">Fecha</th>
-                <th class="py-1.5 text-left w-28">Comprobante</th>
-                <th class="py-1.5 text-left">Detalle</th>
-                <th class="py-1.5 text-right w-28">Cargo</th>
-                <th class="py-1.5 text-right w-28">Abono</th>
-                <th class="py-1.5 text-right w-28">Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-gray-100 text-gray-600">
-                <td class="py-1.5">{{ formatDate(statement.from) }}</td>
-                <td></td>
-                <td class="py-1.5 italic">Saldo inicial</td>
-                <td></td>
-                <td></td>
-                <td class="py-1.5 text-right tabular-nums font-medium">{{ plain(c.opening) }}</td>
-              </tr>
-              <tr v-for="(r, i) in c.rows" :key="i" class="border-b border-gray-100 align-top">
-                <td class="py-1.5 whitespace-nowrap">{{ formatDate(r.date) }}</td>
-                <td class="py-1.5 font-mono text-xs whitespace-nowrap">{{ r.document }}</td>
-                <td class="py-1.5 text-gray-600">
-                  <span v-if="r.kind === 'nota_credito'" class="text-gray-800">{{ r.description }}</span>
-                  <span v-else-if="r.debit > 0">{{ r.description || (r.kind === 'boleta' ? 'Boleta' : 'Factura') }}</span>
-                  <span v-else>{{ r.description }}</span>
-                </td>
-                <td class="py-1.5 text-right tabular-nums">{{ r.debit > 0 ? plain(r.debit) : '' }}</td>
-                <td class="py-1.5 text-right tabular-nums">{{ r.credit > 0 ? plain(r.credit) : '' }}</td>
-                <td class="py-1.5 text-right tabular-nums">{{ plain(r.balance) }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr class="border-t border-gray-300 font-semibold">
-                <td colspan="3" class="py-1.5">Totales del periodo</td>
-                <td class="py-1.5 text-right tabular-nums">{{ plain(c.debit) }}</td>
-                <td class="py-1.5 text-right tabular-nums">{{ plain(c.credit) }}</td>
-                <td class="py-1.5 text-right tabular-nums">{{ plain(c.closing) }}</td>
-              </tr>
-            </tfoot>
-          </table>
-
-          <div v-if="c.open.length > 0" class="mt-5 break-inside-avoid">
-            <h3 class="font-semibold text-gray-900 mb-1">Comprobantes por cobrar</h3>
+          <div class="overflow-x-auto">
             <table class="w-full">
               <thead>
                 <tr class="text-xs text-gray-500 border-b border-gray-300">
+                  <th class="py-1.5 text-left w-24">Fecha</th>
                   <th class="py-1.5 text-left w-28">Comprobante</th>
-                  <th class="py-1.5 text-left w-24">Emisión</th>
-                  <th class="py-1.5 text-left w-24">Vencimiento</th>
-                  <th class="py-1.5 text-left">Concepto</th>
-                  <th class="py-1.5 text-right w-24">Total</th>
-                  <th class="py-1.5 text-right w-24">Saldo</th>
-                  <th class="py-1.5 text-right w-20">Días vencido</th>
+                  <th class="py-1.5 text-left">Detalle</th>
+                  <th class="py-1.5 text-right w-28">Cargo</th>
+                  <th class="py-1.5 text-right w-28">Abono</th>
+                  <th class="py-1.5 text-right w-28">Saldo</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="o in c.open" :key="o.document" class="border-b border-gray-100 align-top">
-                  <td class="py-1.5 font-mono text-xs">{{ o.document }}</td>
-                  <td class="py-1.5">{{ formatDate(o.issue_date) }}</td>
-                  <td class="py-1.5">{{ formatDate(o.due_date) }}</td>
-                  <td class="py-1.5 text-gray-600">{{ o.concept }}</td>
-                  <td class="py-1.5 text-right tabular-nums">{{ plain(o.total) }}</td>
-                  <td class="py-1.5 text-right tabular-nums font-medium">{{ plain(o.balance) }}</td>
-                  <td class="py-1.5 text-right tabular-nums" :class="o.days_overdue > 30 ? 'text-red-600' : 'text-gray-600'">{{ o.days_overdue || '—' }}</td>
+                <tr class="border-b border-gray-100 text-gray-600">
+                  <td class="py-1.5">{{ formatDate(statement.from) }}</td>
+                  <td></td>
+                  <td class="py-1.5 italic">Saldo inicial</td>
+                  <td></td>
+                  <td></td>
+                  <td class="py-1.5 text-right tabular-nums font-medium">{{ plain(c.opening) }}</td>
+                </tr>
+                <tr v-for="(r, i) in c.rows" :key="i" class="border-b border-gray-100 align-top">
+                  <td class="py-1.5 whitespace-nowrap">{{ formatDate(r.date) }}</td>
+                  <td class="py-1.5 font-mono text-xs whitespace-nowrap">{{ r.document }}</td>
+                  <td class="py-1.5 text-gray-600">
+                    <span v-if="r.kind === 'nota_credito'" class="text-gray-800">{{ r.description }}</span>
+                    <span v-else-if="r.debit > 0">{{ r.description || (r.kind === 'boleta' ? 'Boleta' : 'Factura') }}</span>
+                    <span v-else>{{ r.description }}</span>
+                  </td>
+                  <td class="py-1.5 text-right tabular-nums">{{ r.debit > 0 ? plain(r.debit) : '' }}</td>
+                  <td class="py-1.5 text-right tabular-nums">{{ r.credit > 0 ? plain(r.credit) : '' }}</td>
+                  <td class="py-1.5 text-right tabular-nums">{{ plain(r.balance) }}</td>
                 </tr>
               </tbody>
+              <tfoot>
+                <tr class="border-t border-gray-300 font-semibold">
+                  <td colspan="3" class="py-1.5">Totales del periodo</td>
+                  <td class="py-1.5 text-right tabular-nums">{{ plain(c.debit) }}</td>
+                  <td class="py-1.5 text-right tabular-nums">{{ plain(c.credit) }}</td>
+                  <td class="py-1.5 text-right tabular-nums">{{ plain(c.closing) }}</td>
+                </tr>
+              </tfoot>
             </table>
+          </div>
+
+          <div v-if="c.open.length > 0" class="mt-5 break-inside-avoid">
+            <h3 class="font-semibold text-gray-900 mb-1">Comprobantes por cobrar</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="text-xs text-gray-500 border-b border-gray-300">
+                    <th class="py-1.5 text-left w-28">Comprobante</th>
+                    <th class="py-1.5 text-left w-24">Emisión</th>
+                    <th class="py-1.5 text-left w-24">Vencimiento</th>
+                    <th class="py-1.5 text-left">Concepto</th>
+                    <th class="py-1.5 text-right w-24">Total</th>
+                    <th class="py-1.5 text-right w-24">Saldo</th>
+                    <th class="py-1.5 text-right w-20">Días vencido</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="o in c.open" :key="o.document" class="border-b border-gray-100 align-top">
+                    <td class="py-1.5 font-mono text-xs">{{ o.document }}</td>
+                    <td class="py-1.5">{{ formatDate(o.issue_date) }}</td>
+                    <td class="py-1.5">{{ formatDate(o.due_date) }}</td>
+                    <td class="py-1.5 text-gray-600">{{ o.concept }}</td>
+                    <td class="py-1.5 text-right tabular-nums">{{ plain(o.total) }}</td>
+                    <td class="py-1.5 text-right tabular-nums font-medium">{{ plain(o.balance) }}</td>
+                    <td class="py-1.5 text-right tabular-nums" :class="o.days_overdue > 30 ? 'text-red-600' : 'text-gray-600'">{{ o.days_overdue || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 

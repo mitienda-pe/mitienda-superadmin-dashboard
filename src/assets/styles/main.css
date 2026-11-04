@@ -176,6 +176,12 @@ body {
    sin capa con `.p-dialog .p-dialog-content` le gana a las utilidades que cada
    diálogo pasa por `pt`, y las deja muertas. */
 
+/* Cada diálogo fija su ancho (44rem, 36rem…): en un celular no puede pasarse
+   de la pantalla. Es max-width, así que en pantallas grandes no cambia nada. */
+.p-dialog {
+  max-width: calc(100vw - 1.5rem);
+}
+
 /* InputNumber: el input interno no encoge por debajo de su ancho intrínseco
    y se sale de un contenedor angosto (`w-32`). Con `w-full` crece solo. */
 .p-inputnumber .p-inputnumber-input {
