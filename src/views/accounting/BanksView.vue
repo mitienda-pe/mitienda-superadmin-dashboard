@@ -94,7 +94,8 @@
           </div>
           <SelectButton v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" :allowEmpty="false" @change="reload" />
           <Dropdown v-model="directionFilter" :options="directionOptions" optionLabel="label" optionValue="value" class="w-40" @change="reload" />
-          <InputText v-model="monthFilter" type="month" class="w-44" v-tooltip.top="'Un mes en particular'" @change="reload" />
+          <InputText v-model="monthFilter" type="month" class="w-44" v-tooltip.top="'Un mes en particular'" @change="pickMonth" />
+          <InputText v-model="dayFilter" type="date" class="w-44" v-tooltip.top="'Un día en particular'" @change="pickDay" />
         </div>
         <p class="text-xs text-gray-400 mt-3">
           {{ formatNumber(summary.movements) }} movimientos · entró {{ plain(summary.inflow) }} · salió {{ plain(-summary.outflow) }}
@@ -874,6 +875,7 @@ const otherOptions = computed(() => Object.entries(otherLabels.value).map(([valu
 // --- Filtros ---
 const searchQuery = ref('')
 const monthFilter = ref('')
+const dayFilter = ref('')
 const directionFilter = ref('all')
 const filters = reactive<BankMovementFilters>({ account_id: null, period: '', status: 'pending', direction: '', search: '', page: 1 })
 
@@ -895,7 +897,7 @@ async function load() {
   const seq = ++loadSeq
   loading.value = true
   error.value = null
-  filters.period = monthFilter.value
+  filters.period = dayFilter.value || monthFilter.value
   filters.direction = directionFilter.value === 'all' ? '' : (directionFilter.value as 'in' | 'out')
   try {
     const res = await getBankMovements(filters)
@@ -931,6 +933,17 @@ function onSort(event: DataTableSortEvent) {
   const field = typeof event.sortField === 'string' ? event.sortField : ''
   filters.sort = field ? (field as BankMovementFilters['sort']) : undefined
   filters.dir = field ? (event.sortOrder === 1 ? 'asc' : 'desc') : undefined
+  reload()
+}
+
+// Día y mes se excluyen: elegir uno limpia el otro.
+function pickMonth() {
+  dayFilter.value = ''
+  reload()
+}
+
+function pickDay() {
+  monthFilter.value = ''
   reload()
 }
 
