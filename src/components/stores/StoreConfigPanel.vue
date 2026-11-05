@@ -73,8 +73,25 @@
         </div>
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-600 mb-1">Umami Website ID</label>
-          <InputText v-model="configForm.umami_website_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full font-mono text-sm" />
-          <p class="text-xs text-gray-400 mt-1">UUID del website en Umami Analytics. Dejar vacío si no está configurado.</p>
+          <div class="flex gap-2">
+            <InputText v-model="configForm.umami_website_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" class="w-full font-mono text-sm" />
+            <Button
+              v-if="!config.umami_website_id"
+              label="Activar analítica"
+              icon="pi pi-chart-line"
+              size="small"
+              outlined
+              class="shrink-0"
+              :loading="provisioningAnalytics"
+              @click="activateAnalytics"
+            />
+          </div>
+          <p class="text-xs text-gray-400 mt-1">
+            UUID del website en Umami Analytics.
+            <template v-if="!config.umami_website_id">
+              Las tiendas en prueba no se activan solas: «Activar analítica» crea el website y empieza a medir desde ahora (lo anterior no se recupera).
+            </template>
+          </p>
         </div>
         <div class="flex items-center gap-6 md:col-span-2 flex-wrap">
           <div class="flex items-center gap-2">
@@ -418,7 +435,7 @@ import { useStoresStore } from '@/stores/stores.store'
 import { usePlansStore } from '@/stores/plans.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { plansApi } from '@/api/plans.api'
-import { expireStorePlan } from '@/api/stores.api'
+import { expireStorePlan, provisionStoreAnalytics } from '@/api/stores.api'
 import RenewPlanDialog from '@/components/stores/RenewPlanDialog.vue'
 import StoreAdminEventsCard from '@/components/stores/StoreAdminEventsCard.vue'
 import { MIGRATED_MODULE_CODES } from '@/config/migrated-modules.config'
@@ -769,6 +786,37 @@ async function savePlan() {
     toast.add({ severity: 'error', summary: 'Error', detail: storesStore.configError || 'Error al guardar', life: 5000 })
   } finally {
     savingSection.value = null
+  }
+}
+
+// ── Activar analítica (Umami) a mano ─────────────────────────────────────
+const provisioningAnalytics = ref(false)
+
+async function activateAnalytics() {
+  provisioningAnalytics.value = true
+  try {
+    const res = await provisionStoreAnalytics(props.storeId)
+    const websiteId = res.data.umami_website_id
+    if (storesStore.currentStore?.config) {
+      storesStore.currentStore.config.umami_website_id = websiteId
+    }
+    configForm.umami_website_id = websiteId
+    eventsCard.value?.load()
+    toast.add({
+      severity: 'success',
+      summary: res.data.created ? 'Analítica activada' : 'Ya estaba activa',
+      detail: res.data.created ? 'La tienda empieza a medir visitas desde ahora.' : 'La tienda ya tenía un website en Umami.',
+      life: 4000
+    })
+  } catch (e: any) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: e?.response?.data?.messages?.error || e?.response?.data?.message || 'No se pudo activar la analítica',
+      life: 6000
+    })
+  } finally {
+    provisioningAnalytics.value = false
   }
 }
 

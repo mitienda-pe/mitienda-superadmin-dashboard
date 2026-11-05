@@ -104,6 +104,19 @@ export async function updateStoreConfig(storeId: number, data: StoreConfigUpdate
   return res.data
 }
 
+/**
+ * Activa Umami a mano para una tienda que la regla automática deja fuera (las
+ * pruebas, p. ej. del programa Tu Empresa). Si ya tenía, devuelve el existente.
+ */
+export async function provisionStoreAnalytics(storeId: number) {
+  const res = await api.post<{
+    success: boolean
+    message: string
+    data: { umami_website_id: string; created: boolean }
+  }>(`/superadmin/dashboard/stores/${storeId}/analytics/provision`, {})
+  return res.data
+}
+
 /** Bitácora de bloqueos, estado, configuración y módulos de la tienda. */
 export async function getStoreAdminEvents(storeId: number) {
   const res = await api.get<{ success: boolean; data: StoreAdminEvent[] }>(
