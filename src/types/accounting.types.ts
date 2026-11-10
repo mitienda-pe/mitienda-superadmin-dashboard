@@ -275,7 +275,7 @@ export interface BankMovementSummary {
   itf: number
 }
 
-export type DetractionRowStatus = 'conciliado' | 'anotado' | 'ya_estaba' | 'no_encontrado' | 'aviso'
+export type DetractionRowStatus = 'conciliado' | 'reasignado' | 'anotado' | 'saldo_favor' | 'ya_estaba' | 'no_encontrado' | 'aviso'
 
 export interface DetractionReportRow {
   constancia: string

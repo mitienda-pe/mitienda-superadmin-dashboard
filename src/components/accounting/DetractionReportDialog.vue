@@ -92,10 +92,12 @@ const emit = defineEmits<{ 'update:visible': [value: boolean]; applied: [] }>()
 const toast = useToast()
 const { formatDate } = useFormatters()
 
-const STATUS_ORDER: DetractionRowStatus[] = ['conciliado', 'anotado', 'ya_estaba', 'no_encontrado', 'aviso']
+const STATUS_ORDER: DetractionRowStatus[] = ['conciliado', 'reasignado', 'anotado', 'saldo_favor', 'ya_estaba', 'no_encontrado', 'aviso']
 const STATUS: Record<DetractionRowStatus, { label: string; badge: string }> = {
   conciliado: { label: 'Se concilia', badge: 'bg-primary-50 text-primary-700' },
   anotado: { label: 'Se anota el pago', badge: 'bg-primary-50 text-primary-700' },
+  reasignado: { label: 'Se reasigna', badge: 'bg-primary-50 text-primary-700' },
+  saldo_favor: { label: 'Saldo a favor', badge: 'bg-amber-50 text-amber-700' },
   ya_estaba: { label: 'Ya estaba', badge: 'bg-gray-100 text-gray-600' },
   no_encontrado: { label: 'No encontrado', badge: 'bg-amber-50 text-amber-700' },
   aviso: { label: 'Revisar', badge: 'bg-red-50 text-red-700' }
@@ -107,7 +109,8 @@ const loading = ref(false)
 const saving = ref(false)
 
 /** Lo que el botón "Aplicar" cambiaría. */
-const pending = computed(() => (result.value?.counts.conciliado ?? 0) + (result.value?.counts.anotado ?? 0))
+const pending = computed(() => (['conciliado', 'reasignado', 'anotado', 'saldo_favor'] as const)
+  .reduce((sum, s) => sum + (result.value?.counts[s] ?? 0), 0))
 
 function money(value: number, currency: string) {
   return `${currency === 'USD' ? 'US$' : 'S/'} ${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
