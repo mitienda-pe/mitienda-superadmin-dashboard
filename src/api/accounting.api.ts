@@ -1,7 +1,7 @@
 import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
-  SireImportResult, BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
+  SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
   InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod
 } from '@/types/accounting.types'
@@ -170,6 +170,18 @@ export async function importBankFile(file: File, accountId: number | null, execu
   if (execute) form.append('execute', '1')
 
   const res = await api.post<{ message: string; data: BankImportResult }>(`${BASE}/bank-import`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data
+}
+
+/** "Consulta de pago de detracciones" de SUNAT (CSV o TXT). Sin `execute` solo devuelve qué haría. */
+export async function importDetractionReport(file: File, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  if (execute) form.append('execute', '1')
+
+  const res = await api.post<{ message: string; data: DetractionReportResult }>(`${BASE}/detraction-report`, form, {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
   return res.data

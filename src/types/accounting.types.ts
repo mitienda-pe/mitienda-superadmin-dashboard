@@ -275,6 +275,34 @@ export interface BankMovementSummary {
   itf: number
 }
 
+export type DetractionRowStatus = 'conciliado' | 'anotado' | 'ya_estaba' | 'no_encontrado' | 'aviso'
+
+export interface DetractionReportRow {
+  constancia: string
+  period: string
+  supplier_ruc: string
+  supplier_name: string
+  buyer_ruc: string
+  buyer_name: string
+  date: string
+  amount: number
+  serie: string
+  number: number
+  document: string
+  /** venta: nos depositaron · compra: depositamos al proveedor */
+  side: 'venta' | 'compra' | 'ajena'
+  status: DetractionRowStatus
+  message: string
+  movement_id: number | null
+  target_id: number | null
+}
+
+export interface DetractionReportResult {
+  executed: boolean
+  rows: DetractionReportRow[]
+  counts: Partial<Record<DetractionRowStatus, number>>
+}
+
 export interface BankImportResult {
   executed: boolean
   bank: string
