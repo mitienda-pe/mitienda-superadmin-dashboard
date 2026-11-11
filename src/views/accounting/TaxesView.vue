@@ -11,7 +11,80 @@
           declarado en el PDT 621 y el PLAME.
         </p>
       </div>
-      <InputText v-model="period" type="month" class="w-44" @change="load" />
+    </div>
+
+    <!-- El año de un vistazo -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <InputText v-model="period" type="month" class="w-44" @change="load" />
+        <div class="flex flex-wrap gap-1">
+          <button
+            v-for="month in yearMonths"
+            :key="month.period"
+            type="button"
+            class="px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors"
+            :class="month.period === period
+              ? 'border-primary bg-primary text-white'
+              : month.status === 'pendiente'
+                ? 'border-amber-200 text-amber-800 bg-amber-50 hover:bg-amber-100'
+                : 'border-gray-200 text-gray-600 hover:bg-gray-50'"
+            v-tooltip.top="month.hint"
+            @click="pick(month.period)"
+          >
+            {{ month.label }}
+            <i v-if="month.icon" :class="month.icon" class="ml-1 text-[10px]"></i>
+          </button>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">
+        <i class="pi pi-check text-[10px]"></i> pagado ·
+        <i class="pi pi-sync text-[10px]"></i> fraccionado ·
+        <i class="pi pi-exclamation-circle text-[10px]"></i> vencido con saldo ·
+        <i class="pi pi-clock text-[10px]"></i> por vencer. Según el cálculo frente a las constancias importadas.
+      </p>
+    </div>
+
+    <!-- Deuda con SUNAT -->
+    <div v-if="overview" class="bg-white rounded-xl border border-gray-200 p-5">
+      <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+        <h2 class="font-semibold text-gray-900">Deuda con SUNAT</h2>
+        <span class="text-sm text-gray-500">
+          Total adeudado
+          <span class="text-lg font-bold text-gray-900 tabular-nums ml-1">{{ whole(overview.debt.overdue + overview.debt.installments) }}</span>
+        </span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+        <div class="rounded-lg border p-3" :class="overview.debt.overdue > 0 ? 'border-amber-200 bg-amber-50' : 'border-gray-200'">
+          <div class="text-gray-500">Vencido sin pagar</div>
+          <div class="text-xl font-semibold tabular-nums">{{ whole(overview.debt.overdue) }}</div>
+          <div class="text-xs text-gray-500 mt-1">
+            <span v-if="!overdueMonths.length">Nada vencido en {{ overview.year }}.</span>
+            <span v-for="(m, k) in overdueMonths" :key="m.period">
+              {{ k ? ' · ' : '' }}<button type="button" class="hover:underline" @click="pick(m.period)">{{ shortMonth(m.period) }} {{ whole(m.balance) }}</button>
+            </span>
+          </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+          <div class="text-gray-500">Fraccionamientos (capital)</div>
+          <div class="text-xl font-semibold tabular-nums">{{ whole(overview.debt.installments) }}</div>
+          <div class="text-xs text-gray-500 mt-1">
+            {{ overview.debt.loans.length }} vigentes · con intereses {{ whole(overview.debt.installments_remaining) }}
+            · cuota mensual {{ whole(monthlyInstallment) }}
+          </div>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+          <div class="text-gray-500">Por vencer</div>
+          <div class="text-xl font-semibold tabular-nums">{{ whole(overview.debt.upcoming) }}</div>
+          <div class="text-xs text-gray-500 mt-1">
+            <span v-if="!upcomingMonths.length">Nada por vencer.</span>
+            <span v-for="(m, k) in upcomingMonths" :key="m.period">{{ k ? ' · ' : '' }}{{ shortMonth(m.period) }} vence ~{{ formatDate(m.due_date) }}</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400 mt-2">
+        Es el cálculo del sistema frente a lo pagado según las constancias de SUNAT, no la deuda oficial: confírmala en SOL
+        (Consulta de deuda tributaria). El saldo de los fraccionamientos sale de sus cronogramas, dando por pagadas las cuotas ya vencidas.
+      </p>
     </div>
 
     <div v-if="error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{{ error }}</div>
@@ -315,8 +388,8 @@ import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { useAuthStore } from '@/stores/auth.store'
 import {
-  getTaxSettlement, getTaxRetentions, createTaxRetention, deleteTaxRetention, importTaxPayments, accountingErrorMessage,
-  type TaxSettlement, type TaxRetention, type TaxPayment, type TaxPaymentsImport
+  getTaxSettlement, getTaxRetentions, createTaxRetention, deleteTaxRetention, importTaxPayments, getTaxOverview, accountingErrorMessage,
+  type TaxSettlement, type TaxRetention, type TaxPayment, type TaxPaymentsImport, type TaxOverview, type TaxMonth
 } from '@/api/accounting.api'
 
 const toast = useToast()
@@ -337,6 +410,53 @@ const sunat = computed(() => s.value.sunat)
 const periodLabel = computed(() => `${period.value.slice(5)}/${period.value.slice(0, 4)}`)
 const balance = computed(() => Math.round(s.value.total - sunat.value.paid))
 const balanceClass = computed(() => balance.value > 0 ? 'bg-amber-50 text-amber-800' : balance.value < 0 ? 'bg-gray-50 text-gray-700' : 'bg-green-50 text-green-800')
+
+// --- El año y la deuda ---
+const overview = ref<TaxOverview | null>(null)
+const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic']
+const STATUS_ICON: Record<TaxMonth['status'], string> = {
+  pagado: 'pi pi-check',
+  fraccionado: 'pi pi-sync',
+  pendiente: 'pi pi-exclamation-circle',
+  por_vencer: 'pi pi-clock'
+}
+const year = computed(() => period.value.slice(0, 4))
+const yearMonths = computed(() =>
+  MONTHS.map((label, index) => {
+    const key = `${year.value}-${String(index + 1).padStart(2, '0')}`
+    const found = overview.value?.months.find(m => m.period === key)
+    let hint = 'Sin datos'
+    if (found) {
+      hint = `Calculado ${whole(found.total)} · pagado ${whole(found.paid)}`
+        + (found.fractioned ? ` · fraccionado ${whole(found.fractioned)}` : '')
+        + (found.balance ? ` · falta ${whole(found.balance)}` : '')
+    }
+    return { period: key, label, status: found?.status, icon: found ? STATUS_ICON[found.status] : '', hint }
+  })
+)
+const overdueMonths = computed(() => overview.value?.months.filter(m => m.status === 'pendiente') ?? [])
+const upcomingMonths = computed(() => overview.value?.months.filter(m => m.status === 'por_vencer') ?? [])
+const monthlyInstallment = computed(() => (overview.value?.debt.loans ?? []).reduce((t, l) => t + (l.next?.total ?? 0), 0))
+
+function shortMonth(p: string): string {
+  return `${MONTHS[Number(p.slice(5, 7)) - 1]} ${p.slice(2, 4)}`
+}
+
+let overviewYear = ''
+async function loadOverview(force = false) {
+  if (!force && overviewYear === year.value) return
+  overviewYear = year.value
+  try {
+    overview.value = await getTaxOverview(year.value)
+  } catch (e) {
+    error.value = accountingErrorMessage(e)
+  }
+}
+
+function pick(p: string) {
+  period.value = p
+  load()
+}
 
 const KIND_LABELS: Record<TaxPaymentsImport['rows'][number]['kind'], string> = {
   impuesto: 'Boleta de pago',
@@ -370,6 +490,7 @@ async function load() {
     if (mine !== seq) return
     settlement.value = calc
     retentions.value = list
+    loadOverview()
   } catch (e) {
     error.value = accountingErrorMessage(e)
   } finally {
@@ -455,6 +576,7 @@ async function runImport() {
     toast.add({ severity: 'success', summary: res.message, life: 5000 })
     importVisible.value = false
     load()
+    loadOverview(true)
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo importar', detail: accountingErrorMessage(e), life: 7000 })
   } finally {

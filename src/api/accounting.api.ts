@@ -546,6 +546,35 @@ export interface TaxPaymentsImport {
   rematched_older: number
 }
 
+export interface TaxMonth {
+  period: string
+  total: number
+  paid: number
+  fractioned: number
+  fractioned_name: string | null
+  balance: number
+  due_date: string
+  status: 'pagado' | 'fraccionado' | 'pendiente' | 'por_vencer'
+}
+
+export interface TaxOverview {
+  year: string
+  months: TaxMonth[]
+  debt: {
+    overdue: number
+    upcoming: number
+    installments: number
+    installments_remaining: number
+    loans: { name: string; outstanding: number; remaining: number; next: { due_date: string; total: number } | null }[]
+  }
+}
+
+/** El año mes a mes (calculado frente a lo pagado) y la deuda con SUNAT. */
+export async function getTaxOverview(year: string) {
+  const res = await api.get<{ data: TaxOverview }>(`${BASE}/tax-overview`, { params: { year } })
+  return res.data.data
+}
+
 /** XLS "Relación de constancia de pagos" de SUNAT. Sin `execute` solo devuelve qué entraría. */
 export async function importTaxPayments(file: File, execute: boolean) {
   const form = new FormData()
