@@ -173,6 +173,7 @@
           <div class="text-sm space-y-1">
             <div class="flex justify-between"><span class="text-gray-500">EsSalud</span><span class="tabular-nums">{{ whole(s.payroll.essalud) }}</span></div>
             <div class="flex justify-between"><span class="text-gray-500">Renta de quinta retenida</span><span class="tabular-nums">{{ whole(s.payroll.fifth) }}</span></div>
+            <div v-if="s.payroll.onp" class="flex justify-between"><span class="text-gray-500">ONP retenida</span><span class="tabular-nums">{{ whole(s.payroll.onp) }}</span></div>
             <p v-if="!s.payroll.closed" class="text-xs text-amber-700">La planilla del mes no está cerrada.</p>
           </div>
         </div>

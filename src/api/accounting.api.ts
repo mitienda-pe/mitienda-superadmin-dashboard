@@ -511,7 +511,7 @@ export interface TaxSettlement {
     retentions: number; to_pay: number; next_igv_credit: number; next_retention_credit: number
   }
   renta: { income: number; rate: number; tax: number; credit: number; to_pay: number; income_year_to_date: number; limit_300_uit: number }
-  payroll: { essalud: number; fifth: number; closed: boolean }
+  payroll: { essalud: number; fifth: number; onp: number; closed: boolean }
   total: number
   sunat: TaxPaymentsOfPeriod
 }
