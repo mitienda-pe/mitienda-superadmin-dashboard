@@ -513,6 +513,49 @@ export interface TaxSettlement {
   renta: { income: number; rate: number; tax: number; credit: number; to_pay: number; income_year_to_date: number; limit_300_uit: number }
   payroll: { essalud: number; fifth: number; closed: boolean }
   total: number
+  sunat: TaxPaymentsOfPeriod
+}
+
+export interface TaxPayment {
+  id: number
+  order_number: string
+  form: string
+  description: string
+  paid_at: string
+  bank: string | null
+  amount: number
+  movement: { id: number; account_name: string; op_date: string; amount: number; reconciled: boolean } | null
+}
+
+/** Lo pagado a SUNAT con ese periodo, según la relación de constancias importada. */
+export interface TaxPaymentsOfPeriod {
+  payments: TaxPayment[]
+  paid: number
+  installments: TaxPayment[]
+  declarations: TaxPayment[]
+  imported_until: string | null
+}
+
+export interface TaxPaymentsImport {
+  executed: boolean
+  rows: { order_number: string; period: string; form: string; description: string; paid_at: string; bank: string | null; amount: number; kind: 'impuesto' | 'fraccionamiento' | 'detraccion' | 'declaracion'; movement_id: number | null }[]
+  new: number
+  already: number
+  created: number
+  matched: number
+  rematched_older: number
+}
+
+/** XLS "Relación de constancia de pagos" de SUNAT. Sin `execute` solo devuelve qué entraría. */
+export async function importTaxPayments(file: File, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  if (execute) form.append('execute', '1')
+
+  const res = await api.post<{ message: string; data: TaxPaymentsImport }>(`${BASE}/import-tax-payments`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data
 }
 
 export async function getTaxSettlement(period: string, rentaCredit = 0) {

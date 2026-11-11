@@ -109,6 +109,72 @@
       </div>
     </div>
 
+    <!-- Pagos a SUNAT del periodo -->
+    <div v-if="settlement" class="bg-white rounded-xl border border-gray-200 p-5" :class="{ 'opacity-60': loading }">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div>
+          <h2 class="font-semibold text-gray-900">Pagado a SUNAT por este periodo</h2>
+          <p class="text-xs text-gray-500 max-w-3xl">
+            Las boletas con periodo {{ periodLabel }}, de la relación de constancias de pago de SOL. La fecha del cargo en el
+            banco no dice el periodo (mayo se pagó en octubre): esto sí.
+            <span v-if="sunat.imported_until">Importado hasta el {{ formatDate(sunat.imported_until) }}.</span>
+            <span v-else class="text-amber-700">Aún no se importó ninguna relación.</span>
+          </p>
+        </div>
+        <Button
+          v-if="authStore.canWrite('accounting')"
+          label="Importar constancias SUNAT"
+          icon="pi pi-upload"
+          size="small"
+          outlined
+          @click="openImport"
+        />
+      </div>
+
+      <div v-if="sunat.declarations.length" class="text-xs text-gray-500 mb-2">
+        Declarado:
+        <span v-for="(d, k) in sunat.declarations" :key="d.id">{{ k ? ' · ' : '' }}{{ formName(d) }} el {{ formatDate(d.paid_at) }}</span>
+      </div>
+
+      <div v-if="!sunat.payments.length" class="text-sm text-gray-500">Sin boletas de pago con este periodo.</div>
+      <table v-else class="w-full text-sm">
+        <tbody class="divide-y divide-gray-100">
+          <tr v-for="p in sunat.payments" :key="p.id">
+            <td class="py-1.5 text-gray-700 whitespace-nowrap">{{ formatDate(p.paid_at) }}</td>
+            <td class="py-1.5 text-gray-500">{{ p.bank ?? '—' }} <span class="text-xs text-gray-400 font-mono">orden {{ p.order_number }}</span></td>
+            <td class="py-1.5">
+              <router-link v-if="p.movement" :to="{ path: '/accounting/banks', query: { search: `#${p.movement.id}` } }" class="text-primary hover:underline">
+                #{{ p.movement.id }}
+              </router-link>
+              <span v-if="p.movement" class="text-xs ml-1" :class="p.movement.reconciled ? 'text-gray-400' : 'text-amber-700'">
+                {{ p.movement.reconciled ? 'conciliado' : 'por conciliar' }}
+              </span>
+              <span v-else class="text-xs text-amber-700">sin cargo en el banco (¿falta importar el extracto?)</span>
+            </td>
+            <td class="py-1.5 text-right tabular-nums">{{ money(p.amount) }}</td>
+          </tr>
+          <tr class="font-semibold text-gray-900 border-t-2 border-gray-200">
+            <td class="py-2" colspan="3">Pagado</td>
+            <td class="py-2 text-right tabular-nums">{{ money(sunat.paid) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="mt-3 flex flex-wrap justify-between gap-2 text-sm rounded-lg px-3 py-2" :class="balanceClass">
+        <span>{{ balance > 0 ? 'Falta pagar, según el cálculo' : balance < 0 ? 'Pagado de más (intereses o el cálculo no cuadra con lo declarado)' : 'Pagado completo' }}</span>
+        <span class="tabular-nums font-semibold">{{ whole(Math.abs(balance)) }}</span>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">
+        Total calculado {{ whole(s.total) }} menos lo pagado. Si se fraccionó, la deuda pasa a Flujo de caja como préstamo de SUNAT y aquí queda "por pagar".
+      </p>
+
+      <div v-if="sunat.installments.length" class="mt-3 text-xs text-gray-500">
+        Además, cuotas de fraccionamiento pagadas con periodo {{ periodLabel }} (no cuentan arriba):
+        <span v-for="(p, k) in sunat.installments" :key="p.id">{{ k ? ' · ' : '' }}{{ formatDate(p.paid_at) }} {{ money(p.amount) }}</span>
+        = {{ money(sunat.installments.reduce((t, p) => t + p.amount, 0)) }}
+      </div>
+    </div>
+
     <!-- Retenciones -->
     <div class="bg-white rounded-xl border border-gray-200 p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -181,6 +247,59 @@
         <Button label="Registrar" icon="pi pi-check" :loading="saving" @click="saveRetention" />
       </template>
     </Dialog>
+    <Dialog :draggable="false" v-model:visible="importVisible" header="Importar constancias de pago de SUNAT" modal :style="{ width: '52rem' }">
+      <div class="space-y-3">
+        <p class="text-sm text-gray-600">
+          En SOL: <b>Consultas → Declaraciones y pagos → Relación de constancias</b>, por rango de fechas, y descarga el XLS.
+          Cada boleta se empareja con su cargo en BBVA o BN Detracciones; las que ya estaban se saltan.
+        </p>
+        <input type="file" accept=".xls,.xlsx,application/vnd.ms-excel" class="block w-full text-sm text-gray-600" @change="onImportFile" />
+        <div v-if="importPreview" class="space-y-2">
+          <p class="text-sm">
+            <b>{{ importPreview.new }}</b> nuevas ({{ importPreview.already }} ya estaban) ·
+            <b>{{ importPreview.matched }}</b> con su cargo en el banco
+            <span v-if="importPreview.rematched_older"> · {{ importPreview.rematched_older }} anteriores encuentran ahora su cargo</span>
+          </p>
+          <div v-if="importPreview.rows.length" class="max-h-80 overflow-y-auto border border-gray-200 rounded-lg">
+            <table class="w-full text-xs">
+              <thead class="bg-gray-50 text-gray-500 sticky top-0">
+                <tr>
+                  <th class="px-2 py-1 text-left font-medium">Fecha</th>
+                  <th class="px-2 py-1 text-left font-medium">Periodo</th>
+                  <th class="px-2 py-1 text-left font-medium">Qué es</th>
+                  <th class="px-2 py-1 text-left font-medium">Banco</th>
+                  <th class="px-2 py-1 text-right font-medium">Monto</th>
+                  <th class="px-2 py-1 text-left font-medium">Cargo</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="r in importPreview.rows" :key="r.order_number">
+                  <td class="px-2 py-1 whitespace-nowrap">{{ formatDate(r.paid_at) }}</td>
+                  <td class="px-2 py-1">{{ r.period.slice(5) }}/{{ r.period.slice(0, 4) }}</td>
+                  <td class="px-2 py-1">{{ KIND_LABELS[r.kind] }}</td>
+                  <td class="px-2 py-1">{{ r.bank ?? '—' }}</td>
+                  <td class="px-2 py-1 text-right tabular-nums">{{ r.amount ? money(r.amount) : '—' }}</td>
+                  <td class="px-2 py-1">
+                    <span v-if="r.movement_id">#{{ r.movement_id }}</span>
+                    <span v-else-if="r.kind !== 'declaracion'" class="text-amber-700">no encontrado</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text @click="importVisible = false" />
+        <Button
+          label="Importar"
+          icon="pi pi-check"
+          :loading="importing"
+          :disabled="!importPreview || (!importPreview.new && !importPreview.rematched_older)"
+          @click="runImport"
+        />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -196,8 +315,8 @@ import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { useAuthStore } from '@/stores/auth.store'
 import {
-  getTaxSettlement, getTaxRetentions, createTaxRetention, deleteTaxRetention, accountingErrorMessage,
-  type TaxSettlement, type TaxRetention
+  getTaxSettlement, getTaxRetentions, createTaxRetention, deleteTaxRetention, importTaxPayments, accountingErrorMessage,
+  type TaxSettlement, type TaxRetention, type TaxPayment, type TaxPaymentsImport
 } from '@/api/accounting.api'
 
 const toast = useToast()
@@ -214,6 +333,20 @@ const retentions = ref<TaxRetention[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 const s = computed(() => settlement.value as TaxSettlement)
+const sunat = computed(() => s.value.sunat)
+const periodLabel = computed(() => `${period.value.slice(5)}/${period.value.slice(0, 4)}`)
+const balance = computed(() => Math.round(s.value.total - sunat.value.paid))
+const balanceClass = computed(() => balance.value > 0 ? 'bg-amber-50 text-amber-800' : balance.value < 0 ? 'bg-gray-50 text-gray-700' : 'bg-green-50 text-green-800')
+
+const KIND_LABELS: Record<TaxPaymentsImport['rows'][number]['kind'], string> = {
+  impuesto: 'Boleta de pago',
+  fraccionamiento: 'Cuota de fraccionamiento',
+  detraccion: 'Detracción (proveedor)',
+  declaracion: 'Declaración'
+}
+function formName(p: TaxPayment): string {
+  return p.form === '0621' ? 'PDT 621' : p.form === '0601' ? 'PLAME' : `${p.form} ${p.description}`
+}
 
 function money(value: number): string {
   return `S/ ${value.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -284,6 +417,48 @@ async function removeRetention(r: TaxRetention) {
     load()
   } catch (e) {
     toast.add({ severity: 'error', summary: 'No se pudo quitar', detail: accountingErrorMessage(e), life: 6000 })
+  }
+}
+
+// --- Constancias de pago de SUNAT ---
+const importVisible = ref(false)
+const importing = ref(false)
+const importFile = ref<File | null>(null)
+const importPreview = ref<TaxPaymentsImport | null>(null)
+
+function openImport() {
+  importFile.value = null
+  importPreview.value = null
+  importVisible.value = true
+}
+
+async function onImportFile(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0] ?? null
+  importFile.value = file
+  importPreview.value = null
+  if (!file) return
+  importing.value = true
+  try {
+    importPreview.value = (await importTaxPayments(file, false)).data
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo leer', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    importing.value = false
+  }
+}
+
+async function runImport() {
+  if (!importFile.value) return
+  importing.value = true
+  try {
+    const res = await importTaxPayments(importFile.value, true)
+    toast.add({ severity: 'success', summary: res.message, life: 5000 })
+    importVisible.value = false
+    load()
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo importar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    importing.value = false
   }
 }
 
