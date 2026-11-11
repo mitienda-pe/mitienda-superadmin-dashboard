@@ -5,7 +5,7 @@
 //   master                → todo
 //   desarrollo            → plataforma, emisión y cobros (no contabilidad)
 //   ventas                → emisión, ver comprobantes, conciliar ingresos en Bancos y el pipeline de trials
-//   soporte_ventas        → lo de ventas más la ficha de las tiendas (sin lo técnico)
+//   soporte_ventas        → lo de ventas más el alta y la ficha de las tiendas (sin lo técnico)
 //   contabilidad          → cobros y contabilidad
 //   contabilidad_lectura  → cobros y contabilidad, sin modificar
 //   programa              → solo las tiendas del programa de su partner (Tu Empresa)
@@ -14,9 +14,8 @@ export type PanelArea = 'platform' | 'stores' | 'billing' | 'finance' | 'collect
 
 export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs', 'pipeline']
 
-/** La ficha de las tiendas y lo comercial de su plan. Crear una tienda sigue siendo de la plataforma. */
+/** La ficha de las tiendas, su alta y lo comercial de su plan. */
 const STORES_PATHS = ['/stores']
-const STORES_PLATFORM_PATHS = ['/stores/create']
 
 /** Emitir: ventas de planes (y su renovación), comisiones, emisión manual. */
 const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/commission-period', '/billing/payment-links']
@@ -46,7 +45,6 @@ function under(path: string, bases: string[]): boolean {
 }
 
 export function areaOfPath(path: string): PanelArea {
-  if (under(path, STORES_PLATFORM_PATHS)) return 'platform'
   if (under(path, STORES_PATHS)) return 'stores'
   if (under(path, BILLING_PATHS)) return 'billing'
   if (under(path, FINANCE_PATHS)) return 'finance'
