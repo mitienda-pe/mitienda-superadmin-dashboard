@@ -399,6 +399,17 @@ export interface ExpenseSuggestion {
   unconfirmed_payment?: string
   name_match: boolean
   description?: string | null
+  /** Gasto en soles que se paga desde una cuenta en dólares (un sueldo pagado en parte en dólares). */
+  usd_for_pen?: {
+    official_rate: number
+    soles_at_official: number
+    /** Equivalente en soles que trae la glosa ("SUELDO PARCIAL JAVIER 3,380.10"). */
+    glosa_soles: number | null
+    suggested_soles: number
+    /** Dólares del movimiento que se llevan esos soles; si son menos que el movimiento, el resto queda para otro gasto. */
+    usd_part: number
+    implied_rate: number
+  }
 }
 
 export type ReconcileInput =
@@ -411,6 +422,8 @@ export type ReconcileInput =
   | { kind: 'detraccion_usd'; invoice_id: number }
   /** Depósito en soles que paga una factura en dólares; sin usd_amount, se abona todo su saldo. */
   | { kind: 'cobro_soles_usd'; invoice_id: number; usd_amount?: number }
+  /** Salida en dólares que paga un gasto en soles; sin soles_amount, los de la glosa o al TC oficial. */
+  | { kind: 'pago_usd_soles'; expense_id: number; soles_amount?: number; usd_amount?: number }
   /** Retiro del banco que fue a la caja (o depósito que salió de ella): crea el otro lado en la caja. */
   | { kind: 'caja'; cash_account_id: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[]; retention?: boolean }

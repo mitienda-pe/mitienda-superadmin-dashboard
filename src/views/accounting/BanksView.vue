@@ -427,10 +427,10 @@
                   v-for="expense in expenseRows"
                   :key="expense.id"
                   class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50"
-                  :class="{ 'bg-primary-50': expensePlan[expense.id] !== undefined }"
+                  :class="{ 'bg-primary-50': isExpensePicked(expense) }"
                 >
-                  <Checkbox :modelValue="expensePlan[expense.id] !== undefined" binary @update:modelValue="toggleExpense(expense, $event)" />
-                  <div class="flex-1 min-w-0 cursor-pointer" @click="toggleExpense(expense, expensePlan[expense.id] === undefined)">
+                  <Checkbox :modelValue="isExpensePicked(expense)" binary @update:modelValue="toggleExpense(expense, $event)" />
+                  <div class="flex-1 min-w-0 cursor-pointer" @click="toggleExpense(expense, !isExpensePicked(expense))">
                     <div class="text-sm text-gray-800">
                       <span class="font-medium">{{ expense.payee_name }}</span> · {{ expense.category_name }}
                     </div>
@@ -440,6 +440,7 @@
                       <span v-if="expense.same_amount" class="text-green-700"> · mismo importe</span>
                       <span v-if="expense.unconfirmed_payment" class="text-green-700"> · confirma el pago anotado el {{ formatDate(expense.unconfirmed_payment) }}</span>
                       <span v-if="expense.name_match" class="text-green-700"> · el nombre está en la glosa</span>
+                      <span v-if="expense.usd_for_pen" class="text-gray-700"> · en soles: se paga al tipo de cambio</span>
                     </div>
                   </div>
                   <div class="text-right whitespace-nowrap">
@@ -454,6 +455,35 @@
                     />
                     <div class="text-xs tabular-nums text-gray-500">{{ expense.unconfirmed_payment ? 'pago' : 'saldo' }} {{ money(expense.open_amount, expense.currency) }}</div>
                   </div>
+                </div>
+              </div>
+              <!-- Salida en dólares que paga un gasto en soles -->
+              <div v-if="usdPenExpense?.usd_for_pen" class="space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p class="text-sm text-gray-700">
+                  {{ usdPenExpense.payee_name }}: gasto en soles ({{ money(usdPenExpense.open_amount, 'PEN') }} por pagar) pagado
+                  desde la cuenta en dólares. Al gasto se le abonan los soles que indiques con los dólares que indiques; contra el
+                  TC oficial ({{ usdPenExpense.usd_for_pen.official_rate.toFixed(3) }}), la diferencia va a diferencia de cambio.
+                </p>
+                <p v-if="usdPenExpense.usd_for_pen.glosa_soles" class="text-xs text-green-700">
+                  La glosa dice {{ money(usdPenExpense.usd_for_pen.glosa_soles, 'PEN') }}
+                  (TC {{ (usdPenExpense.usd_for_pen.glosa_soles / current.remaining).toFixed(3) }}).
+                </p>
+                <div class="flex flex-wrap items-end gap-3">
+                  <div class="w-44">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Dólares que se aplican</label>
+                    <InputNumber v-model="usdPenUsd" :minFractionDigits="2" :maxFractionDigits="2" :min="0" :max="current.remaining" prefix="US$ " class="w-full" />
+                  </div>
+                  <div class="w-44">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Soles que se abonan</label>
+                    <InputNumber v-model="usdPenSoles" :minFractionDigits="2" :maxFractionDigits="2" :min="0" :max="usdPenExpense.open_amount" prefix="S/ " class="w-full" />
+                  </div>
+                  <p v-if="usdPenSoles && usdPenUsd" class="text-xs text-gray-500 pb-2">
+                    TC {{ (usdPenSoles / usdPenUsd).toFixed(3) }} ·
+                    quedan {{ money(Math.max(usdPenExpense.open_amount - usdPenSoles, 0), 'PEN') }} por pagar
+                    <template v-if="current.remaining - usdPenUsd > 0.004">
+                      · sobran {{ money(current.remaining - usdPenUsd, 'USD') }} del movimiento para otro gasto
+                    </template>
+                  </p>
                 </div>
               </div>
               <div v-if="expenseSummary.count > 0" class="flex flex-wrap justify-between gap-x-6 gap-y-1 text-xs text-gray-600">
@@ -1099,7 +1129,31 @@ const expenseSummary = computed(() => {
   const applied = Math.round(amounts.reduce((a, b) => a + b, 0) * 100) / 100
   return { count: amounts.length, applied, left: Math.round(((current.value?.remaining ?? 0) - applied) * 100) / 100 }
 })
+// Gasto en soles pagado desde la cuenta en dólares: va solo, con su importe en soles.
+const usdPenExpense = ref<ExpenseSuggestion | null>(null)
+const usdPenSoles = ref<number | null>(null)
+const usdPenUsd = ref<number | null>(null)
+function isExpensePicked(expense: ExpenseSuggestion): boolean {
+  return expensePlan.value[expense.id] !== undefined || usdPenExpense.value?.id === expense.id
+}
 function toggleExpense(expense: ExpenseSuggestion, on: boolean) {
+  if (expense.usd_for_pen) {
+    usdPenExpense.value = on ? expense : null
+    usdPenSoles.value = on ? expense.usd_for_pen.suggested_soles : null
+    usdPenUsd.value = on ? expense.usd_for_pen.usd_part : null
+    if (on) {
+      expensePlan.value = {}
+      pickedExpenseRows.value = { [expense.id]: expense }
+    } else {
+      pickedExpenseRows.value = {}
+    }
+    return
+  }
+  if (on && usdPenExpense.value) {
+    usdPenExpense.value = null
+    usdPenSoles.value = null
+    pickedExpenseRows.value = {}
+  }
   const plan = { ...expensePlan.value }
   const rows = { ...pickedExpenseRows.value }
   if (on) {
@@ -1273,6 +1327,9 @@ function resetChoice() {
   pickedInvoice.value = null
   expensePlan.value = {}
   pickedExpenseRows.value = {}
+  usdPenExpense.value = null
+  usdPenSoles.value = null
+  usdPenUsd.value = null
   expenseSearch.value = ''
   partAmount.value = current.value?.remaining ?? null
   newExpense.payee_id = null
@@ -1419,6 +1476,10 @@ async function submitReconcile() {
       if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
       payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }
     }
+  } else if (mode.value === 'pago' && usdPenExpense.value) {
+    if (!usdPenSoles.value || usdPenSoles.value <= 0) return warn('Indica cuántos soles se abonan al gasto')
+    if (!usdPenUsd.value || usdPenUsd.value <= 0) return warn('Indica cuántos dólares del movimiento se aplican')
+    payload = { kind: 'pago_usd_soles', expense_id: usdPenExpense.value.id, soles_amount: usdPenSoles.value, usd_amount: usdPenUsd.value }
   } else if (mode.value === 'pago') {
     const items = Object.entries(expensePlan.value).map(([id, amount]) => ({ expense_id: Number(id), amount: Number(amount) || 0 }))
     if (items.length === 0) return warn('Marca el gasto o los gastos que se pagaron')
