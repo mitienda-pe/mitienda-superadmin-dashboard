@@ -59,7 +59,7 @@
       </div>
     </div>
 
-    <!-- Section 2: Technical Config (solo plataforma: dominio, SSL, integraciones) -->
+    <!-- Section 2: Technical Config (solo plataforma: dominio, integraciones). El SSL lo emite Caddy solo. -->
     <div v-if="authStore.canWrite('platform')" class="bg-white rounded-xl border border-gray-200 p-6">
       <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-4">Configuración Técnica</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -94,10 +94,6 @@
           </p>
         </div>
         <div class="flex items-center gap-6 md:col-span-2 flex-wrap">
-          <div class="flex items-center gap-2">
-            <InputSwitch v-model="configForm.ssl_enabled" />
-            <label class="text-sm text-gray-600">SSL</label>
-          </div>
           <div class="flex items-center gap-2">
             <InputSwitch v-model="configForm.domain_verified" />
             <label class="text-sm text-gray-600">Dominio Verificado</label>
@@ -658,7 +654,6 @@ const configForm = reactive({
   blocked: props.config.blocked,
   marketplace: props.config.marketplace,
   directory: props.config.directory,
-  ssl_enabled: props.config.ssl_enabled,
   domain: props.config.domain || '',
   domain_verified: props.config.domain_verified,
   fb_integration: props.config.fb_integration,
@@ -695,7 +690,6 @@ watch(() => props.config, (c) => {
   configForm.blocked = c.blocked
   configForm.marketplace = c.marketplace
   configForm.directory = c.directory
-  configForm.ssl_enabled = c.ssl_enabled
   configForm.domain = c.domain || ''
   configForm.domain_verified = c.domain_verified
   configForm.fb_integration = c.fb_integration
@@ -746,7 +740,6 @@ async function saveConfig() {
   savingSection.value = 'config'
   try {
     await storesStore.saveStoreConfig(props.storeId, {
-      ssl_enabled: configForm.ssl_enabled,
       domain: configForm.domain || null,
       domain_verified: configForm.domain_verified,
       fb_integration: configForm.fb_integration,
