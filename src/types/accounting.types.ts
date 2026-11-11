@@ -360,6 +360,27 @@ export interface InvoiceSuggestion {
     /** Con el TC oficial de la fecha de la factura sale exacto el depósito. */
     rate_match: boolean
   }
+  /** Hallada con el buscador: factura en dólares en una cuenta en soles que no es la de detracciones. */
+  foreign_pen?: boolean
+  /** El depósito en soles paga esta factura en dólares (cuenta que no es la de detracciones). */
+  pen_for_usd?: PenForUsdFit
+}
+
+/** Un depósito en soles contra el saldo en dólares de una factura. */
+export interface PenForUsdFit {
+  open_usd: number
+  /** Soles del depósito / saldo en dólares. */
+  implied_rate: number
+  /** Venta SBS del cierre anterior a la fecha del depósito. */
+  official_rate: number
+  /** < 0: entraron menos soles de los que vale el saldo al TC oficial. */
+  deviation: number
+  /** Dólares que cubre el depósito al TC oficial (tope: el saldo). */
+  usd_at_official: number
+  /** Lo que quedaría por cobrar si se abona al TC oficial. */
+  shortfall_usd: number
+  /** Soles de más (+) o de menos (−) contra el saldo al TC oficial. */
+  fx_difference: number
 }
 
 export interface ExpenseSuggestion {
@@ -388,6 +409,8 @@ export type ReconcileInput =
   | { kind: 'otro'; label: string; note?: string }
   | { kind: 'transferencia'; counterpart_id: number }
   | { kind: 'detraccion_usd'; invoice_id: number }
+  /** Depósito en soles que paga una factura en dólares; sin usd_amount, se abona todo su saldo. */
+  | { kind: 'cobro_soles_usd'; invoice_id: number; usd_amount?: number }
   /** Retiro del banco que fue a la caja (o depósito que salió de ella): crea el otro lado en la caja. */
   | { kind: 'caja'; cash_account_id: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[]; retention?: boolean }

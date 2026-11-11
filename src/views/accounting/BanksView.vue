@@ -332,6 +332,12 @@
                       </span>
                       <span v-if="invoice.usd_detraction.rate_match" class="text-green-700"> · calza con el TC oficial de su fecha</span>
                     </div>
+                    <div v-if="invoice.pen_for_usd" class="text-xs text-gray-700">
+                      Factura en dólares: el depósito sale a TC {{ invoice.pen_for_usd.implied_rate.toFixed(3) }}
+                      (oficial {{ invoice.pen_for_usd.official_rate.toFixed(3) }})
+                      <span v-if="Math.abs(invoice.pen_for_usd.deviation) <= 0.01" class="text-green-700"> · calza con el TC oficial</span>
+                    </div>
+                    <div v-else-if="invoice.foreign_pen" class="text-xs text-gray-700">Factura en dólares: se cobra en soles.</div>
                   </div>
                   <div class="text-sm tabular-nums text-gray-800 whitespace-nowrap">{{ money(invoice.open_amount, invoice.currency) }}</div>
                 </label>
@@ -566,8 +572,46 @@
             </div>
           </template>
 
+          <!-- Depósito en soles que paga una factura en dólares -->
+          <div v-if="mode === 'cobro' && !customerOpen && pickedPenUsd" class="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+            <p class="text-sm text-gray-700">
+              Factura en dólares cobrada en soles: el movimiento se concilia completo
+              ({{ money(current?.remaining ?? 0, 'PEN') }}) y a la factura se le abonan los dólares que indiques.
+              Lo que no calce con el tipo de cambio de la factura va a diferencia de cambio.
+            </p>
+            <template v-if="pickedPenUsd.fit">
+              <p class="text-xs text-gray-600">
+                TC del depósito {{ pickedPenUsd.fit.implied_rate.toFixed(3) }} · oficial del día {{ pickedPenUsd.fit.official_rate.toFixed(3) }}
+                <span v-if="Math.abs(pickedPenUsd.fit.deviation) > 0.01" class="text-amber-700">
+                  · entraron {{ money(Math.abs(pickedPenUsd.fit.fx_difference), 'PEN') }}
+                  {{ pickedPenUsd.fit.fx_difference < 0 ? 'menos' : 'más' }} de lo que vale el saldo al TC oficial
+                  ({{ (pickedPenUsd.fit.deviation * 100).toFixed(1) }} %)
+                </span>
+              </p>
+              <div v-if="pickedPenUsd.fit.shortfall_usd > 0.004" class="space-y-2">
+                <label class="flex items-start gap-2 text-sm cursor-pointer">
+                  <RadioButton v-model="penUsdChoice" value="full" @change="usdAmount = pickedPenUsd.fit.open_usd" />
+                  <span>
+                    <b>Cerrar la factura</b>: abonar {{ money(pickedPenUsd.fit.open_usd, 'USD') }}. La diferencia es pérdida por tipo de cambio.
+                  </span>
+                </label>
+                <label class="flex items-start gap-2 text-sm cursor-pointer">
+                  <RadioButton v-model="penUsdChoice" value="official" @change="usdAmount = pickedPenUsd.fit.usd_at_official" />
+                  <span>
+                    <b>Cobro parcial</b>: abonar {{ money(pickedPenUsd.fit.usd_at_official, 'USD') }} (al TC oficial) y dejar
+                    {{ money(pickedPenUsd.fit.shortfall_usd, 'USD') }} por cobrar al cliente.
+                  </span>
+                </label>
+              </div>
+            </template>
+            <div class="w-48">
+              <label class="block text-sm font-medium text-gray-600 mb-1">Dólares que se abonan</label>
+              <InputNumber v-model="usdAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" prefix="US$ " class="w-full" @input="penUsdChoice = null" />
+            </div>
+          </div>
+
           <!-- Importe de esta parte: solo cuando se cruza con un comprobante o un gasto -->
-          <div v-if="mode === 'cobro' && !customerOpen && !pickedUsdDetraction" class="flex items-end gap-3">
+          <div v-if="mode === 'cobro' && !customerOpen && !pickedUsdDetraction && !pickedPenUsd" class="flex items-end gap-3">
             <div class="w-48">
               <label class="block text-sm font-medium text-gray-600 mb-1">Importe a aplicar</label>
               <InputNumber v-model="partAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" class="w-full" />
@@ -1072,6 +1116,14 @@ function toggleExpense(expense: ExpenseSuggestion, on: boolean) {
 const partAmount = ref<number | null>(null)
 // Depósito en soles que paga la detracción de una factura en dólares: va completo, sin importe.
 const pickedUsdDetraction = computed(() => invoiceOptions.value.find(i => i.id === pickedInvoice.value)?.usd_detraction ?? null)
+// Depósito en soles (fuera de la cuenta de detracciones) que paga una factura en dólares.
+const pickedPenUsd = computed(() => {
+  const picked = invoiceOptions.value.find(i => i.id === pickedInvoice.value)
+  if (!picked || (!picked.pen_for_usd && !picked.foreign_pen)) return null
+  return { invoice: picked, fit: picked.pen_for_usd ?? null }
+})
+const usdAmount = ref<number | null>(null)
+const penUsdChoice = ref<'full' | 'official' | null>('full')
 const invoiceSearch = ref('')
 const undoingId = ref<number | null>(null)
 const payees = ref<Payee[]>([])
@@ -1283,6 +1335,8 @@ async function openReconcile(row: BankMovement) {
 // El abono no puede superar ni lo que falta del movimiento ni el saldo del comprobante.
 function onPickInvoice(invoice: InvoiceSuggestion) {
   partAmount.value = Math.min(current.value?.remaining ?? 0, invoice.open_amount)
+  usdAmount.value = invoice.open_amount
+  penUsdChoice.value = 'full'
 }
 
 // Buscar a mano gastos que las sugerencias no trajeron (p. ej. lo que se le reembolsa a alguien).
@@ -1309,10 +1363,12 @@ async function searchInvoices() {
   loadingSuggestions.value = true
   try {
     const res = await getLedgerInvoices({ payment: 'all', period: '', origin: '', search: invoiceSearch.value.trim(), page: 1 })
-    // En la cuenta de detracciones (soles) entra también la detracción de facturas en dólares.
+    // En la cuenta de detracciones (soles) entra también la detracción de facturas en dólares;
+    // en las demás cuentas en soles, el cobro en soles de una factura en dólares.
     const bnSoles = current.value.bank === 'Banco de la Nación' && current.value.currency === 'PEN'
+    const penAccount = current.value.currency === 'PEN'
     invoiceOptions.value = res.data
-      .filter(i => i.payment_status !== null && (i.currency === current.value!.currency || (bnSoles && i.currency === 'USD')))
+      .filter(i => i.payment_status !== null && (i.currency === current.value!.currency || (penAccount && i.currency === 'USD')))
       .map(i => ({
         id: i.id,
         number: i.number,
@@ -1327,7 +1383,8 @@ async function searchInvoices() {
         net_of_detraction: false,
         name_match: false,
         number_match: false,
-        foreign_detraction: i.currency !== current.value!.currency
+        foreign_detraction: bnSoles && i.currency !== current.value!.currency,
+        foreign_pen: !bnSoles && i.currency !== current.value!.currency
       }))
       .filter(i => i.open_amount > 0)
     pickedInvoice.value = null
@@ -1355,6 +1412,9 @@ async function submitReconcile() {
     const picked = invoiceOptions.value.find(i => i.id === pickedInvoice.value)
     if (pickedUsdDetraction.value || picked?.foreign_detraction) {
       payload = { kind: 'detraccion_usd', invoice_id: pickedInvoice.value }
+    } else if (pickedPenUsd.value) {
+      if (!usdAmount.value || usdAmount.value <= 0) return warn('Indica cuántos dólares se abonan a la factura')
+      payload = { kind: 'cobro_soles_usd', invoice_id: pickedInvoice.value, usd_amount: usdAmount.value }
     } else {
       if (!partAmount.value || partAmount.value <= 0) return warn('Indica el importe a aplicar')
       payload = { kind: 'cobro', invoice_id: pickedInvoice.value, amount: partAmount.value }
