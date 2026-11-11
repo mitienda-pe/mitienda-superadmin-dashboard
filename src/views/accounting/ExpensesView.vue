@@ -528,11 +528,11 @@
     <Dialog :draggable="false" v-model:visible="sireVisible" modal header="Importar comprobantes de compra" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Sube el CSV del registro de compras de SUNAT (SIRE), o el XML de un comprobante suelto, como el Documento
-          Autorizado mensual de Culqi. Primero ves qué entraría; nada se guarda hasta que confirmes, y lo que ya se
-          importó no se repite aunque llegue por el otro camino.
+          Sube el CSV del registro de compras de SUNAT (SIRE), el XML de un comprobante suelto (como el Documento
+          Autorizado mensual de Culqi) o el PDF de un recibo de Movistar, que ya no llegan por el SIRE. Primero ves qué
+          entraría; nada se guarda hasta que confirmes, y lo que ya se importó no se repite aunque llegue por el otro camino.
         </p>
-        <input type="file" accept=".csv,.xml,text/csv,text/xml" class="block w-full text-sm text-gray-600" @change="onSireFile" />
+        <input type="file" accept=".csv,.xml,.pdf,text/csv,text/xml,application/pdf" class="block w-full text-sm text-gray-600" @change="onSireFile" />
 
         <p v-if="sireLoading" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Leyendo el archivo…</p>
 
