@@ -605,6 +605,26 @@ export interface PayrollExpense {
   total: number
   paid_amount: number
   payment_status: 'pendiente' | 'parcial' | 'pagado'
+  /** Cada pago con el movimiento del banco que lo concilió (null si se anotó sin banco). */
+  payments: PayrollExpensePayment[]
+}
+
+export interface PayrollExpensePayment {
+  id: number
+  paid_at: string
+  amount: number
+  method: string | null
+  reference: string | null
+  movement: {
+    id: number
+    account_name: string
+    currency: string
+    op_date: string
+    amount: number
+    /** Lo del movimiento que se aplicó a este pago, en la moneda de la cuenta. */
+    applied: number
+    description: string
+  } | null
 }
 
 export interface Payroll {

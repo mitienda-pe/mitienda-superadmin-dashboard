@@ -238,19 +238,64 @@
               <h2 class="text-sm font-semibold text-gray-800">Gastos de esta planilla</h2>
               <p class="text-xs text-gray-500">Uno por cada pago: se concilian con el banco desde Bancos.</p>
             </div>
-            <router-link :to="`/accounting/expenses`" class="text-sm text-primary hover:underline">Ver en Gastos</router-link>
+            <router-link :to="{ path: '/accounting/expenses', query: { search: expensesSearch } }" class="text-sm text-primary hover:underline">Ver en Gastos</router-link>
           </div>
           <div class="divide-y divide-gray-100">
-            <div v-for="expense in data.expenses" :key="expense.id" class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-sm">
-              <div>
-                <span class="text-gray-800 font-medium">{{ expense.payee_name }}</span>
-                <span class="text-gray-500"> · {{ expense.description }}</span>
+            <div v-for="expense in data.expenses" :key="expense.id" class="px-4 py-2.5 text-sm">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <button
+                  type="button"
+                  class="flex items-center gap-2 text-left min-w-0"
+                  :aria-expanded="openExpenses.has(expense.id)"
+                  @click="toggleExpense(expense.id)"
+                >
+                  <i class="pi text-xs text-gray-400" :class="openExpenses.has(expense.id) ? 'pi-chevron-down' : 'pi-chevron-right'" />
+                  <span>
+                    <span class="text-gray-800 font-medium">{{ expense.payee_name }}</span>
+                    <span class="text-gray-500"> · {{ expense.description }}</span>
+                    <span v-if="expense.payments.length" class="text-xs text-gray-400">
+                      · {{ expense.payments.length }} {{ expense.payments.length === 1 ? 'pago' : 'pagos' }}
+                    </span>
+                  </span>
+                </button>
+                <div class="flex items-center gap-3">
+                  <span class="tabular-nums text-gray-900">{{ money(expense.total) }}</span>
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="paymentClass[expense.payment_status]">
+                    {{ paymentLabel(expense) }}
+                  </span>
+                </div>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="tabular-nums text-gray-900">{{ money(expense.total) }}</span>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium" :class="paymentClass[expense.payment_status]">
-                  {{ paymentLabel(expense) }}
-                </span>
+              <!-- Pagos del gasto con el movimiento del banco que los concilió -->
+              <div v-if="openExpenses.has(expense.id)" class="mt-2 ml-5 space-y-1.5">
+                <p v-if="!expense.payments.length" class="text-xs text-gray-500">Sin pagos todavía.</p>
+                <div
+                  v-for="payment in expense.payments"
+                  :key="payment.id"
+                  class="flex flex-wrap items-start justify-between gap-x-4 gap-y-0.5 rounded-lg bg-gray-50 px-3 py-2 text-xs"
+                >
+                  <div class="min-w-0">
+                    <div class="text-gray-700">
+                      {{ shortDate(payment.paid_at) }} · {{ payment.method || 'Pago' }}
+                      <span v-if="payment.reference" class="text-gray-500"> · {{ payment.reference }}</span>
+                    </div>
+                    <div v-if="payment.movement" class="text-gray-500">
+                      <router-link
+                        :to="{ path: '/accounting/banks', query: { search: `#${payment.movement.id}` } }"
+                        class="text-primary hover:underline"
+                      >#{{ payment.movement.id }}</router-link>
+                      {{ payment.movement.account_name }} · {{ shortDate(payment.movement.op_date) }} ·
+                      {{ payment.movement.description }}
+                      <span v-if="payment.movement.currency !== 'PEN'">
+                        · {{ moneyIn(payment.movement.applied, payment.movement.currency) }}
+                      </span>
+                      <span v-else-if="Math.abs(payment.movement.applied - payment.movement.amount) > 0.004">
+                        · de un movimiento de {{ money(payment.movement.amount) }}
+                      </span>
+                    </div>
+                    <div v-else class="text-amber-700">Sin movimiento del banco: anotado a mano.</div>
+                  </div>
+                  <div class="tabular-nums text-gray-900 whitespace-nowrap">{{ money(payment.amount) }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -515,6 +560,30 @@ const paymentClass: Record<PayrollExpense['payment_status'], string> = {
   pendiente: 'bg-amber-50 text-amber-700',
   parcial: 'bg-gray-100 text-gray-700',
   pagado: 'bg-emerald-50 text-emerald-700'
+}
+
+// Gastos desplegados para ver sus pagos.
+const openExpenses = ref(new Set<number>())
+function toggleExpense(id: number) {
+  const next = new Set(openExpenses.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  openExpenses.value = next
+}
+
+/** "mayo de 2026": así terminan las descripciones de los gastos de la planilla del mes. */
+const expensesSearch = computed(() => {
+  const [year, month] = period.value.split('-')
+  return `${MONTH_NAMES[Number(month) - 1]} de ${year}`
+})
+
+function shortDate(date: string): string {
+  const [year, month, day] = date.slice(0, 10).split('-')
+  return `${Number(day)} ${MONTHS[Number(month) - 1].toLowerCase()} ${year}`
+}
+
+function moneyIn(amount: number, currency: string): string {
+  return currency === 'USD' ? `US$ ${plain(amount)}` : money(amount)
 }
 
 function paymentLabel(expense: PayrollExpense): string {
