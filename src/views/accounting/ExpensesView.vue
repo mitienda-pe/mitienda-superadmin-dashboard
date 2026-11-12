@@ -529,7 +529,8 @@
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
           Sube el CSV del registro de compras de SUNAT (SIRE), el XML de un comprobante suelto (como el Documento
-          Autorizado mensual de Culqi) o el PDF de un recibo de Movistar, que ya no llegan por el SIRE. Primero ves qué
+          Autorizado mensual de Culqi) o el PDF de un recibo de Movistar o de un recibo por honorarios, que no llegan por
+          el SIRE. Para otras facturas en PDF, descarga su XML. Primero ves qué
           entraría; nada se guarda hasta que confirmes, y lo que ya se importó no se repite aunque llegue por el otro camino.
         </p>
         <input type="file" accept=".csv,.xml,.pdf,text/csv,text/xml,application/pdf" class="block w-full text-sm text-gray-600" @change="onSireFile" />
