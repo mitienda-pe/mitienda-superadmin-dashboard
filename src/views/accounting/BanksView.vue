@@ -900,6 +900,17 @@
         <Button v-if="!countResult" label="Comparar" icon="pi pi-check" :loading="saving" @click="submitCount" />
       </template>
     </Dialog>
+    <!-- Deshacer lo último -->
+    <div
+      v-if="lastUndo"
+      class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[1200] flex items-center gap-3 rounded-lg bg-gray-900 text-white shadow-lg px-4 py-2 text-sm max-w-[calc(100vw-2rem)]"
+    >
+      <span class="truncate">{{ lastUndo.label }}</span>
+      <button type="button" class="font-semibold text-primary hover:underline whitespace-nowrap disabled:opacity-50" :disabled="undoing" @click="undoLast">
+        <i class="pi pi-undo text-xs mr-1"></i>Deshacer
+      </button>
+      <button type="button" class="text-gray-400 hover:text-white" aria-label="Cerrar" @click="lastUndo = null"><i class="pi pi-times text-xs"></i></button>
+    </div>
   </div>
 </template>
 
@@ -928,7 +939,7 @@ import {
   searchBankExpenses,
   getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate,
   createCashMovement, deleteCashMovement, cashExchange, cashCount,
-  getCashExchangeCandidates, cashExchangeFromBank, type CashExchangeLeg
+  getCashExchangeCandidates, cashExchangeFromBank, undoBankAction, type CashExchangeLeg
 } from '@/api/accounting.api'
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
@@ -1086,6 +1097,35 @@ async function runAuto() {
   }
 }
 
+// --- Deshacer la última acción ---
+const lastUndo = ref<{ batch: string; label: string } | null>(null)
+const undoing = ref(false)
+let undoTimer: ReturnType<typeof setTimeout> | undefined
+
+/** Ofrece deshacer durante un minuto lo que acaba de hacer una acción. */
+function offerUndo(batch: string | undefined, label: string) {
+  if (!batch) return
+  lastUndo.value = { batch, label }
+  clearTimeout(undoTimer)
+  undoTimer = setTimeout(() => { lastUndo.value = null }, 60_000)
+}
+
+async function undoLast() {
+  if (!lastUndo.value) return
+  undoing.value = true
+  try {
+    const res = await undoBankAction(lastUndo.value.batch)
+    toast.add({ severity: 'success', summary: res.message, life: 3000 })
+    lastUndo.value = null
+    reconcileVisible.value = false
+    await Promise.all([loadAccounts(), load()])
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo deshacer', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    undoing.value = false
+  }
+}
+
 // --- Varios a la vez ---
 const bulkLabel = ref<string | null>(null)
 
@@ -1095,6 +1135,7 @@ async function submitBulk() {
   try {
     const res = await markBankMovements(selected.value.map(m => m.id), bulkLabel.value)
     toast.add({ severity: 'success', summary: res.message, life: 3000 })
+    offerUndo(res.undo, res.message)
     bulkLabel.value = null
     refreshAll()
   } catch (e) {
@@ -1212,8 +1253,9 @@ const cashPlan = computed(() => {
 async function submitCashLegs() {
   saving.value = true
   try {
-    await cashExchangeFromBank(cashChosen.value, cashRateConfirmed.value)
+    const res = await cashExchangeFromBank(cashChosen.value, cashRateConfirmed.value)
     toast.add({ severity: 'success', summary: 'Cambio registrado', life: 4000 })
+    offerUndo(res.undo, `Cambio de moneda con ${cashChosen.value.map(id => `#${id}`).join(', ')}`)
     reconcileVisible.value = false
     await Promise.all([loadAccounts(), load()])
   } catch (e) {
@@ -1511,6 +1553,7 @@ async function submitReconcile() {
     current.value = res.data
     changed = true
     toast.add({ severity: 'success', summary: res.message, life: 3000 })
+    offerUndo(res.undo, `#${res.data.id}: ${res.message}`)
 
     // Con resto por conciliar el diálogo sigue abierto para la siguiente parte.
     if (res.data.remaining <= 0) {
@@ -1534,6 +1577,7 @@ async function closeAsRounding() {
     const res = await reconcileBankMovement(current.value.id, { kind: 'otro', label: 'redondeo' })
     current.value = res.data
     changed = true
+    offerUndo(res.undo, `#${res.data.id}: redondeo`)
     toast.add({ severity: 'success', summary: 'Cerrado como redondeo', life: 3000 })
     if (res.data.remaining <= 0) reconcileVisible.value = false
   } catch (e) {
@@ -1784,10 +1828,11 @@ async function submitExchange() {
   if (!f.date || !f.from_account_id || !f.to_account_id || !f.from_amount || !f.to_amount) return warn('Indica las dos cajas y los dos importes')
   saving.value = true
   try {
-    await cashExchange({
+    const res = await cashExchange({
       date: f.date, from_account_id: f.from_account_id, from_amount: f.from_amount,
       to_account_id: f.to_account_id, to_amount: f.to_amount, note: f.note.trim() || undefined
     })
+    offerUndo(res.undo, 'Cambio de moneda entre cajas')
     exchangeVisible.value = false
     toast.add({ severity: 'success', summary: 'Cambio registrado y conciliado', life: 4000 })
     refreshAll()

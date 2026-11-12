@@ -213,7 +213,13 @@ export async function getBankSuggestions(movementId: number) {
 
 /** Conciliar crea el abono del comprobante o el pago del gasto. */
 export async function reconcileBankMovement(movementId: number, payload: ReconcileInput) {
-  const res = await api.post<{ message: string; data: BankMovement }>(`${BASE}/bank-movements/${movementId}/reconcile`, payload)
+  const res = await api.post<{ message: string; data: BankMovement; undo?: string }>(`${BASE}/bank-movements/${movementId}/reconcile`, payload)
+  return res.data
+}
+
+/** Deshace todo lo que hizo una acción de Bancos (el `undo` que trae su respuesta). */
+export async function undoBankAction(batch: string) {
+  const res = await api.post<{ message: string; data: { movements: number[]; links: number; cash: number; expenses: number } }>(`${BASE}/bank-undo`, { batch })
   return res.data
 }
 
@@ -232,8 +238,8 @@ export async function deleteCashMovement(movementId: number) {
 export async function cashExchange(payload: {
   date: string; from_account_id: number; from_amount: number; to_account_id: number; to_amount: number; note?: string
 }) {
-  const res = await api.post<{ data: { out: BankMovement; in: BankMovement } }>(`${BASE}/cash-exchange`, payload)
-  return res.data.data
+  const res = await api.post<{ data: { out: BankMovement; in: BankMovement }; undo?: string }>(`${BASE}/cash-exchange`, payload)
+  return res.data
 }
 
 /** Arqueo: compara lo contado con lo anotado; la diferencia queda como movimiento por conciliar. */
@@ -260,7 +266,8 @@ export async function getCashExchangeCandidates(movementId: number) {
 
 /** Pasa los retiros y depósitos por las cajas y registra el cambio. */
 export async function cashExchangeFromBank(movementIds: number[], confirmRate = false) {
-  await api.post(`${BASE}/cash-exchange/from-bank`, { movement_ids: movementIds, confirm_rate: confirmRate })
+  const res = await api.post<{ undo?: string }>(`${BASE}/cash-exchange/from-bank`, { movement_ids: movementIds, confirm_rate: confirmRate })
+  return res.data
 }
 
 export interface TransferCandidate {
@@ -298,7 +305,7 @@ export async function getCustomerOpenInvoices(movementId: number, customerDocume
 }
 
 export async function markBankMovements(movementIds: number[], label: string) {
-  const res = await api.post<{ message: string; data: { affected: number } }>(`${BASE}/bank-movements/mark`, {
+  const res = await api.post<{ message: string; data: { affected: number }; undo?: string }>(`${BASE}/bank-movements/mark`, {
     movement_ids: movementIds,
     label
   })
