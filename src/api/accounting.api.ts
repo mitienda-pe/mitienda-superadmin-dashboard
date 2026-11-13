@@ -3,7 +3,7 @@ import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
   InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
-  PayrollPeriod
+  PayrollPeriod, BankPayerContext
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
 
@@ -205,7 +205,7 @@ export async function getBankMovements(filters: BankMovementFilters) {
 }
 
 export async function getBankSuggestions(movementId: number) {
-  const res = await api.get<{ data: { invoices: InvoiceSuggestion[]; expenses: ExpenseSuggestion[] } }>(
+  const res = await api.get<{ data: { invoices: InvoiceSuggestion[]; expenses: ExpenseSuggestion[]; payer?: BankPayerContext | null } }>(
     `${BASE}/bank-movements/${movementId}/suggestions`
   )
   return res.data.data

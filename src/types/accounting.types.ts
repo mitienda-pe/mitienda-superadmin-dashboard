@@ -252,6 +252,23 @@ export interface BankMovement {
   links: BankMovementLink[]
   /** Anotado a mano en una caja: se puede borrar mientras no esté conciliado. */
   manual?: boolean
+  /** Quién pagó, según el reporte de Culqi o Mercado Pago. */
+  payer?: BankPayer | null
+}
+
+/** Quien pagó un cobro de Culqi o Mercado Pago. */
+export interface BankPayer {
+  name: string | null
+  email: string | null
+  document: string | null
+  /** Motivo o concepto del cobro (el título del link de pago). */
+  note: string | null
+}
+
+/** Quien pagó y a qué tiendas apunta su correo o documento. */
+export interface BankPayerContext extends BankPayer {
+  stores: { id: number; name: string; via: string }[]
+  documents: string[]
 }
 
 export interface BankMovementFilters {
@@ -319,6 +336,8 @@ export interface BankImportResult {
   duplicates: number
   /** Entraron ya conciliados porque el archivo dice qué son (abonos de Culqi al banco). */
   auto_marked?: number
+  /** Ya cargados a los que el archivo les completó quién pagó. */
+  payers_filled?: number
   from: string | null
   to: string | null
   inflow: number
@@ -344,6 +363,8 @@ export interface InvoiceSuggestion {
   detraction_match?: boolean
   /** El RUC de quien depositó es el del cliente. */
   document_match?: boolean
+  /** Es de la tienda o del cliente de quien pagó (por su correo o documento). */
+  payer_match?: boolean
   name_match: boolean
   number_match: boolean
   /** Este depósito confirma un cobro ya anotado (hoja de ingresos, a mano): no crea otro abono. */

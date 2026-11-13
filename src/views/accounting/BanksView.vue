@@ -144,6 +144,9 @@
           <Column header="Movimiento" sortable sortField="description" style="min-width: 280px">
             <template #body="{ data: row }">
               <span class="text-sm text-gray-800">{{ row.description }}</span>
+              <div v-if="row.payer && payerText(row.payer) !== ''" class="text-xs text-gray-500">
+                <i class="pi pi-user" style="font-size: 0.65rem"></i> {{ payerText(row.payer) }}
+              </div>
               <div v-if="row.reference" class="text-xs text-gray-400 font-mono">op. {{ row.reference }}</div>
             </template>
           </Column>
@@ -226,6 +229,9 @@
                 <span class="font-mono">#{{ current.id }}</span> · {{ current.account_name }} · {{ formatDate(current.op_date) }}
                 <template v-if="current.reference"> · op. {{ current.reference }}</template>
               </div>
+              <div v-if="current.payer && payerText(current.payer) !== ''" class="text-xs text-gray-600 mt-0.5">
+                Pagó: {{ payerText(current.payer) }}<template v-if="current.payer.note"> · «{{ current.payer.note }}»</template>
+              </div>
             </div>
             <div class="text-right whitespace-nowrap">
               <div class="text-lg font-bold tabular-nums" :class="current.amount >= 0 ? 'text-green-700' : 'text-gray-900'">
@@ -291,6 +297,22 @@
           <template v-if="mode === 'cobro'">
             <p v-if="loadingSuggestions" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Buscando comprobantes…</p>
             <template v-else>
+              <div v-if="payerContext && payerContext.email" class="rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                <template v-if="payerContext.stores.length > 0">
+                  <span class="text-gray-600">Por quien pagó, es de:</span>
+                  <span v-for="(store, index) in payerContext.stores" :key="store.id">
+                    {{ index > 0 ? ',' : '' }}
+                    <RouterLink :to="`/stores/${store.id}`" target="_blank" class="text-primary hover:underline">{{ store.name }} (#{{ store.id }})</RouterLink>
+                    <span class="text-xs text-gray-400"> {{ store.via }}</span>
+                  </span>
+                  <p v-if="!invoiceOptions.some(i => i.payer_match)" class="text-xs text-amber-700 mt-1">
+                    No tiene comprobantes abiertos: si es su renovación, emítele el comprobante del plan desde su tienda y vuelve aquí.
+                  </p>
+                </template>
+                <span v-else class="text-gray-500">
+                  Ninguna tienda ni cliente tiene el correo {{ payerContext.email }}<template v-if="payerContext.documents.length"> ni el documento {{ payerContext.documents.join(', ') }}</template>.
+                </span>
+              </div>
               <span class="p-input-icon-left w-full">
                 <i class="pi pi-search" />
                 <InputText v-model="invoiceSearch" placeholder="Buscar otro comprobante por número, RUC o cliente" class="w-full" @keyup.enter="searchInvoices" />
@@ -317,6 +339,7 @@
                       <span v-if="invoice.same_amount" class="text-green-700"> · mismo importe</span>
                       <span v-else-if="invoice.net_of_detraction" class="text-amber-700"> · calza con el neto de detracción</span>
                       <span v-if="invoice.document_match" class="text-green-700"> · mismo RUC</span>
+                      <span v-if="invoice.payer_match" class="text-green-700"> · de quien pagó</span>
                       <span v-if="invoice.detraction_match && !invoice.usd_detraction" class="text-green-700"> · el importe es su detracción</span>
                       <span v-if="invoice.confirms_payment" class="text-green-700">
                         · confirma el cobro anotado el {{ formatDate(invoice.confirms_payment.paid_at) }}{{ invoice.confirms_payment.method ? ` (${invoice.confirms_payment.method})` : '' }}
@@ -944,7 +967,7 @@ import {
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
   BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementLink, BankMovementSummary, ExpenseCategory,
-  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult
+  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult, BankPayer, BankPayerContext
 } from '@/types/accounting.types'
 
 const toast = useToast()
@@ -1153,6 +1176,12 @@ const current = ref<BankMovement | null>(null)
 const mode = ref<Mode>('cobro')
 const loadingSuggestions = ref(false)
 const invoiceOptions = ref<InvoiceSuggestion[]>([])
+const payerContext = ref<BankPayerContext | null>(null)
+
+/** Nombre, correo y documento de quien pagó, lo que haya. */
+function payerText(payer: BankPayer): string {
+  return [payer.name, payer.email, payer.document].filter(Boolean).join(' · ')
+}
 const expenseOptions = ref<ExpenseSuggestion[]>([])
 const pickedInvoice = ref<number | null>(null)
 // Gasto → importe que se le aplica. Varios gastos pueden salir de un solo pago.
@@ -1390,9 +1419,11 @@ async function loadSuggestions() {
     const res = await getBankSuggestions(current.value.id)
     invoiceOptions.value = res.invoices
     expenseOptions.value = res.expenses
+    payerContext.value = res.payer ?? null
     // Una sola candidata segura se deja elegida: es un clic menos.
     const sure = res.invoices.filter(
       i => i.number_match || (i.name_match && (i.same_amount || i.net_of_detraction)) || (i.document_match && i.detraction_match)
+        || (i.payer_match && i.same_amount)
     )
     if (sure.length === 1) {
       pickedInvoice.value = sure[0].id
@@ -1413,6 +1444,7 @@ async function openReconcile(row: BankMovement) {
   current.value = row
   mode.value = row.amount >= 0 ? 'cobro' : 'pago'
   invoiceOptions.value = []
+  payerContext.value = null
   expenseOptions.value = []
   invoiceSearch.value = ''
   changed = false
@@ -1682,9 +1714,12 @@ async function submitImport() {
     toast.add({
       severity: 'success',
       summary: res.message,
-      detail: res.data.auto_marked
-        ? `${res.data.auto_marked} entraron ya conciliados (abonos al banco). Usa "Conciliar automáticamente" para cruzar los cobros.`
-        : undefined,
+      detail: [
+        res.data.auto_marked
+          ? `${res.data.auto_marked} entraron ya conciliados (abonos al banco). Usa "Conciliar automáticamente" para cruzar los cobros.`
+          : '',
+        res.data.payers_filled ? `A ${res.data.payers_filled} ya cargados se les completó quién pagó.` : ''
+      ].filter(Boolean).join(' ') || undefined,
       life: 8000
     })
     importVisible.value = false
