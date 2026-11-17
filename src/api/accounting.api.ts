@@ -605,7 +605,17 @@ export interface TaxOverview {
     upcoming: number
     installments: number
     installments_remaining: number
-    loans: { name: string; outstanding: number; remaining: number; next: { due_date: string; total: number } | null }[]
+    /** Cuotas vencidas sin boleta (ya están dentro de installments). */
+    installments_overdue: number
+    installments_overdue_count: number
+    loans: {
+      name: string
+      outstanding: number
+      remaining: number
+      next: { due_date: string; total: number } | null
+      overdue: number
+      overdue_count: number
+    }[]
   }
 }
 

@@ -719,7 +719,7 @@ export interface CashFlow {
   plan_items: CashPlanItem[]
 }
 
-/** Un préstamo según su cronograma: da por pagada toda cuota ya vencida. */
+/** Un préstamo según su cronograma: da por pagada toda cuota ya vencida, salvo en SUNAT (la paga su boleta). */
 export interface LoanSummary {
   id: number
   lender: string
@@ -729,6 +729,9 @@ export interface LoanSummary {
   annual_rate: number | null
   installments: number
   paid_count: number
+  /** Solo SUNAT: cuotas vencidas sin pagar (siguen dentro de outstanding y remaining). */
+  overdue_count: number
+  overdue: number
   /** Capital que falta devolver. */
   outstanding: number
   /** Todo lo que falta pagar, con intereses y seguro. */

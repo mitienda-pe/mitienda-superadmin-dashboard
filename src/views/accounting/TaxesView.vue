@@ -65,12 +65,17 @@
             </span>
           </div>
         </div>
-        <div class="rounded-lg border border-gray-200 p-3">
+        <div class="rounded-lg border p-3" :class="overview.debt.installments_overdue > 0 ? 'border-amber-200 bg-amber-50' : 'border-gray-200'">
           <div class="text-gray-500">Fraccionamientos (capital)</div>
           <div class="text-xl font-semibold tabular-nums">{{ whole(overview.debt.installments) }}</div>
           <div class="text-xs text-gray-500 mt-1">
             {{ overview.debt.loans.length }} vigentes · con intereses {{ whole(overview.debt.installments_remaining) }}
             · cuota mensual {{ whole(monthlyInstallment) }}
+          </div>
+          <div v-if="overview.debt.installments_overdue_count" class="text-xs text-amber-800 mt-1">
+            {{ overview.debt.installments_overdue_count }} {{ overview.debt.installments_overdue_count === 1 ? 'cuota vencida' : 'cuotas vencidas' }}
+            sin pagar: {{ whole(overview.debt.installments_overdue) }} más intereses
+            ({{ overdueLoans.map(l => `${l.name.replace('Fraccionamiento ', '')}: ${l.overdue_count}`).join(' · ') }})
           </div>
         </div>
         <div class="rounded-lg border border-gray-200 p-3">
@@ -486,6 +491,7 @@ const yearMonths = computed(() =>
 )
 const overdueMonths = computed(() => overview.value?.months.filter(m => m.status === 'pendiente') ?? [])
 const upcomingMonths = computed(() => overview.value?.months.filter(m => m.status === 'por_vencer') ?? [])
+const overdueLoans = computed(() => (overview.value?.debt.loans ?? []).filter(l => l.overdue_count > 0))
 const monthlyInstallment = computed(() => (overview.value?.debt.loans ?? []).reduce((t, l) => t + (l.next?.total ?? 0), 0))
 
 function shortMonth(p: string): string {

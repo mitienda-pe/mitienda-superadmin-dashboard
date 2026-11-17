@@ -189,6 +189,7 @@
                 <span class="text-gray-500">
                   · {{ loanMoney(loan, loan.principal) }}<template v-if="loan.annual_rate"> al {{ loan.annual_rate }} % anual</template>
                   · cuota {{ loan.paid_count }} de {{ loan.installments }} pagada
+                  <span v-if="loan.overdue_count" class="text-amber-700">· {{ loan.overdue_count }} vencida{{ loan.overdue_count === 1 ? '' : 's' }} sin pagar ({{ loanMoney(loan, loan.overdue) }})</span>
                 </span>
               </div>
               <span v-if="loan.next" class="text-xs text-gray-500">
