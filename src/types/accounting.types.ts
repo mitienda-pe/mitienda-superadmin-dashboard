@@ -404,6 +404,23 @@ export interface PenForUsdFit {
   fx_difference: number
 }
 
+/** Gasto pagado que una entrada puede estar devolviendo. */
+export interface RefundCandidate {
+  id: number
+  payee_name: string
+  payee_kind: string
+  category_name: string
+  document_number: string | null
+  issue_date: string
+  period: string
+  description: string | null
+  total: number
+  paid_amount: number
+  currency: 'PEN' | 'USD'
+  /** Lo pagado alcanza para devolver lo que falta conciliar del movimiento. */
+  fits: boolean
+}
+
 export interface ExpenseSuggestion {
   id: number
   payee_name: string
@@ -437,6 +454,8 @@ export type ReconcileInput =
   | { kind: 'cobro'; invoice_id: number; amount?: number }
   | { kind: 'pago'; expense_id: number; amount?: number }
   | { kind: 'pagos'; items: { expense_id: number; amount: number }[] }
+  /** Entrada que devuelve parte o todo un gasto ya pagado: el gasto baja a lo que costó. */
+  | { kind: 'reembolso'; expense_id: number; amount?: number }
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
   | { kind: 'otro'; label: string; note?: string }
   | { kind: 'transferencia'; counterpart_id: number }

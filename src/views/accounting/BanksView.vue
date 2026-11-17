@@ -522,6 +522,63 @@
             </template>
           </template>
 
+          <!-- Devolución de un gasto ya pagado -->
+          <template v-else-if="mode === 'reembolso'">
+            <p class="text-xs text-gray-500">
+              El gasto baja a lo que costó de verdad (lo pagado menos lo devuelto) y esta entrada queda conciliada contra él.
+            </p>
+            <div class="flex gap-2">
+              <InputText
+                v-model="refundSearch"
+                placeholder="Buscar el gasto por proveedor, descripción o número"
+                class="flex-1"
+                @keydown.enter.prevent="searchRefunds"
+              />
+              <Button icon="pi pi-search" outlined :loading="loadingRefunds" @click="searchRefunds" />
+            </div>
+            <p v-if="loadingRefunds" class="text-sm text-gray-400"><i class="pi pi-spin pi-spinner mr-2"></i>Buscando gastos…</p>
+            <template v-else>
+              <p v-if="refundOptions.length === 0" class="text-sm text-gray-500">
+                No hay un gasto pagado en {{ current.currency === 'USD' ? 'dólares' : 'soles' }} que se parezca a la glosa. Búscalo arriba.
+              </p>
+              <div v-else class="max-h-72 overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-100">
+                <label
+                  v-for="expense in refundOptions"
+                  :key="expense.id"
+                  class="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                  :class="{ 'bg-primary-50': refundPicked === expense.id }"
+                >
+                  <RadioButton v-model="refundPicked" :value="expense.id" />
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm text-gray-800">
+                      <span class="font-medium">{{ expense.payee_name }}</span> · {{ expense.category_name }}
+                    </div>
+                    <div class="text-xs text-gray-500 truncate">
+                      {{ formatDate(expense.issue_date) }} · {{ expense.document_number || formatMonthYear(expense.period) }}
+                      <span v-if="expense.description"> · {{ expense.description }}</span>
+                      <span v-if="!expense.fits" class="text-orange-600"> · se pagó menos de lo que entra</span>
+                    </div>
+                  </div>
+                  <div class="text-right whitespace-nowrap text-sm tabular-nums">
+                    <div>{{ money(expense.paid_amount, expense.currency) }}</div>
+                    <div class="text-xs text-gray-400">pagado</div>
+                  </div>
+                </label>
+              </div>
+              <div v-if="pickedRefund" class="flex flex-wrap items-end gap-3">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">Devuelto</label>
+                  <InputNumber v-model="partAmount" :minFractionDigits="2" :maxFractionDigits="2" :min="0" inputClass="w-32 text-right" />
+                </div>
+                <p class="text-xs text-gray-600 pb-2">
+                  El gasto queda en
+                  <b>{{ money(Math.max(pickedRefund.total - (partAmount ?? 0), 0), pickedRefund.currency) }}</b>
+                  (era {{ money(pickedRefund.total, pickedRefund.currency) }}).
+                </p>
+              </div>
+            </template>
+          </template>
+
           <!-- Gasto que no estaba registrado -->
           <template v-else-if="mode === 'gasto'">
             <p class="text-xs text-gray-500">
@@ -959,7 +1016,7 @@ import { useFormatters } from '@/composables/useFormatters'
 import {
   getBankAccounts, saveBankAccount, importBankFile, getBankMovements, getBankSuggestions, reconcileBankMovement,
   markBankMovements, unlinkBankMovement, autoReconcileBanks, getExpenseCategories, getPayees, accountingErrorMessage,
-  searchBankExpenses,
+  searchBankExpenses, getRefundCandidates,
   getCustomerOpenInvoices, getTransferCandidates, type TransferCandidate,
   createCashMovement, deleteCashMovement, cashExchange, cashCount,
   getCashExchangeCandidates, cashExchangeFromBank, undoBankAction, type CashExchangeLeg
@@ -967,7 +1024,7 @@ import {
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
   BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementLink, BankMovementSummary, ExpenseCategory,
-  CustomerOpenInvoices, ExpenseSuggestion, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult, BankPayer, BankPayerContext
+  CustomerOpenInvoices, ExpenseSuggestion, RefundCandidate, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult, BankPayer, BankPayerContext
 } from '@/types/accounting.types'
 
 const toast = useToast()
@@ -1169,7 +1226,7 @@ async function submitBulk() {
 }
 
 // --- Conciliar ---
-type Mode = 'cobro' | 'pago' | 'gasto' | 'otro'
+type Mode = 'cobro' | 'pago' | 'gasto' | 'reembolso' | 'otro'
 
 const reconcileVisible = ref(false)
 const current = ref<BankMovement | null>(null)
@@ -1324,7 +1381,9 @@ const modeOptions = computed(() =>
   current.value && current.value.amount >= 0
     ? [
         { label: 'Cobro de un comprobante', value: 'cobro' },
-        ...(authStore.canWriteFinance ? [{ label: 'No es un cobro', value: 'otro' }] : [])
+        ...(authStore.canWriteFinance
+          ? [{ label: 'Reembolso de un gasto', value: 'reembolso' }, { label: 'No es un cobro', value: 'otro' }]
+          : [])
       ]
     : [
         { label: 'Pago de un gasto', value: 'pago' },
@@ -1410,7 +1469,35 @@ function resetChoice() {
   other.label = null
   other.note = ''
   other.counterpart = null
+  refundPicked.value = null
 }
+
+// --- Reembolso de un gasto ya pagado ---
+const refundOptions = ref<RefundCandidate[]>([])
+const refundSearch = ref('')
+const refundPicked = ref<number | null>(null)
+const loadingRefunds = ref(false)
+
+async function searchRefunds() {
+  if (!current.value) return
+  loadingRefunds.value = true
+  try {
+    refundOptions.value = await getRefundCandidates(current.value.id, refundSearch.value.trim())
+    const fitting = refundOptions.value.filter(e => e.fits)
+    if (fitting.length === 1 && refundPicked.value === null) refundPicked.value = fitting[0].id
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudieron buscar los gastos', detail: accountingErrorMessage(e), life: 6000 })
+  } finally {
+    loadingRefunds.value = false
+  }
+}
+
+const pickedRefund = computed(() => refundOptions.value.find(e => e.id === refundPicked.value) ?? null)
+
+// La primera vez que se elige, se buscan los gastos que se parecen a la glosa.
+watch(mode, value => {
+  if (value === 'reembolso' && refundOptions.value.length === 0 && !loadingRefunds.value) searchRefunds()
+})
 
 async function loadSuggestions() {
   if (!current.value || current.value.remaining <= 0) return
@@ -1443,6 +1530,8 @@ async function loadSuggestions() {
 async function openReconcile(row: BankMovement) {
   current.value = row
   mode.value = row.amount >= 0 ? 'cobro' : 'pago'
+  refundOptions.value = []
+  refundSearch.value = ''
   invoiceOptions.value = []
   payerContext.value = null
   expenseOptions.value = []
@@ -1560,6 +1649,11 @@ async function submitReconcile() {
     if (items.some(i => i.amount <= 0)) return warn('Cada gasto marcado necesita un importe')
     if (expenseSummary.value.left < -0.004) return warn('Los gastos marcados suman más que el movimiento')
     payload = { kind: 'pagos', items }
+  } else if (mode.value === 'reembolso') {
+    if (!pickedRefund.value) return warn('Elige el gasto que se devolvió')
+    if (!partAmount.value || partAmount.value <= 0) return warn('Indica cuánto se devolvió')
+    if (partAmount.value > pickedRefund.value.paid_amount + 0.004) return warn('El reembolso supera lo pagado del gasto')
+    payload = { kind: 'reembolso', expense_id: pickedRefund.value.id, amount: partAmount.value }
   } else if (mode.value === 'gasto') {
     if (!newExpense.payee_id || !newExpense.category_id) return warn('Indica a quién se pagó y la categoría')
     payload = {

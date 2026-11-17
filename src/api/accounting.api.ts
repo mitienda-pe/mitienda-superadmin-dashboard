@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
-  InvoiceSuggestion, ExpenseSuggestion, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, RefundCandidate, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod, BankPayerContext
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -286,6 +286,12 @@ export interface TransferCandidate {
 /** Gastos por pagar para juntar en un pago (proveedor, descripción o número). */
 export async function searchBankExpenses(movementId: number, q: string) {
   const res = await api.get<{ data: ExpenseSuggestion[] }>(`${BASE}/bank-movements/${movementId}/expenses`, { params: { q } })
+  return res.data.data
+}
+
+/** Gastos pagados que una entrada puede estar devolviendo; sin q, los que se parecen a la glosa. */
+export async function getRefundCandidates(movementId: number, q = '') {
+  const res = await api.get<{ data: RefundCandidate[] }>(`${BASE}/bank-movements/${movementId}/refund-candidates`, { params: { q } })
   return res.data.data
 }
 
