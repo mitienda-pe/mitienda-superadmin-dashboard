@@ -551,6 +551,39 @@ export interface TaxPaymentsImport {
   created: number
   matched: number
   rematched_older: number
+  /** Cuotas de fraccionamiento que estas boletas dejaron pagadas. */
+  installments_paid?: number
+}
+
+/** Lo que se leyó (o cargó) de un cronograma de fraccionamiento en CSV. */
+export interface LoanScheduleImport {
+  executed: boolean
+  /** No existía un fraccionamiento con ese número (si existía, se reemplazan sus cuotas). */
+  created: boolean
+  name: string
+  number: string
+  principal: number
+  interest: number
+  total: number
+  first_due: string
+  last_due: string
+  installments: { number: number; due_date: string; principal: number; interest: number; total: number }[]
+  /** Cuotas que boletas ya importadas dejaron pagadas. */
+  linked: number
+}
+
+/** Cronograma de un fraccionamiento de SUNAT: CSV con número; vencimiento; amortización; interés; total. */
+export async function importLoanSchedule(file: File, name: string, number: string, execute: boolean) {
+  const form = new FormData()
+  form.append('file', file)
+  form.append('name', name)
+  form.append('number', number)
+  if (execute) form.append('execute', '1')
+
+  const res = await api.post<{ message: string; data: LoanScheduleImport }>(`${BASE}/loan-schedule`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
+  return res.data
 }
 
 export interface TaxMonth {

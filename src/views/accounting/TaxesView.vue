@@ -48,6 +48,7 @@
     <div v-if="overview" class="bg-white rounded-xl border border-gray-200 p-5">
       <div class="flex flex-wrap items-baseline justify-between gap-2 mb-3">
         <h2 class="font-semibold text-gray-900">Deuda con SUNAT</h2>
+        <Button v-if="authStore.canWriteFinance" label="Cargar fraccionamiento" icon="pi pi-upload" size="small" severity="secondary" outlined @click="openSchedule" />
         <span class="text-sm text-gray-500">
           Total adeudado
           <span class="text-lg font-bold text-gray-900 tabular-nums ml-1">{{ whole(overview.debt.overdue + overview.debt.installments) }}</span>
@@ -84,6 +85,7 @@
       <p class="text-xs text-gray-400 mt-2">
         Es el cálculo del sistema frente a lo pagado según las constancias de SUNAT, no la deuda oficial: confírmala en SOL
         (Consulta de deuda tributaria). El saldo de los fraccionamientos sale de sus cronogramas, dando por pagadas las cuotas ya vencidas.
+        Cada constancia de pago de una cuota la deja marcada como pagada.
       </p>
     </div>
 
@@ -374,6 +376,52 @@
         />
       </template>
     </Dialog>
+    <Dialog :draggable="false" v-model:visible="scheduleVisible" header="Cargar fraccionamiento de SUNAT" modal :style="{ width: '44rem' }">
+      <div class="space-y-3">
+        <p class="text-sm text-gray-600">
+          El cronograma de la resolución, en CSV: una cuota por fila con <b>número; vencimiento; amortización; interés; total</b>
+          (fechas DD/MM/AAAA). Si el número ya está cargado, se reemplazan sus cuotas y las pagadas siguen pagadas.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <InputText v-model="schedule.name" placeholder="Nombre, p. ej. Fraccionamiento IGV 05-2026" class="w-full" />
+          <InputText v-model="schedule.number" placeholder="N.º de documento (0230…)" class="w-full" />
+        </div>
+        <input type="file" accept=".csv,text/csv" class="block w-full text-sm text-gray-600" @change="onScheduleFile" />
+        <div v-if="schedulePreview" class="space-y-2 text-sm">
+          <p>
+            <b>{{ schedulePreview.installments.length }}</b> cuotas, del {{ formatDate(schedulePreview.first_due) }} al {{ formatDate(schedulePreview.last_due) }}
+            · capital {{ money(schedulePreview.principal) }} · interés {{ money(schedulePreview.interest) }}
+            · <span :class="schedulePreview.created ? 'text-gray-600' : 'text-amber-700'">{{ schedulePreview.created ? 'nuevo' : 'ya existe: se reemplazan sus cuotas' }}</span>
+          </p>
+          <div class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+            <table class="w-full text-xs">
+              <thead class="bg-gray-50 text-gray-500 sticky top-0">
+                <tr>
+                  <th class="px-2 py-1 text-left font-medium">N.º</th>
+                  <th class="px-2 py-1 text-left font-medium">Vence</th>
+                  <th class="px-2 py-1 text-right font-medium">Amortización</th>
+                  <th class="px-2 py-1 text-right font-medium">Interés</th>
+                  <th class="px-2 py-1 text-right font-medium">Cuota</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr v-for="i in schedulePreview.installments" :key="i.number">
+                  <td class="px-2 py-1">{{ i.number }}</td>
+                  <td class="px-2 py-1 whitespace-nowrap">{{ formatDate(i.due_date) }}</td>
+                  <td class="px-2 py-1 text-right tabular-nums">{{ money(i.principal) }}</td>
+                  <td class="px-2 py-1 text-right tabular-nums">{{ money(i.interest) }}</td>
+                  <td class="px-2 py-1 text-right tabular-nums">{{ money(i.total) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <Button label="Cancelar" text @click="scheduleVisible = false" />
+        <Button label="Cargar" icon="pi pi-check" :loading="scheduleSaving" :disabled="!schedulePreview" @click="saveSchedule" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -390,7 +438,8 @@ import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   getTaxSettlement, getTaxRetentions, createTaxRetention, deleteTaxRetention, importTaxPayments, getTaxOverview, accountingErrorMessage,
-  type TaxSettlement, type TaxRetention, type TaxPayment, type TaxPaymentsImport, type TaxOverview, type TaxMonth
+  importLoanSchedule,
+  type TaxSettlement, type TaxRetention, type TaxPayment, type TaxPaymentsImport, type TaxOverview, type TaxMonth, type LoanScheduleImport
 } from '@/api/accounting.api'
 
 const toast = useToast()
@@ -582,6 +631,49 @@ async function runImport() {
     toast.add({ severity: 'error', summary: 'No se pudo importar', detail: accountingErrorMessage(e), life: 7000 })
   } finally {
     importing.value = false
+  }
+}
+
+// --- Cronograma de un fraccionamiento ---
+const scheduleVisible = ref(false)
+const scheduleSaving = ref(false)
+const schedule = reactive({ name: '', number: '', file: null as File | null })
+const schedulePreview = ref<LoanScheduleImport | null>(null)
+
+function openSchedule() {
+  schedule.name = ''
+  schedule.number = ''
+  schedule.file = null
+  schedulePreview.value = null
+  scheduleVisible.value = true
+}
+
+async function onScheduleFile(event: Event) {
+  schedule.file = (event.target as HTMLInputElement).files?.[0] ?? null
+  schedulePreview.value = null
+  if (!schedule.file) return
+  scheduleSaving.value = true
+  try {
+    schedulePreview.value = (await importLoanSchedule(schedule.file, schedule.name, schedule.number, false)).data
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo leer', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    scheduleSaving.value = false
+  }
+}
+
+async function saveSchedule() {
+  if (!schedule.file) return
+  scheduleSaving.value = true
+  try {
+    const res = await importLoanSchedule(schedule.file, schedule.name, schedule.number, true)
+    toast.add({ severity: 'success', summary: res.message, life: 6000 })
+    scheduleVisible.value = false
+    loadOverview(true)
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'No se pudo cargar', detail: accountingErrorMessage(e), life: 7000 })
+  } finally {
+    scheduleSaving.value = false
   }
 }
 
