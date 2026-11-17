@@ -5,6 +5,8 @@ export type BroadcastScope = 'all' | 'global' | 'tenant'
 export type BroadcastPlanSlug = 'micro' | 'small' | 'medium' | 'large' | 'trial'
 export type BroadcastTargetStatus = 'all' | 'active' | 'expired'
 export type BroadcastTargetScope = 'global' | 'stores'
+/** manual = lo escribió alguien del equipo; system = aviso automático (vencimiento de plan). */
+export type BroadcastOrigin = 'all' | 'manual' | 'system'
 
 export interface BroadcastStoreRef {
   id: number
@@ -86,4 +88,13 @@ export interface BroadcastListFilters {
   severity?: BroadcastSeverity
   target_plan?: BroadcastPlanSlug | null
   target_status?: 'active' | 'expired' | null
+  origin?: BroadcastOrigin
+  /** Título, texto, nombre o ID de tienda, o ID del aviso. */
+  q?: string
+}
+
+export interface BroadcastPagination {
+  page: number
+  per_page: number
+  total: number
 }

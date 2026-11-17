@@ -3,15 +3,20 @@ import type {
   Broadcast,
   BroadcastFormInput,
   BroadcastListFilters,
+  BroadcastPagination,
   BroadcastStoresResolution
 } from '@/types/broadcast.types'
 
-type ApiList = { success: boolean; data: Broadcast[] }
+type ApiList = { success: boolean; data: Broadcast[]; pagination?: BroadcastPagination }
 type ApiItem = { success: boolean; data: Broadcast; message?: string }
 type ApiMsg = { success: boolean; message?: string }
 
-export async function listBroadcasts(filters: BroadcastListFilters = {}) {
-  const params: Record<string, string | number> = {}
+export async function listBroadcasts(
+  filters: BroadcastListFilters = {},
+  page = 1,
+  perPage = 25
+) {
+  const params: Record<string, string | number> = { page, per_page: perPage }
   if (filters.scope && filters.scope !== 'all') params.scope = filters.scope
   if (filters.tienda_id) params.tienda_id = filters.tienda_id
   if (filters.status && filters.status !== 'all') params.status = filters.status
@@ -19,6 +24,8 @@ export async function listBroadcasts(filters: BroadcastListFilters = {}) {
   if (filters.severity) params.severity = filters.severity
   if (filters.target_plan) params.target_plan = filters.target_plan
   if (filters.target_status) params.target_status = filters.target_status
+  if (filters.origin && filters.origin !== 'all') params.origin = filters.origin
+  if (filters.q?.trim()) params.q = filters.q.trim()
 
   const res = await api.get<ApiList>('/superadmin/broadcasts', { params })
   return res.data

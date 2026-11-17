@@ -11,14 +11,34 @@
     </div>
 
     <!-- Filtros -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
+    <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
+    <div class="flex flex-col md:flex-row gap-3">
+      <span class="p-input-icon-left flex-1">
+        <i class="pi pi-search" />
+        <InputText
+          v-model="store.filters.q"
+          class="w-full"
+          placeholder="Buscar por título, texto, tienda (nombre o ID) o ID del aviso"
+          @input="onSearchInput"
+        />
+      </span>
+      <SelectButton
+        v-model="store.filters.origin"
+        :options="originOptions"
+        optionLabel="label"
+        optionValue="value"
+        :allowEmpty="false"
+        @change="store.applyFilters()"
+      />
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3">
       <Dropdown
         v-model="store.filters.scope"
         :options="scopeOptions"
         optionLabel="label"
         optionValue="value"
         placeholder="Alcance"
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
       <Dropdown
         v-model="store.filters.status"
@@ -26,7 +46,7 @@
         optionLabel="label"
         optionValue="value"
         placeholder="Estado"
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
       <Dropdown
         v-model="store.filters.placement"
@@ -35,7 +55,7 @@
         optionValue="value"
         placeholder="Tipo"
         showClear
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
       <Dropdown
         v-model="store.filters.severity"
@@ -44,7 +64,7 @@
         optionValue="value"
         placeholder="Severidad"
         showClear
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
       <Dropdown
         v-model="store.filters.target_plan"
@@ -53,7 +73,7 @@
         optionValue="value"
         placeholder="Plan"
         showClear
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
       <Dropdown
         v-model="store.filters.target_status"
@@ -62,15 +82,16 @@
         optionValue="value"
         placeholder="Vigencia"
         showClear
-        @change="store.fetchAll()"
+        @change="store.applyFilters()"
       />
+    </div>
     </div>
 
     <div v-if="store.error" class="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
       {{ store.error }}
     </div>
 
-    <div v-if="store.isLoading" class="flex justify-center py-12">
+    <div v-if="store.isLoading && store.items.length === 0" class="flex justify-center py-12">
       <ProgressSpinner style="width: 40px; height: 40px" />
     </div>
 
@@ -82,10 +103,34 @@
     </div>
 
     <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <DataTable :value="store.items" stripedRows responsiveLayout="scroll">
-        <Column field="title" header="Título" sortable>
+      <DataTable
+        :value="store.items"
+        stripedRows
+        responsiveLayout="scroll"
+        lazy
+        paginator
+        :loading="store.isLoading"
+        :rows="store.perPage"
+        :first="(store.page - 1) * store.perPage"
+        :totalRecords="store.total"
+        :rowsPerPageOptions="[25, 50, 100]"
+        currentPageReportTemplate="{first}–{last} de {totalRecords}"
+        paginatorTemplate="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport"
+        @page="onPage"
+      >
+        <Column field="title" header="Título">
           <template #body="{ data }">
-            <div class="font-medium text-gray-900">{{ data.title }}</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-gray-400">#{{ data.id }}</span>
+              <span class="font-medium text-gray-900">{{ data.title }}</span>
+              <span
+                v-if="data.created_by_superadmin_id === null"
+                class="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 text-[11px] font-medium"
+                v-tooltip.top="'Generado por el sistema (vencimiento de plan)'"
+              >
+                <i class="pi pi-cog mr-1" /> Automático
+              </span>
+            </div>
             <div class="text-xs text-gray-500 truncate max-w-md">{{ data.body }}</div>
           </template>
         </Column>
@@ -244,6 +289,9 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
+import InputText from 'primevue/inputtext'
+import SelectButton from 'primevue/selectbutton'
+import type { DataTablePageEvent } from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -268,6 +316,22 @@ const isDeleting = ref(false)
 const showResetDialog = ref(false)
 const resetTarget = ref<Broadcast | null>(null)
 const isResetting = ref(false)
+
+const originOptions = [
+  { label: 'Manuales', value: 'manual' },
+  { label: 'Automáticos', value: 'system' },
+  { label: 'Todos', value: 'all' }
+]
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+function onSearchInput() {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => store.applyFilters(), 350)
+}
+
+function onPage(e: DataTablePageEvent) {
+  store.setPage(e.page + 1, e.rows)
+}
 
 const scopeOptions = [
   { label: 'Todos', value: 'all' },
