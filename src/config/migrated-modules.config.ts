@@ -11,6 +11,9 @@ export const MIGRATED_MODULE_CODES = new Set([
   'mod_ventas',
   'mod_opiniones',
   'mod_reclamaciones',
+  // Panel de despacho (/dispatch en el backoffice)
+  'mod_panel_despacho',
+  'mod_link_pago',
 
   // Reports
   'mod_reportes_ventas',
@@ -60,6 +63,7 @@ export const MIGRATED_MODULE_CODES = new Set([
 
   // Shipping
   'mod_tarifas_envio',
+  'mod_courier_avanzado',
 
   // Store settings
   'mod_varios_usuarios',
