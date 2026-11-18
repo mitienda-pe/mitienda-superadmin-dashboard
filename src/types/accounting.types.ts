@@ -296,6 +296,8 @@ export interface BankInflowOrigin extends BankInflowAmounts {
   label: string
   /** false: se muestra para revisarlo, pero no suma al total. */
   in_total: boolean
+  /** Es un cobro a clientes (directo, detracción o vía pasarela). */
+  sales: boolean
   movements: number
 }
 

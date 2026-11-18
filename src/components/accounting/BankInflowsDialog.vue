@@ -44,23 +44,30 @@
               </tr>
             </thead>
             <tbody>
-              <template v-for="row in counted" :key="row.key">
-                <tr class="border-t border-gray-100">
-                  <td class="px-3 py-2">
-                    {{ row.label }}
-                    <span class="text-xs text-gray-400">· {{ row.movements }} mov.</span>
-                  </td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.PEN, 'PEN') }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.USD, 'USD') }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.soles, 'PEN') }}</td>
-                </tr>
-                <tr v-if="row.key === LAST_SALES" class="border-t border-gray-200 bg-gray-50 font-medium">
-                  <td class="px-3 py-2">Plata de ventas</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.PEN, 'PEN') }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.USD, 'USD') }}</td>
-                  <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.soles, 'PEN') }}</td>
-                </tr>
-              </template>
+              <tr class="border-t border-gray-100 font-medium text-gray-900 bg-gray-50">
+                <td class="px-3 py-2">Cobros a clientes</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.PEN, 'PEN') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.USD, 'USD') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.sales.soles, 'PEN') }}</td>
+              </tr>
+              <tr v-for="row in salesRows" :key="row.key" class="border-t border-gray-100 text-gray-600">
+                <td class="py-2 pl-8 pr-3">
+                  {{ row.label }}
+                  <span class="text-xs text-gray-400">· {{ row.movements }} mov.</span>
+                </td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.PEN, 'PEN') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.USD, 'USD') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.soles, 'PEN') }}</td>
+              </tr>
+              <tr v-for="row in otherRows" :key="row.key" class="border-t border-gray-100">
+                <td class="px-3 py-2">
+                  {{ row.label }}
+                  <span class="text-xs text-gray-400">· {{ row.movements }} mov.</span>
+                </td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.PEN, 'PEN') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.USD, 'USD') }}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{{ amount(row.soles, 'PEN') }}</td>
+              </tr>
               <tr class="border-t-2 border-gray-300 font-semibold text-gray-900">
                 <td class="px-3 py-2">Total que entró</td>
                 <td class="px-3 py-2 text-right tabular-nums">{{ amount(data.total.PEN, 'PEN') }}</td>
@@ -86,6 +93,10 @@
           </table>
         </div>
 
+        <p v-if="counted.some((o) => o.key === 'detracciones')" class="text-xs text-gray-500">
+          Las detracciones son parte de lo cobrado, pero esa plata queda en el Banco de la Nación y solo sirve para pagar
+          impuestos a SUNAT.
+        </p>
         <p v-if="flagged.length > 0" class="text-xs text-amber-700">
           Hay abonos marcados como transferencia sin su otro lado: no se sabe si vienen de una cuenta propia. Búscalos con
           el filtro "Sin pareja" y enlázalos, o cámbiales la etiqueta si vienen de afuera.
@@ -118,9 +129,6 @@ const emit = defineEmits<{ 'update:visible': [value: boolean] }>()
 
 const { formatDate } = useFormatters()
 
-/** Detrás de esta fila va el subtotal "Plata de ventas" (cobros, Culqi y Mercado Pago). */
-const LAST_SALES = 'mercado_pago'
-
 function iso(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -141,6 +149,9 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 const counted = computed(() => data.value?.origins.filter((o) => o.in_total && (o.PEN !== 0 || o.USD !== 0)) ?? [])
+/** Los cobros a clientes, por el camino que tomó la plata; debajo, lo que no es venta. */
+const salesRows = computed(() => counted.value.filter((o) => o.sales))
+const otherRows = computed(() => counted.value.filter((o) => !o.sales))
 const flagged = computed(() => data.value?.origins.filter((o) => !o.in_total && (o.PEN !== 0 || o.USD !== 0)) ?? [])
 
 function amount(value: number, currency: 'PEN' | 'USD') {
