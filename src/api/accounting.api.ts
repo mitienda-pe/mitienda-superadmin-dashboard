@@ -1,7 +1,7 @@
 import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
-  SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, CashCountResult,
+  SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, BankInflows, CashCountResult,
   InvoiceSuggestion, ExpenseSuggestion, RefundCandidate, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod, BankPayerContext
 } from '@/types/accounting.types'
@@ -202,6 +202,12 @@ export async function getBankMovements(filters: BankMovementFilters) {
     meta: { current_page: number; per_page: number; total: number; total_pages: number }
   }>(`${BASE}/bank-movements`, { params })
   return res.data
+}
+
+/** Lo que entró a los bancos por origen, sin las transferencias entre cuentas propias. */
+export async function getBankInflows(from: string, to: string) {
+  const res = await api.get<{ data: BankInflows }>(`${BASE}/bank-inflows`, { params: { from, to } })
+  return res.data.data
 }
 
 export async function getBankSuggestions(movementId: number) {

@@ -11,7 +11,17 @@
           registrado el cobro del comprobante o el pago del gasto, con la fecha y la referencia del banco.
         </p>
       </div>
-      <div v-if="authStore.canWriteFinance" class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2">
+        <Button
+          v-if="authStore.areas.includes('accounting') && accounts.length > 0"
+          label="Ingresos por origen"
+          icon="pi pi-chart-bar"
+          severity="secondary"
+          outlined
+          v-tooltip.bottom="'Cuánto entró a los bancos en un período, sin contar las transferencias entre cuentas propias'"
+          @click="inflowsVisible = true"
+        />
+        <template v-if="authStore.canWriteFinance">
         <Button
           v-if="accounts.length > 0"
           label="Conciliar automáticamente"
@@ -25,6 +35,7 @@
         <Button label="Nueva cuenta" icon="pi pi-plus" severity="secondary" outlined @click="openAccount(null)" />
         <Button label="Reporte de detracciones" icon="pi pi-file-import" severity="secondary" outlined @click="detractionsVisible = true" />
         <Button label="Importar movimientos" icon="pi pi-upload" @click="openImport" />
+        </template>
       </div>
     </div>
 
@@ -747,6 +758,7 @@
 
     <!-- Reporte de detracciones de SUNAT: se monta al abrir para empezar limpio -->
     <DetractionReportDialog v-if="detractionsVisible" v-model:visible="detractionsVisible" @applied="reload" />
+    <BankInflowsDialog v-if="inflowsVisible" v-model:visible="inflowsVisible" />
 
     <!-- Importar -->
     <Dialog :draggable="false" v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
@@ -997,6 +1009,7 @@
 <script setup lang="ts">
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import DetractionReportDialog from '@/components/accounting/DetractionReportDialog.vue'
+import BankInflowsDialog from '@/components/accounting/BankInflowsDialog.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { RouterLink, useRoute, type RouteLocationRaw } from 'vue-router'
@@ -1738,6 +1751,7 @@ watch(reconcileVisible, visible => {
 })
 
 const detractionsVisible = ref(false)
+const inflowsVisible = ref(false)
 
 // --- Importar ---
 const importVisible = ref(false)

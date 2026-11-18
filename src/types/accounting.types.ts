@@ -284,6 +284,32 @@ export interface BankMovementFilters {
   page: number
 }
 
+export interface BankInflowAmounts {
+  PEN: number
+  USD: number
+  /** Todo en soles: los dólares al tipo de venta del día de cada abono. */
+  soles: number
+}
+
+export interface BankInflowOrigin extends BankInflowAmounts {
+  key: string
+  label: string
+  /** false: se muestra para revisarlo, pero no suma al total. */
+  in_total: boolean
+  movements: number
+}
+
+export interface BankInflows {
+  from: string
+  to: string
+  accounts: { id: number; bank: string; name: string; currency: string; last_date: string | null }[]
+  origins: BankInflowOrigin[]
+  total: BankInflowAmounts
+  sales: BankInflowAmounts
+  own_transfers: BankInflowAmounts
+  missing_rates: number
+}
+
 export interface BankMovementSummary {
   movements: number
   pending: number
