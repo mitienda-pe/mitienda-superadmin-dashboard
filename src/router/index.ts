@@ -223,6 +223,15 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    // Valoración de la empresa: solo Master.
+    path: '/valuation',
+    component: DashboardLayout,
+    meta: { requiresAuth: true, requiresSuperAdmin: true },
+    children: [
+      { path: '', name: 'Valuation', component: () => import('@/views/valuation/ValuationView.vue') }
+    ]
+  },
+  {
     // Programas de convenio (Tu Empresa): el partner solo ve el suyo.
     path: '/programs',
     component: DashboardLayout,

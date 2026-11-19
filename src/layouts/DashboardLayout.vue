@@ -155,6 +155,7 @@ const pageTitle = computed(() => {
     PipelineDetail: 'Detalle de Lead',
     Revenue: 'MRR y retención',
     StoreSales: 'Ventas de tiendas',
+    Valuation: 'Valoración',
     Alerts: 'Alertas',
     PlansMatrix: 'Matriz de Planes',
     PlansList: 'Lista de Planes',

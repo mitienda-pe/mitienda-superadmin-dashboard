@@ -123,7 +123,8 @@ const navGroups: NavGroup[] = [
     items: [
       { path: '/billing/income', label: 'Ingresos facturados', icon: 'pi pi-chart-bar' },
       { path: '/revenue', label: 'MRR y suscripciones', icon: 'pi pi-dollar', also: siblings(MRR_TABS) },
-      { path: '/store-sales', label: 'Ventas de tiendas', icon: 'pi pi-shopping-cart' }
+      { path: '/store-sales', label: 'Ventas de tiendas', icon: 'pi pi-shopping-cart' },
+      { path: '/valuation', label: 'Valoración', icon: 'pi pi-chart-line' }
     ]
   },
   {

@@ -9,10 +9,12 @@
 //   contabilidad          → cobros y contabilidad
 //   contabilidad_lectura  → cobros y contabilidad, sin modificar
 //   programa              → solo las tiendas del programa de su partner (Tu Empresa)
+//
+// La valoración (`valuation`) es solo de Master: usa sueldos comerciales y de soporte.
 
-export type PanelArea = 'platform' | 'stores' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting' | 'programs' | 'pipeline'
+export type PanelArea = 'platform' | 'stores' | 'billing' | 'finance' | 'collections' | 'reconcile' | 'accounting' | 'programs' | 'pipeline' | 'valuation'
 
-export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs', 'pipeline']
+export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance', 'collections', 'reconcile', 'accounting', 'programs', 'pipeline', 'valuation']
 
 /** La ficha de las tiendas, su alta y lo comercial de su plan. */
 const STORES_PATHS = ['/stores']
@@ -40,6 +42,9 @@ const PROGRAMS_PATHS = ['/programs']
 /** Pipeline de trials: seguimiento comercial de las pruebas gratis. */
 const PIPELINE_PATHS = ['/pipeline']
 
+/** Valoración de la empresa (solo Master). */
+const VALUATION_PATHS = ['/valuation']
+
 function under(path: string, bases: string[]): boolean {
   return bases.some(base => path === base || path.startsWith(`${base}/`))
 }
@@ -53,6 +58,7 @@ export function areaOfPath(path: string): PanelArea {
   if (under(path, ACCOUNTING_PATHS)) return 'accounting'
   if (under(path, PROGRAMS_PATHS)) return 'programs'
   if (under(path, PIPELINE_PATHS)) return 'pipeline'
+  if (under(path, VALUATION_PATHS)) return 'valuation'
   return 'platform'
 }
 

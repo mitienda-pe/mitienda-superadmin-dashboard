@@ -26,7 +26,8 @@ export const useAuthStore = defineStore('auth', () => {
     const info = superAdminInfo.value
     if (!info) return []
     if (info.role === 'master') return [...ALL_AREAS]
-    return info.areas ?? (info.is_superadmin ? [...ALL_AREAS] : [])
+    // Sin lista (sesión vieja), el equipo técnico ve todo menos lo que es solo de Master.
+    return info.areas ?? (info.is_superadmin ? ALL_AREAS.filter(area => area !== 'valuation') : [])
   })
   const hasPanelAccess = computed(() => areas.value.length > 0)
   /** ¿Puede modificar en esa área? Una sesión guardada sin `write_areas` usa el permiso viejo. */
