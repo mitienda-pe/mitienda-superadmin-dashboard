@@ -60,10 +60,24 @@
               </td>
               <template v-if="row.values.length">
                 <td v-for="(value, i) in row.values" :key="i" class="px-3 py-1.5 text-right tabular-nums" :class="valueClass(row, value)">
-                  {{ format(value) }}
+                  <button
+                    v-if="row.source && Math.round(value) !== 0"
+                    type="button"
+                    class="tabular-nums hover:text-primary hover:underline decoration-dotted underline-offset-2"
+                    :title="`De dónde sale: ${row.label}, ${MONTHS[i]}`"
+                    @click="openDetail(row, data.periods[i])"
+                  >{{ format(value) }}</button>
+                  <template v-else>{{ format(value) }}</template>
                 </td>
                 <td class="px-4 py-1.5 text-right tabular-nums font-medium" :class="valueClass(row, row.total ?? 0)">
-                  {{ format(row.total ?? 0) }}
+                  <button
+                    v-if="row.source && Math.round(row.total ?? 0) !== 0"
+                    type="button"
+                    class="tabular-nums font-medium hover:text-primary hover:underline decoration-dotted underline-offset-2"
+                    :title="`De dónde sale: ${row.label}, todo el año`"
+                    @click="openDetail(row, null)"
+                  >{{ format(row.total ?? 0) }}</button>
+                  <template v-else>{{ format(row.total ?? 0) }}</template>
                 </td>
               </template>
               <td v-else :colspan="data.periods.length + 1"></td>
@@ -74,8 +88,18 @@
 
       <p class="text-xs text-gray-500">
         Cada categoría de gasto cae en el bloque que tiene asignado en Categorías; el costo de cada persona se reparte
-        según su ficha en Planilla → Personal. Los gastos van en negativo.
+        según su ficha en Planilla → Personal. Los gastos van en negativo. Haz clic en una cifra de una línea para ver de
+        dónde sale.
       </p>
+
+      <IncomeStatementDetailDialog
+        v-if="detailRow"
+        v-model:visible="detailVisible"
+        :year="data.year"
+        :period="detailPeriod"
+        :label="detailRow.label"
+        :source="detailRow.source!"
+      />
 
       <!-- Por línea de negocio: solo lo directo; lo común no se reparte -->
       <div v-if="data.by_line?.lines.length" class="bg-white rounded-xl border border-gray-200 overflow-x-auto" :class="{ 'opacity-60': loading }">
@@ -134,6 +158,7 @@ import SectionTabs from '@/components/layout/SectionTabs.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, computed, onMounted } from 'vue'
 import Button from 'primevue/button'
+import IncomeStatementDetailDialog from '@/components/accounting/IncomeStatementDetailDialog.vue'
 import { getIncomeStatement, accountingErrorMessage } from '@/api/accounting.api'
 import type { IncomeStatement, IncomeStatementRow } from '@/types/accounting.types'
 
@@ -224,6 +249,17 @@ function valueClass(row: IncomeStatementRow, value: number): string {
   if (row.type === 'total') return 'font-semibold text-gray-900'
   if (row.type === 'subtotal') return 'text-gray-500 border-t border-gray-200'
   return 'text-gray-700'
+}
+
+// --- De dónde sale una cifra
+const detailRow = ref<IncomeStatementRow | null>(null)
+const detailPeriod = ref<string | null>(null)
+const detailVisible = ref(false)
+
+function openDetail(row: IncomeStatementRow, period: string | null) {
+  detailRow.value = row
+  detailPeriod.value = period
+  detailVisible.value = true
 }
 
 // Solo se muestra la última respuesta: cambiar de año rápido no deja datos de otro.

@@ -2,7 +2,7 @@ import api from './axios'
 import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, BankInflows, CashCountResult,
-  InvoiceSuggestion, ExpenseSuggestion, RefundCandidate, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
+  InvoiceSuggestion, ExpenseSuggestion, RefundCandidate, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, IncomeStatementDetail, IncomeStatementSource, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
   PayrollPeriod, BankPayerContext
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
@@ -369,6 +369,14 @@ export async function unlinkBankMovement(linkId: number) {
 /** Estado de resultados por función, mes a mes (solo Master: reparte el costo de cada persona). */
 export async function getIncomeStatement(year: number) {
   const res = await api.get<{ data: IncomeStatement }>(`${BASE}/income-statement`, { params: { year } })
+  return res.data.data
+}
+
+/** De dónde sale una cifra del estado: una línea en un mes, o en el año sin `period`. */
+export async function getIncomeStatementDetail(year: number, period: string | null, source: IncomeStatementSource) {
+  const params: Record<string, string | number> = { year, ...source }
+  if (period) params.period = period
+  const res = await api.get<{ data: IncomeStatementDetail }>(`${BASE}/income-statement/detail`, { params })
   return res.data.data
 }
 

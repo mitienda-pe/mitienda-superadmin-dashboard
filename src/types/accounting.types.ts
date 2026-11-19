@@ -13,6 +13,12 @@ export interface ExpenseCategory {
 
 export type StatementFunction = 'costo' | 'admin' | 'ventas' | 'financiero' | 'excluido'
 
+/** De dónde sale una línea del estado: con esto se pide su detalle. */
+export type IncomeStatementSource =
+  | { kind: 'revenue'; key: string }
+  | { kind: 'payroll'; function: string; concept: string }
+  | { kind: 'expense'; function: string; category: string }
+
 export interface IncomeStatementRow {
   type: 'section' | 'group' | 'line' | 'subtotal' | 'total' | 'result'
   label: string
@@ -20,6 +26,30 @@ export interface IncomeStatementRow {
   values: number[]
   total: number | null
   note: string | null
+  source?: IncomeStatementSource | null
+}
+
+export interface IncomeStatementDetailItem {
+  date: string | null
+  period: string
+  /** Cliente, persona o proveedor. */
+  who: string
+  document: string | null
+  description: string | null
+  /** Moneda original, si no era en soles. */
+  original: string | null
+  /** Con el signo del estado: los gastos en negativo. */
+  amount: number
+  link: { type: 'expense' | 'invoice' | 'payroll'; id?: number; search?: string; period?: string }
+}
+
+export interface IncomeStatementDetail {
+  kind: IncomeStatementSource['kind']
+  period: string | null
+  items: IncomeStatementDetailItem[]
+  groups: { who: string; amount: number; count: number }[]
+  total: number
+  count: number
 }
 
 export interface IncomeStatement {
