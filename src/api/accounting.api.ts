@@ -301,6 +301,31 @@ export async function getRefundCandidates(movementId: number, q = '') {
   return res.data.data
 }
 
+/** Cuota de un préstamo de banco que un débito puede estar pagando. */
+export interface LoanInstallmentCandidate {
+  id: number
+  loan_id: number
+  loan_name: string
+  lender: string
+  number: number
+  due_date: string
+  total: number
+  /** Lo que falta cubrir con débitos del banco. */
+  open: number
+  principal: number
+  interest: number
+  insurance: number
+  /** Lo que falta calza con el movimiento. */
+  exact: boolean
+  /** Marcada pagada a mano, sin débito enlazado. */
+  paid_at: string | null
+}
+
+export async function getLoanInstallmentCandidates(movementId: number) {
+  const res = await api.get<{ data: LoanInstallmentCandidate[] }>(`${BASE}/bank-movements/${movementId}/loan-installments`)
+  return res.data.data
+}
+
 export async function getTransferCandidates(movementId: number) {
   const res = await api.get<{ data: TransferCandidate[] }>(`${BASE}/bank-movements/${movementId}/transfer-candidates`)
   return res.data.data

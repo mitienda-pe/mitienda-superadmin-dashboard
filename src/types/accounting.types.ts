@@ -232,6 +232,9 @@ export interface BankMovementLink {
   counterpart_movement_id: number | null
   counterpart_account: string | null
   counterpart_date: string | null
+  /** La cuota de préstamo que paga (Bancos → "Préstamo" con cuota). */
+  loan_installment_id?: number | null
+  loan_installment_due?: string | null
 }
 
 export interface BankMovement {
@@ -494,6 +497,8 @@ export type ReconcileInput =
   | { kind: 'pago_usd_soles'; expense_id: number; soles_amount?: number; usd_amount?: number }
   /** Retiro del banco que fue a la caja (o depósito que salió de ella): crea el otro lado en la caja. */
   | { kind: 'caja'; cash_account_id: number }
+  /** Débito que paga una cuota de préstamo: la cuota queda pagada. */
+  | { kind: 'cuota'; installment_id: number; amount?: number }
   | { kind: 'cliente'; customer_document: string; invoice_ids: number[]; retention?: boolean }
 
 /** Lo que un cliente tiene sin cobrar, de lo más antiguo a lo más nuevo. */

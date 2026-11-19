@@ -301,6 +301,16 @@
           </table>
         </div>
 
+        <!-- Marcado "Préstamo" sin decir qué cuota: se puede enlazar con ella -->
+        <LoanInstallmentPicker
+          v-if="authStore.canWriteFinance && plainLoanMark(current)"
+          :key="'loan' + current.id"
+          :movement-id="current.id"
+          :currency="current.currency"
+          title="¿Qué cuota pagó?"
+          @linked="onInstallmentLinked"
+        />
+
         <template v-if="current.remaining > 0 && authStore.canWrite('reconcile')">
           <SelectButton v-model="mode" :options="modeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" />
 
@@ -654,6 +664,14 @@
                 <Button label="Registrar el cambio" size="small" :disabled="!cashPlan || (!!cashRateWarning && !cashRateConfirmed)" :loading="saving" @click="submitCashLegs" />
               </div>
             </div>
+            <LoanInstallmentPicker
+              v-if="other.label === 'prestamo' && current.amount < 0"
+              :key="'loan-new' + current.id"
+              :movement-id="current.id"
+              :currency="current.currency"
+              title="La cuota que se pagó (o concilia sin cuota con el botón de abajo)"
+              @linked="onInstallmentLinked"
+            />
             <div v-if="other.label === 'transferencia'" class="rounded-lg border border-gray-200 p-3 space-y-2">
               <div class="text-sm font-medium text-gray-700">El otro lado, en la otra cuenta</div>
               <div v-if="transferLoading" class="text-sm text-gray-400">Buscando…</div>
@@ -1010,6 +1028,7 @@
 import SectionTabs from '@/components/layout/SectionTabs.vue'
 import DetractionReportDialog from '@/components/accounting/DetractionReportDialog.vue'
 import BankInflowsDialog from '@/components/accounting/BankInflowsDialog.vue'
+import LoanInstallmentPicker from '@/components/accounting/LoanInstallmentPicker.vue'
 import { ACCOUNTING_TABS } from '@/config/sections.config'
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { RouterLink, useRoute, type RouteLocationRaw } from 'vue-router'
@@ -1706,6 +1725,20 @@ async function submitReconcile() {
   } finally {
     saving.value = false
   }
+}
+
+/** Un débito marcado "Préstamo" sin cuota, y nada más: se puede decir qué cuota pagó. */
+function plainLoanMark(movement: BankMovement): boolean {
+  return movement.amount < 0 && movement.links.length > 0
+    && movement.links.every((l) => l.label === 'prestamo' && !l.loan_installment_id && !l.counterpart_movement_id)
+}
+
+function onInstallmentLinked(res: { message: string; data: BankMovement; undo?: string }) {
+  current.value = res.data
+  changed = true
+  toast.add({ severity: 'success', summary: 'Cuota pagada', detail: res.message, life: 3000 })
+  offerUndo(res.undo, `#${res.data.id}: cuota de préstamo`)
+  if (res.data.remaining <= 0) reconcileVisible.value = false
 }
 
 // El resto de céntimos de un movimiento ya cruzado con lo principal.
