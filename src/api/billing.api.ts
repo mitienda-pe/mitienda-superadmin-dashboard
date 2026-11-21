@@ -9,7 +9,7 @@ import type {
   PlatformBatchResult,
   CommissionPeriodResponse, CommissionInvoicePreview, CommissionBatchResult,
   ManualInvoiceClient, ManualInvoiceInput, ManualInvoicePreview, ManualInvoiceResult,
-  CreditNotePreview, CreditNoteResult
+  CreditNotePreview, CreditNoteResult, InvoiceVoidPreview, InvoiceVoidResult
 } from '@/types/billing.types'
 
 // Emitir espera al proveedor de facturación: hasta 30 segundos por comprobante
@@ -277,6 +277,24 @@ export async function emitCreditNote(invoiceId: number, type: number, reason: st
   const res = await api.post<{ message: string; data: CreditNoteResult }>(
     `/superadmin/platform-invoices/credit-notes/${invoiceId}/emit`,
     { type, reason },
+    EMIT_ONE
+  )
+  return res.data
+}
+
+// --- Baja ante SUNAT ---
+
+/** Si el comprobante todavía se puede dar de baja (hasta 7 días desde la emisión). */
+export async function previewInvoiceVoid(invoiceId: number) {
+  const res = await api.get<{ data: InvoiceVoidPreview }>(`/superadmin/platform-invoices/${invoiceId}/void/preview`)
+  return res.data.data
+}
+
+/** Da de baja el comprobante ante SUNAT y lo anula en el libro. Irreversible. */
+export async function voidInvoice(invoiceId: number, reason: string) {
+  const res = await api.post<{ message: string; data: InvoiceVoidResult }>(
+    `/superadmin/platform-invoices/${invoiceId}/void`,
+    { reason },
     EMIT_ONE
   )
   return res.data

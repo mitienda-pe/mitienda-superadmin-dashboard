@@ -322,7 +322,7 @@
           </template>
         </Column>
 
-        <Column header="" style="width: 170px">
+        <Column header="" style="width: 200px">
           <template #body="{ data: row }">
             <Button
               v-if="row.status === 1 && authStore.canWrite('collections')"
@@ -333,6 +333,17 @@
               rounded
               severity="secondary"
               @click="openEmail('invoice', [row])"
+            />
+            <!-- Baja ante SUNAT: solo los primeros 7 días; después, nota de crédito -->
+            <Button
+              v-if="canVoid(row)"
+              v-tooltip.top="'Dar de baja ante SUNAT'"
+              icon="pi pi-ban"
+              size="small"
+              text
+              rounded
+              severity="danger"
+              @click="openVoid(row)"
             />
             <!-- Anotar un cobro a mano; quien solo concilia lo hace desde Bancos -->
             <Button
@@ -591,6 +602,7 @@
       </template>
     </Dialog>
     <InvoiceEmailDialog v-model:visible="emailVisible" :mode="emailMode" :invoice-ids="emailIds" />
+    <InvoiceVoidDialog v-model:visible="voidVisible" :invoice-id="voidId" @voided="onVoided" />
     <BroadcastFormDialog v-model:visible="reminderVisible" :record="reminderDraft" :saving="reminderSaving" @submit="saveReminder" />
   </div>
 </template>
@@ -621,6 +633,7 @@ import { PLAN_PAYMENT_METHODS } from '@/config/plan-payment.config'
 import { toIsoDate } from '@/utils/dates'
 import BroadcastFormDialog from '@/views/broadcasts/BroadcastFormDialog.vue'
 import InvoiceEmailDialog from './InvoiceEmailDialog.vue'
+import InvoiceVoidDialog from './InvoiceVoidDialog.vue'
 import { createBroadcast, resolveBroadcastStores } from '@/api/broadcasts.api'
 import type { Broadcast, BroadcastFormInput } from '@/types/broadcast.types'
 import type {
@@ -630,6 +643,30 @@ import type {
 
 const toast = useToast()
 const authStore = useAuthStore()
+
+// --- Baja ante SUNAT ---
+// SUNAT acepta la baja hasta 7 días calendario desde la emisión; el servidor
+// vuelve a validar todo (cobros, nota de crédito, entorno) al abrir el diálogo.
+const VOID_MAX_DAYS = 7
+const voidVisible = ref(false)
+const voidId = ref<number | null>(null)
+
+function canVoid(row: LedgerInvoice): boolean {
+  if (row.status !== 1 || (row.document_type !== 1 && row.document_type !== 2)) return false
+  if (!authStore.canPath('/billing/emit')) return false
+  const days = Math.round((Date.parse(toIsoDate(new Date())) - Date.parse(row.issue_date)) / 86_400_000)
+  return days <= VOID_MAX_DAYS
+}
+
+function openVoid(row: LedgerInvoice) {
+  voidId.value = row.id
+  voidVisible.value = true
+}
+
+function onVoided(message: string) {
+  toast.add({ severity: 'success', summary: 'Comprobante dado de baja', detail: message, life: 10000 })
+  load()
+}
 
 // --- Correos al cliente: reenviar el comprobante o recordarle el pago ---
 const emailVisible = ref(false)

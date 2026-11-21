@@ -204,6 +204,37 @@ export interface CreditNotePreview {
   types: { id: number; name: string }[]
 }
 
+// --- Baja ante SUNAT ---
+
+export interface InvoiceVoidPreview {
+  invoice_id: number
+  comprobante: string
+  document_type: number
+  issue_date: string
+  /** Días calendario desde la emisión. */
+  days: number
+  /** Último día en que SUNAT acepta la baja. */
+  deadline: string
+  customer_name: string | null
+  customer_document: string | null
+  currency: string
+  total: number
+  /** Salió de una venta de plan: la venta vuelve a "pendiente de facturar". */
+  releases_plan: boolean
+  is_production: boolean
+  can_void: boolean
+  blocked_reason: string | null
+  /** Pasó el plazo: lo que corresponde es una nota de crédito. */
+  credit_note_instead: boolean
+}
+
+export interface InvoiceVoidResult {
+  success: boolean
+  message: string
+  accepted?: boolean
+  ticket?: string
+}
+
 export interface CreditNoteResult {
   success: boolean
   message?: string
