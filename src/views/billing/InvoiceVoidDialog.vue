@@ -14,7 +14,7 @@
       <dl class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
         <dt class="text-gray-500">Comprobante</dt>
         <dd class="col-span-2 font-medium text-gray-900">
-          {{ preview.document_type === 1 ? 'Factura' : 'Boleta' }} {{ preview.comprobante }}
+          {{ DOCUMENT_LABELS[preview.document_type] ?? 'Comprobante' }} {{ preview.comprobante }}
         </dd>
         <dt class="text-gray-500">Cliente</dt>
         <dd class="col-span-2 text-gray-900">
@@ -48,10 +48,19 @@
           <InputText id="void-reason" v-model="reason" class="w-full" maxlength="100" placeholder="Ej. Monto errado: debió ser S/ 149" />
           <span class="text-xs text-gray-400">Entre 5 y 100 caracteres.</span>
         </div>
-        <p v-if="preview.releases_plan" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
-          Salió de una venta de plan: la venta vuelve a <b>pendiente de facturar</b> para emitirla de nuevo con el monto correcto.
-          Si el error está en el precio del plan, corrígelo antes de volver a facturar.
+        <p v-if="preview.document_type === 3" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700">
+          Al dar de baja la nota de crédito, el comprobante que modificaba vuelve a quedar vigente por su total.
         </p>
+        <div v-if="preview.releases_plan" class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 space-y-2">
+          <p>
+            Salió de una venta de plan. Si ya emitiste el comprobante correcto, indícalo y la venta pasa a apuntar a él.
+            Si lo dejas vacío, la venta vuelve a <b>pendiente de facturar</b> (corrige antes el precio del plan si ahí estaba el error).
+          </p>
+          <div>
+            <label for="void-replaced-by" class="block text-sm font-medium text-gray-700 mb-1">Comprobante correcto (opcional)</label>
+            <InputText id="void-replaced-by" v-model="replacedBy" class="w-full font-mono" maxlength="15" placeholder="Ej. F003-1945" />
+          </div>
+        </div>
         <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
           La baja es irreversible: el comprobante queda anulado ante SUNAT y deja de contar como venta y como cuenta por cobrar.
         </p>
@@ -92,7 +101,10 @@ const { formatDate } = useFormatters()
 const preview = ref<InvoiceVoidPreview | null>(null)
 const loading = ref(false)
 const loadError = ref<string | null>(null)
+const DOCUMENT_LABELS: Record<number, string> = { 1: 'Factura', 2: 'Boleta', 3: 'Nota de crédito' }
+
 const reason = ref('')
+const replacedBy = ref('')
 const saving = ref(false)
 const saveError = ref<string | null>(null)
 
@@ -107,6 +119,7 @@ async function load(id: number) {
   saveError.value = null
   preview.value = null
   reason.value = ''
+  replacedBy.value = ''
   try {
     preview.value = await previewInvoiceVoid(id)
   } catch (e) {
@@ -121,7 +134,7 @@ async function submit() {
   saving.value = true
   saveError.value = null
   try {
-    const res = await voidInvoice(preview.value.invoice_id, reason.value.trim())
+    const res = await voidInvoice(preview.value.invoice_id, reason.value.trim(), replacedBy.value.trim().toUpperCase())
     emit('voided', res.message)
     emit('update:visible', false)
   } catch (e) {

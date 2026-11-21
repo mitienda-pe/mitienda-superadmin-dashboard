@@ -652,7 +652,8 @@ const voidVisible = ref(false)
 const voidId = ref<number | null>(null)
 
 function canVoid(row: LedgerInvoice): boolean {
-  if (row.status !== 1 || (row.document_type !== 1 && row.document_type !== 2)) return false
+  // Una nota de crédito también se da de baja: el comprobante que modificaba vuelve a valer.
+  if (row.status !== 1 || ![1, 2, 3].includes(row.document_type)) return false
   if (!authStore.canPath('/billing/emit')) return false
   const days = Math.round((Date.parse(toIsoDate(new Date())) - Date.parse(row.issue_date)) / 86_400_000)
   return days <= VOID_MAX_DAYS

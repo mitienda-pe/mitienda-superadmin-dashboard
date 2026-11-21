@@ -291,10 +291,10 @@ export async function previewInvoiceVoid(invoiceId: number) {
 }
 
 /** Da de baja el comprobante ante SUNAT y lo anula en el libro. Irreversible. */
-export async function voidInvoice(invoiceId: number, reason: string) {
+export async function voidInvoice(invoiceId: number, reason: string, replacedBy?: string) {
   const res = await api.post<{ message: string; data: InvoiceVoidResult }>(
     `/superadmin/platform-invoices/${invoiceId}/void`,
-    { reason },
+    { reason, replaced_by: replacedBy || undefined },
     EMIT_ONE
   )
   return res.data
