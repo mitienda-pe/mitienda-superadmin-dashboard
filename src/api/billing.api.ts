@@ -272,11 +272,14 @@ export async function previewCreditNote(invoiceId: number) {
   return res.data.data
 }
 
-/** Acredita el comprobante por su total. Irreversible: llega a SUNAT. */
-export async function emitCreditNote(invoiceId: number, type: number, reason: string) {
+/**
+ * Acredita el comprobante: por su total, o por `amount` (con IGV) si el motivo
+ * es parcial. Irreversible: llega a SUNAT.
+ */
+export async function emitCreditNote(invoiceId: number, type: number, reason: string, amount?: number) {
   const res = await api.post<{ message: string; data: CreditNoteResult }>(
     `/superadmin/platform-invoices/credit-notes/${invoiceId}/emit`,
-    { type, reason },
+    { type, reason, amount },
     EMIT_ONE
   )
   return res.data

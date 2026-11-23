@@ -200,8 +200,12 @@ export interface CreditNotePreview {
   next_number: number | null
   can_emit: boolean
   blocked_reason: string | null
-  /** Motivos que acreditan el comprobante completo. */
-  types: { id: number; name: string }[]
+  /** Lo ya acreditado por notas vigentes. */
+  credited: number
+  /** Lo que todavía se puede acreditar, con IGV. */
+  available: number
+  /** Motivos: los totales acreditan todo; los parciales, un monto. Con una nota previa solo vienen los parciales. */
+  types: { id: number; name: string; partial: boolean }[]
 }
 
 // --- Baja ante SUNAT ---

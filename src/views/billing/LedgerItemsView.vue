@@ -209,7 +209,7 @@
           <template #body="{ data: row }">
             <div class="flex items-center justify-end">
               <Button v-if="authStore.canWrite('finance')" icon="pi pi-tag" text rounded size="small" v-tooltip.left="'Etiquetar'" @click="openAssign([row.id])" />
-              <!-- Una nota de credito acredita el comprobante entero, no la linea. -->
+              <!-- La nota se emite sobre el comprobante (total o por un monto), no sobre la linea. -->
               <Button
                 v-if="authStore.canPath('/billing/emit') && (row.document_type === 1 || row.document_type === 2)"
                 icon="pi pi-undo"
@@ -266,10 +266,28 @@
             {{ creditPreview.customer_name }}
             <span class="block font-mono text-gray-500">{{ creditPreview.customer_document }}</span>
           </dd>
+          <dt class="text-gray-500">Total</dt>
+          <dd class="col-span-2 text-gray-900 tabular-nums">
+            {{ creditMoney(creditPreview.total) }}
+            <span v-if="creditPreview.credited > 0" class="block text-gray-500">
+              ya acreditado {{ creditMoney(creditPreview.credited) }} · queda {{ creditMoney(creditPreview.available) }}
+            </span>
+          </dd>
           <dt class="text-gray-500">Se acredita</dt>
           <dd class="col-span-2 text-gray-900">
-            <span class="font-semibold tabular-nums">{{ creditMoney(creditPreview.total) }}</span>
-            <span class="text-gray-500"> · el total, {{ creditPreview.lines.length }} línea{{ creditPreview.lines.length === 1 ? '' : 's' }}</span>
+            <template v-if="creditIsPartial">
+              <span class="font-semibold tabular-nums">{{ creditMoney(creditAmount ?? 0) }}</span>
+              <span v-if="creditAmount" class="text-gray-500 tabular-nums">
+                · {{ creditMoney(creditNet) }} + IGV {{ creditMoney((creditAmount ?? 0) - creditNet) }}
+              </span>
+              <span class="block text-gray-500">
+                El comprobante queda vigente por {{ creditMoney(creditPreview.available - (creditAmount ?? 0)) }}.
+              </span>
+            </template>
+            <template v-else>
+              <span class="font-semibold tabular-nums">{{ creditMoney(creditPreview.total) }}</span>
+              <span class="text-gray-500"> · el total, {{ creditPreview.lines.length }} línea{{ creditPreview.lines.length === 1 ? '' : 's' }}</span>
+            </template>
           </dd>
           <dt class="text-gray-500">Nota</dt>
           <dd class="col-span-2 text-gray-700">
@@ -286,18 +304,38 @@
             <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
             <Dropdown
               v-model="creditType"
-              :options="creditPreview.types"
-              optionLabel="name"
+              :options="creditTypeOptions"
+              optionLabel="label"
               optionValue="id"
               class="w-full"
             />
+          </div>
+          <div v-if="creditIsPartial">
+            <label for="credit-amount" class="block text-sm font-medium text-gray-700 mb-1">Monto que se acredita (con IGV)</label>
+            <InputNumber
+              v-model="creditAmount"
+              input-id="credit-amount"
+              mode="decimal"
+              :min-fraction-digits="2"
+              :max-fraction-digits="2"
+              :min="0"
+              :max="creditPreview.available"
+              class="w-full"
+              placeholder="Ej. 150.00"
+            />
+            <span class="text-xs text-gray-400">
+              Hasta {{ creditMoney(creditPreview.available) }}. Por ejemplo, la diferencia entre el plan facturado y el que correspondía.
+            </span>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Explicación (se imprime en la nota)</label>
             <InputText v-model="creditReason" class="w-full" maxlength="250" placeholder="Ej. Comprobante duplicado por error" />
           </div>
           <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            <template v-if="creditPreview.is_production">
+            <template v-if="creditPreview.is_production && creditIsPartial">
+              Emitir es irreversible: la nota llega a SUNAT y rebaja el comprobante en el monto indicado.
+            </template>
+            <template v-else-if="creditPreview.is_production">
               Emitir es irreversible: la nota llega a SUNAT y deja este comprobante sin efecto por su total.
             </template>
             <template v-else>Modo PRUEBAS: se emite en el ambiente demo y no queda en el libro.</template>
@@ -311,7 +349,7 @@
           icon="pi pi-undo"
           severity="danger"
           :loading="creditEmitting"
-          :disabled="!creditPreview?.can_emit || creditReason.trim().length < 5"
+          :disabled="!creditPreview?.can_emit || creditReason.trim().length < 5 || (creditIsPartial && !creditAmountValid)"
           @click="submitCreditNote"
         />
       </template>
@@ -364,6 +402,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
 import Checkbox from 'primevue/checkbox'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -638,6 +677,20 @@ const creditEmitting = ref(false)
 const creditPreview = ref<CreditNotePreview | null>(null)
 const creditType = ref(1)
 const creditReason = ref('')
+const creditAmount = ref<number | null>(null)
+
+// Debe coincidir con el IGV de PlatformBilling: es solo para mostrar el desglose.
+const IGV_RATE = 0.18
+
+const creditTypeOptions = computed(() =>
+  (creditPreview.value?.types ?? []).map((t) => ({ ...t, label: t.partial ? `${t.name} (parcial, por un monto)` : `${t.name} (por el total)` }))
+)
+const creditIsPartial = computed(() => creditPreview.value?.types.find((t) => t.id === creditType.value)?.partial === true)
+const creditNet = computed(() => Math.round(((creditAmount.value ?? 0) / (1 + IGV_RATE)) * 100) / 100)
+const creditAmountValid = computed(() => {
+  const amount = creditAmount.value ?? 0
+  return amount > 0 && amount <= (creditPreview.value?.available ?? 0) + 0.001
+})
 
 function creditMoney(value: number): string {
   return creditPreview.value?.currency === 'USD'
@@ -649,10 +702,13 @@ async function openCreditNote(row: LedgerItem) {
   creditPreview.value = null
   creditType.value = 1
   creditReason.value = ''
+  creditAmount.value = null
   creditVisible.value = true
   creditLoading.value = true
   try {
     creditPreview.value = await previewCreditNote(row.invoice_id)
+    // Con una nota previa solo queda la parcial: se preselecciona el primer motivo disponible.
+    creditType.value = creditPreview.value.types[0]?.id ?? 1
   } catch (e) {
     creditVisible.value = false
     toast.add({ severity: 'error', summary: 'No se pudo cargar', detail: ledgerErrorMessage(e), life: 8000 })
@@ -666,7 +722,12 @@ async function submitCreditNote() {
 
   creditEmitting.value = true
   try {
-    const res = await emitCreditNote(creditPreview.value.invoice_id, creditType.value, creditReason.value.trim())
+    const res = await emitCreditNote(
+      creditPreview.value.invoice_id,
+      creditType.value,
+      creditReason.value.trim(),
+      creditIsPartial.value ? creditAmount.value ?? undefined : undefined
+    )
     creditVisible.value = false
     toast.add({ severity: 'success', summary: 'Nota de crédito emitida', detail: res.message, life: 10000 })
     load()
