@@ -171,6 +171,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/billing/PlanSalesListView.vue')
       },
       {
+        // Cargos de suscripción de Culqi que el webhook no aplicó solo.
+        path: 'culqi-charges',
+        name: 'BillingCulqiCharges',
+        component: () => import('@/views/billing/CulqiChargesView.vue')
+      },
+      {
         // El cierre del mes: comisiones calculadas al vuelo y emitibles. Es una
         // vista aparte de `commissions`, que lista las ya emitidas.
         path: 'commission-period',

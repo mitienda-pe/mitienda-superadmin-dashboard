@@ -20,7 +20,7 @@ export const ALL_AREAS: PanelArea[] = ['platform', 'stores', 'billing', 'finance
 const STORES_PATHS = ['/stores']
 
 /** Emitir: ventas de planes (y su renovación), comisiones, emisión manual. */
-const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/commission-period', '/billing/payment-links']
+const BILLING_PATHS = ['/billing/emit', '/billing/plan-sales', '/billing/culqi-charges', '/billing/commission-period', '/billing/payment-links']
 
 /** Lo emitido y lo cobrado: comprobantes, abonos, líneas, conceptos, etiquetas, ingresos. */
 const FINANCE_PATHS = [
