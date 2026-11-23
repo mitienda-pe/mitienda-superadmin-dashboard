@@ -130,6 +130,22 @@ body {
   .p-button.p-button-text {
     color: var(--primary-500);
   }
+
+  /* InputSwitch: turquesa de marca, y que no se encoja en una fila flex
+     junto a un texto largo (la bolita se desplaza 1.25rem fijos y quedaba
+     cortada). */
+  .p-inputswitch {
+    flex-shrink: 0;
+  }
+  .p-inputswitch.p-highlight .p-inputswitch-slider {
+    background: var(--primary-500);
+  }
+  .p-inputswitch:not(.p-disabled):has(.p-inputswitch-input:hover).p-highlight .p-inputswitch-slider {
+    background: var(--primary-600);
+  }
+  .p-inputswitch:not(.p-disabled):has(.p-inputswitch-input:focus-visible) .p-inputswitch-slider {
+    box-shadow: 0 0 0 0.2rem var(--primary-200);
+  }
 }
 
 .p-button.p-button-sm {
