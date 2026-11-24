@@ -74,19 +74,27 @@ export async function searchCustomers(q: string) {
 }
 
 /** Baja todos los comprobantes del cliente, con lo cobrado y lo que falta, en Excel o PDF. */
-export async function downloadCustomerInvoices(id: number, format: 'xlsx' | 'pdf', name: string): Promise<void> {
-  const res = await api.get<Blob>(`/superadmin/customers/${id}/invoices/export`, { params: { format }, responseType: 'blob' })
+export async function downloadCustomerInvoices(id: number, format: 'xlsx' | 'pdf', name: string, period?: InvoicePeriod): Promise<void> {
+  const res = await api.get<Blob>(`/superadmin/customers/${id}/invoices/export`, { params: { format, ...periodParams(period) }, responseType: 'blob' })
   const slug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cliente'
   const url = URL.createObjectURL(res.data)
   const a = document.createElement('a')
   a.href = url
-  a.download = `comprobantes-${slug}.${format}`
+  const span = period?.from || period?.to ? `-${period.from || 'inicio'}_${period.to || 'hoy'}` : ''
+  a.download = `comprobantes-${slug}${span}.${format}`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-export async function getCustomer(id: number) {
-  const res = await api.get<{ data: CustomerDetail }>(`/superadmin/customers/${id}`)
+export interface InvoicePeriod { from?: string | null; to?: string | null }
+
+function periodParams(period?: InvoicePeriod) {
+  return { from: period?.from || undefined, to: period?.to || undefined }
+}
+
+/** Con período trae todos los comprobantes emitidos en él; sin período, los últimos 100. */
+export async function getCustomer(id: number, period?: InvoicePeriod) {
+  const res = await api.get<{ data: CustomerDetail }>(`/superadmin/customers/${id}`, { params: periodParams(period) })
   return res.data.data
 }
 

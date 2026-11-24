@@ -109,12 +109,37 @@
 
       <div class="bg-white rounded-xl border border-gray-200 p-4">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h2 class="font-semibold text-gray-900">Comprobantes <span class="text-xs font-normal text-gray-400">(los últimos 100)</span></h2>
+          <h2 class="font-semibold text-gray-900">
+            Comprobantes
+            <span class="text-xs font-normal text-gray-400">{{ hasPeriod ? `(${shownInvoices.length} en el período)` : '(los últimos 100)' }}</span>
+          </h2>
           <div class="flex gap-2">
-            <Button label="Excel" icon="pi pi-file-excel" size="small" outlined :loading="exporting === 'xlsx'" :disabled="exporting !== null" v-tooltip.top="'Todos los comprobantes, no solo los últimos 100'" @click="exportInvoices('xlsx')" />
-            <Button label="PDF" icon="pi pi-file-pdf" size="small" outlined :loading="exporting === 'pdf'" :disabled="exporting !== null" v-tooltip.top="'Todos los comprobantes, no solo los últimos 100'" @click="exportInvoices('pdf')" />
+            <Button label="Excel" icon="pi pi-file-excel" size="small" outlined :loading="exporting === 'xlsx'" :disabled="exporting !== null" v-tooltip.top="exportHint" @click="exportInvoices('xlsx')" />
+            <Button label="PDF" icon="pi pi-file-pdf" size="small" outlined :loading="exporting === 'pdf'" :disabled="exporting !== null" v-tooltip.top="exportHint" @click="exportInvoices('pdf')" />
           </div>
         </div>
+
+        <!-- Período: por fecha de emisión -->
+        <div class="flex flex-wrap items-center gap-2 mb-3 text-sm">
+          <Button v-for="p in PERIOD_PRESETS" :key="p.label" :label="p.label" size="small" :outlined="!isPreset(p)" severity="secondary" @click="applyPeriod(p.range())" />
+          <span class="text-gray-500 ml-2">Desde</span>
+          <InputText v-model="period.from" type="date" class="w-40" aria-label="Emitidos desde" @change="applyPeriod({ ...period })" />
+          <span class="text-gray-500">hasta</span>
+          <InputText v-model="period.to" type="date" class="w-40" aria-label="Emitidos hasta" @change="applyPeriod({ ...period })" />
+          <Button v-if="hasPeriod" label="Todo" icon="pi pi-times" size="small" text severity="secondary" @click="applyPeriod({ from: '', to: '' })" />
+          <i v-if="periodLoading" class="pi pi-spin pi-spinner text-gray-400"></i>
+        </div>
+
+        <!-- Totales de lo que se ve -->
+        <div v-if="hasPeriod && shownTotals.length" class="flex flex-wrap gap-x-6 gap-y-1 mb-3 text-sm">
+          <div v-for="t in shownTotals" :key="t.currency" class="text-gray-600">
+            <span class="font-medium text-gray-800">{{ t.currency === 'USD' ? 'Dólares' : 'Soles' }}:</span>
+            facturado <span class="tabular-nums">{{ cur(t) }} {{ number(t.total) }}</span>
+            · cobrado <span class="tabular-nums text-green-700">{{ cur(t) }} {{ number(t.paid) }}</span>
+            · por cobrar <span class="tabular-nums" :class="t.balance > 0 ? 'text-amber-700 font-medium' : ''">{{ cur(t) }} {{ number(t.balance) }}</span>
+          </div>
+        </div>
+        <p v-if="hasPeriod && !periodLoading && shownInvoices.length === 0" class="text-sm text-gray-500 py-4">Sin comprobantes emitidos en este período.</p>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -129,7 +154,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="inv in customer.invoices" :key="inv.id" class="border-b border-gray-100 last:border-0" :class="{ 'opacity-50': inv.voided }">
+              <tr v-for="inv in shownInvoices" :key="inv.id" class="border-b border-gray-100 last:border-0" :class="{ 'opacity-50': inv.voided }">
                 <td class="py-1.5 font-mono text-gray-800">{{ inv.number }}<span v-if="inv.document_type === 3" class="text-xs text-gray-500"> (NC)</span></td>
                 <td class="py-1.5 text-gray-600">{{ formatDate(inv.issue_date) }}</td>
                 <td class="py-1.5 text-gray-600 max-w-xs truncate" :title="inv.concept ?? ''">{{ inv.concept }}</td>
@@ -202,7 +227,7 @@ import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import {
   getCustomer, updateCustomer, downloadCustomerInvoices, verifyCustomer, assignCustomerStore, unassignCustomerStore, customerErrorMessage,
-  type CustomerDetail, type CustomerInput
+  type CustomerDetail, type CustomerInput, type CustomerInvoice
 } from '@/api/customers.api'
 
 // Lo que no se va a cobrar: en vez de un saldo, por qué.
@@ -241,12 +266,72 @@ const sunatOk = computed(() => {
 const editing = ref(false)
 const saving = ref(false)
 
+// Período de los comprobantes (fecha de emisión). Con período se traen todos
+// los de ese rango, aparte de la ficha: editarla no pisa lo filtrado.
+const period = reactive<{ from: string; to: string }>({ from: '', to: '' })
+const periodInvoices = ref<CustomerInvoice[] | null>(null)
+const periodLoading = ref(false)
+const hasPeriod = computed(() => periodInvoices.value !== null)
+const shownInvoices = computed(() => periodInvoices.value ?? customer.value?.invoices ?? [])
+const exportHint = computed(() => hasPeriod.value ? 'Los comprobantes del período' : 'Todos los comprobantes, no solo los últimos 100')
+
+const shownTotals = computed(() => {
+  const by: Record<string, { currency: string; total: number; paid: number; balance: number }> = {}
+  for (const inv of shownInvoices.value) {
+    if (inv.voided || ![1, 2].includes(inv.document_type)) continue
+    const t = (by[inv.currency] ??= { currency: inv.currency, total: 0, paid: 0, balance: 0 })
+    t.total += inv.total
+    t.paid += inv.paid ?? 0
+    t.balance += inv.balance ?? 0
+  }
+  return Object.values(by).sort((a, b) => a.currency.localeCompare(b.currency))
+})
+
+function iso(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const PERIOD_PRESETS: { label: string; range: () => { from: string; to: string } }[] = [
+  { label: 'Este mes', range: () => { const n = new Date(); return { from: iso(new Date(n.getFullYear(), n.getMonth(), 1)), to: iso(new Date(n.getFullYear(), n.getMonth() + 1, 0)) } } },
+  { label: 'Mes pasado', range: () => { const n = new Date(); return { from: iso(new Date(n.getFullYear(), n.getMonth() - 1, 1)), to: iso(new Date(n.getFullYear(), n.getMonth(), 0)) } } },
+  { label: 'Este año', range: () => { const y = new Date().getFullYear(); return { from: `${y}-01-01`, to: `${y}-12-31` } } },
+  { label: 'Año pasado', range: () => { const y = new Date().getFullYear() - 1; return { from: `${y}-01-01`, to: `${y}-12-31` } } }
+]
+function isPreset(p: (typeof PERIOD_PRESETS)[number]): boolean {
+  const r = p.range()
+  return hasPeriod.value && r.from === period.from && r.to === period.to
+}
+
+let periodRequest = 0
+async function applyPeriod(range: { from: string; to: string }) {
+  period.from = range.from
+  period.to = range.to
+  if (!customer.value) return
+  if (!range.from && !range.to) {
+    periodInvoices.value = null
+    return
+  }
+  if (range.from && range.to && range.from > range.to) {
+    toast.add({ severity: 'warn', summary: 'El inicio del período es posterior al fin', life: 4000 })
+    return
+  }
+  const request = ++periodRequest
+  periodLoading.value = true
+  try {
+    const data = await getCustomer(customer.value.id, { from: range.from, to: range.to })
+    if (request === periodRequest) periodInvoices.value = data.invoices
+  } catch (e) {
+    if (request === periodRequest) toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo filtrar'), life: 5000 })
+  } finally {
+    if (request === periodRequest) periodLoading.value = false
+  }
+}
+
 const exporting = ref<'xlsx' | 'pdf' | null>(null)
 async function exportInvoices(format: 'xlsx' | 'pdf') {
   if (!customer.value) return
   exporting.value = format
   try {
-    await downloadCustomerInvoices(customer.value.id, format, customer.value.name)
+    await downloadCustomerInvoices(customer.value.id, format, customer.value.name, hasPeriod.value ? { ...period } : undefined)
   } catch (e) {
     toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo exportar'), life: 5000 })
   } finally {
@@ -339,6 +424,9 @@ watch(() => route.params.id, async (id) => {
   loading.value = true
   error.value = null
   lookupNote.value = null
+  periodInvoices.value = null
+  period.from = ''
+  period.to = ''
   try {
     customer.value = await getCustomer(Number(id))
   } catch (e: any) {
