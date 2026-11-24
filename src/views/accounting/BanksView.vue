@@ -796,9 +796,9 @@
     <Dialog :draggable="false" v-model:visible="importVisible" modal header="Importar movimientos del banco" :style="{ width: '36rem' }">
       <div class="space-y-4">
         <p class="text-sm text-gray-500">
-          Sube el archivo tal como se descarga: el Excel de movimientos de BBVA o de BCP, el CSV de movimientos de
-          Culqi, o el PDF del estado de cuenta de la tarjeta de crédito BBVA. Primero ves qué entraría; lo que ya se
-          importó no se repite.
+          Sube el archivo tal como se descarga: el Excel de movimientos de BBVA, de BCP o de la cuenta de detracciones
+          del Banco de la Nación, el CSV de movimientos de Culqi, o el PDF del estado de cuenta. Primero ves qué
+          entraría; lo que ya se importó no se repite, aunque después llegue el mismo movimiento en el estado de cuenta.
         </p>
         <input type="file" accept=".xls,.xlsx,.csv,.pdf,.md" class="block w-full text-sm text-gray-600" @change="onFile" />
 
