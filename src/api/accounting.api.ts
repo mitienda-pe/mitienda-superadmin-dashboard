@@ -3,7 +3,7 @@ import type {
   Expense, ExpenseCategory, ExpenseFilters, ExpenseInput, ExpensePayments, ExpenseSummary, Payee, PayeeInput,
   SireImportResult, BankAccount, BankImportResult, DetractionReportResult, BankMovement, BankMovementFilters, BankMovementSummary, BankInflows, CashCountResult,
   InvoiceSuggestion, ExpenseSuggestion, RefundCandidate, ReconcileInput, CustomerOpenInvoices, BenefitConcept, BenefitDebts, CashAccount, CashFlow, CashPlanItem, CashPlanItemInput, IncomeStatement, IncomeStatementDetail, IncomeStatementSource, StatementFunction, PayrollSettings, PensionFund, Employee, Payroll, PayrollLineInput,
-  PayrollPeriod, BankPayerContext
+  PayrollPeriod, BankPayerContext, Partner, PartnerKind, PartnerLedger
 } from '@/types/accounting.types'
 import type { InvoiceInstallmentInput } from '@/types/ledger.types'
 
@@ -146,7 +146,23 @@ export async function deleteExpensePayment(paymentId: number) {
 // --- Bancos ---
 
 export async function getBankAccounts() {
-  const res = await api.get<{ data: BankAccount[]; meta: { other_labels: Record<string, string> } }>(`${BASE}/bank-accounts`)
+  const res = await api.get<{
+    data: BankAccount[]
+    meta: { other_labels: Record<string, string>; partners?: Partner[]; partner_kinds?: Record<PartnerKind, string> }
+  }>(`${BASE}/bank-accounts`)
+  return res.data
+}
+
+// --- Socios ---
+
+export async function getPartnerLedger() {
+  const res = await api.get<{ data: PartnerLedger }>(`${BASE}/partners`)
+  return res.data.data
+}
+
+/** Asigna socio y tipo a un movimiento «socios»; null y null lo deja sin asignar. */
+export async function assignPartnerLink(linkId: number, partnerId: number | null, kind: PartnerKind | null) {
+  const res = await api.put<{ message: string }>(`${BASE}/partners/links/${linkId}`, { partner_id: partnerId, partner_kind: kind })
   return res.data
 }
 

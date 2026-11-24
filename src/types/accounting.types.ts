@@ -265,6 +265,54 @@ export interface BankMovementLink {
   /** La cuota de préstamo que paga (Bancos → "Préstamo" con cuota). */
   loan_installment_id?: number | null
   loan_installment_due?: string | null
+  /** «Aporte o retiro de socios»: de qué socio es y qué es. */
+  partner_id?: number | null
+  partner_kind?: PartnerKind | null
+}
+
+export type PartnerKind = 'prestamo' | 'adelanto' | 'capital'
+
+export interface Partner {
+  id: number
+  name: string
+  document: string | null
+}
+
+export interface PartnerBalance {
+  in: number
+  out: number
+  /** Préstamos del socio menos lo devuelto: la empresa se lo debe. */
+  loans: number
+  /** Gastos personales o adelantos menos lo devuelto: el socio se lo debe. */
+  advances: number
+  capital: number
+  /** loans − advances: positivo, la empresa le debe al socio. */
+  net: number
+}
+
+export interface PartnerMovement {
+  link_id: number
+  movement_id: number
+  date: string
+  account: string
+  currency: 'PEN' | 'USD'
+  description: string
+  reference: string | null
+  note: string | null
+  /** Con el signo del banco: + entró a la empresa, − salió. */
+  signed: number
+  partner_id: number | null
+  kind: PartnerKind | null
+}
+
+export interface PartnerLedger {
+  partners: Array<Partner & {
+    balances: Partial<Record<'PEN' | 'USD', PartnerBalance>>
+    movements: PartnerMovement[]
+    payroll_payable: { total: number; items: Array<{ expense_id: number; description: string; period: string | null; pending: number }> }
+  }>
+  unassigned: PartnerMovement[]
+  kinds: Record<PartnerKind, string>
 }
 
 export interface BankMovement {
@@ -518,7 +566,7 @@ export type ReconcileInput =
   /** Entrada que devuelve parte o todo un gasto ya pagado: el gasto baja a lo que costó. */
   | { kind: 'reembolso'; expense_id: number; amount?: number }
   | { kind: 'gasto'; payee_id: number; category_id: number; document_kind?: string; tax?: number; period?: string; description?: string }
-  | { kind: 'otro'; label: string; note?: string }
+  | { kind: 'otro'; label: string; note?: string; partner_id?: number; partner_kind?: PartnerKind }
   | { kind: 'transferencia'; counterpart_id: number }
   | { kind: 'detraccion_usd'; invoice_id: number }
   /** Depósito en soles que paga una factura en dólares; sin usd_amount, se abona todo su saldo. */

@@ -27,6 +27,7 @@ export const ACCOUNTING_TABS: SectionTab[] = [
   { to: '/accounting/expenses', label: 'Gastos', icon: 'pi pi-wallet' },
   { to: '/accounting/banks', label: 'Bancos', icon: 'pi pi-building-columns' },
   { to: '/accounting/payroll', label: 'Planilla', icon: 'pi pi-id-card' },
+  { to: '/accounting/partners', label: 'Socios', icon: 'pi pi-user-plus' },
   { to: '/accounting/results', label: 'Resultados', icon: 'pi pi-chart-bar' },
   { to: '/accounting/cash-flow', label: 'Flujo de caja', icon: 'pi pi-calendar' },
   { to: '/accounting/taxes', label: 'Impuestos', icon: 'pi pi-percentage' },

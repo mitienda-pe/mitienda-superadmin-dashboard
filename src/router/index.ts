@@ -269,6 +269,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/accounting/PayrollView.vue')
       },
       {
+        // Cuenta corriente de cada socio: aportes, préstamos y retiros.
+        path: 'partners',
+        name: 'AccountingPartners',
+        component: () => import('@/views/accounting/PartnersView.vue')
+      },
+      {
         path: 'results',
         name: 'AccountingResults',
         component: () => import('@/views/accounting/IncomeStatementView.vue')

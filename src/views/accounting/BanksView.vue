@@ -705,6 +705,20 @@
                 </p>
               </template>
             </div>
+            <!-- De qué socio es y qué es: arma su cuenta corriente (Contabilidad → Socios) -->
+            <div v-if="other.label === 'socios' && partners.length" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Socio</label>
+                <Dropdown v-model="other.partnerId" :options="partners" optionLabel="name" optionValue="id" placeholder="Elige" class="w-full" showClear />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Qué es</label>
+                <Dropdown v-model="other.partnerKind" :options="partnerKindOptions" optionLabel="label" optionValue="value" placeholder="Elige" class="w-full" showClear />
+              </div>
+              <p class="sm:col-span-2 text-xs text-gray-500">
+                Préstamo: la empresa se lo debe al socio. Gasto personal o adelanto: el socio se lo debe a la empresa. Capital: no se devuelve.
+              </p>
+            </div>
             <div>
               <label class="block text-sm font-medium text-gray-600 mb-1">Nota</label>
               <InputText v-model="other.note" maxlength="255" class="w-full" placeholder="Opcional" />
@@ -1056,7 +1070,8 @@ import {
 import { getLedgerInvoices } from '@/api/ledger.api'
 import type {
   BankAccount, BankImportResult, BankMovement, BankMovementFilters, BankMovementLink, BankMovementSummary, ExpenseCategory,
-  CustomerOpenInvoices, ExpenseSuggestion, RefundCandidate, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult, BankPayer, BankPayerContext
+  CustomerOpenInvoices, ExpenseSuggestion, RefundCandidate, InvoiceSuggestion, Payee, ReconcileInput, CashCountResult, BankPayer, BankPayerContext,
+  Partner, PartnerKind
 } from '@/types/accounting.types'
 
 const toast = useToast()
@@ -1138,6 +1153,8 @@ async function loadAccounts() {
     const res = await getBankAccounts()
     accounts.value = res.data
     otherLabels.value = res.meta.other_labels
+    partners.value = res.meta.partners ?? []
+    partnerKinds.value = res.meta.partner_kinds ?? {}
   } catch (e) {
     error.value = accountingErrorMessage(e)
   }
@@ -1342,7 +1359,13 @@ const undoingId = ref<number | null>(null)
 const payees = ref<Payee[]>([])
 const categories = ref<ExpenseCategory[]>([])
 const newExpense = reactive({ payee_id: null as number | null, category_id: null as number | null, period: '', description: '' })
-const other = reactive({ label: null as string | null, note: '', counterpart: null as number | null })
+const other = reactive({
+  label: null as string | null, note: '', counterpart: null as number | null,
+  partnerId: null as number | null, partnerKind: null as PartnerKind | null
+})
+const partners = ref<Partner[]>([])
+const partnerKinds = ref<Partial<Record<PartnerKind, string>>>({})
+const partnerKindOptions = computed(() => Object.entries(partnerKinds.value).map(([value, label]) => ({ label, value })))
 
 // Transferencia entre cuentas propias: el otro lado, para conciliar los dos a la vez.
 const transferCandidates = ref<TransferCandidate[]>([])
@@ -1501,6 +1524,8 @@ function resetChoice() {
   other.label = null
   other.note = ''
   other.counterpart = null
+  other.partnerId = null
+  other.partnerKind = null
   refundPicked.value = null
 }
 
@@ -1697,12 +1722,22 @@ async function submitReconcile() {
     }
   } else {
     if (!other.label) return warn('Indica qué es el movimiento')
+    if (other.label === 'socios' && (other.partnerId === null) !== (other.partnerKind === null)) {
+      return warn('Indica el socio y qué es, o deja los dos vacíos para asignarlo después')
+    }
     // Un número negativo es una caja: el otro lado se anota en ella.
     payload = other.label === 'transferencia' && other.counterpart && other.counterpart < 0
       ? { kind: 'caja', cash_account_id: -other.counterpart }
       : other.label === 'transferencia' && other.counterpart
         ? { kind: 'transferencia', counterpart_id: other.counterpart }
-        : { kind: 'otro', label: other.label, note: other.note.trim() || undefined }
+        : {
+            kind: 'otro',
+            label: other.label,
+            note: other.note.trim() || undefined,
+            ...(other.label === 'socios' && other.partnerId !== null && other.partnerKind !== null
+              ? { partner_id: other.partnerId, partner_kind: other.partnerKind }
+              : {})
+          }
   }
 
   saving.value = true
