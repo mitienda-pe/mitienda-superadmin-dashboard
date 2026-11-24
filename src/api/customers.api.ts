@@ -73,6 +73,18 @@ export async function searchCustomers(q: string) {
   return res.data.data
 }
 
+/** Baja todos los comprobantes del cliente, con lo cobrado y lo que falta, en Excel o PDF. */
+export async function downloadCustomerInvoices(id: number, format: 'xlsx' | 'pdf', name: string): Promise<void> {
+  const res = await api.get<Blob>(`/superadmin/customers/${id}/invoices/export`, { params: { format }, responseType: 'blob' })
+  const slug = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'cliente'
+  const url = URL.createObjectURL(res.data)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `comprobantes-${slug}.${format}`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export async function getCustomer(id: number) {
   const res = await api.get<{ data: CustomerDetail }>(`/superadmin/customers/${id}`)
   return res.data.data

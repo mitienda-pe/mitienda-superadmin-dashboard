@@ -108,7 +108,13 @@
       </div>
 
       <div class="bg-white rounded-xl border border-gray-200 p-4">
-        <h2 class="font-semibold text-gray-900 mb-3">Comprobantes <span class="text-xs font-normal text-gray-400">(los últimos 100)</span></h2>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h2 class="font-semibold text-gray-900">Comprobantes <span class="text-xs font-normal text-gray-400">(los últimos 100)</span></h2>
+          <div class="flex gap-2">
+            <Button label="Excel" icon="pi pi-file-excel" size="small" outlined :loading="exporting === 'xlsx'" :disabled="exporting !== null" v-tooltip.top="'Todos los comprobantes, no solo los últimos 100'" @click="exportInvoices('xlsx')" />
+            <Button label="PDF" icon="pi pi-file-pdf" size="small" outlined :loading="exporting === 'pdf'" :disabled="exporting !== null" v-tooltip.top="'Todos los comprobantes, no solo los últimos 100'" @click="exportInvoices('pdf')" />
+          </div>
+        </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -195,7 +201,7 @@ import Checkbox from 'primevue/checkbox'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth.store'
 import {
-  getCustomer, updateCustomer, verifyCustomer, assignCustomerStore, unassignCustomerStore, customerErrorMessage,
+  getCustomer, updateCustomer, downloadCustomerInvoices, verifyCustomer, assignCustomerStore, unassignCustomerStore, customerErrorMessage,
   type CustomerDetail, type CustomerInput
 } from '@/api/customers.api'
 
@@ -234,6 +240,19 @@ const sunatOk = computed(() => {
 
 const editing = ref(false)
 const saving = ref(false)
+
+const exporting = ref<'xlsx' | 'pdf' | null>(null)
+async function exportInvoices(format: 'xlsx' | 'pdf') {
+  if (!customer.value) return
+  exporting.value = format
+  try {
+    await downloadCustomerInvoices(customer.value.id, format, customer.value.name)
+  } catch (e) {
+    toast.add({ severity: 'error', summary: customerErrorMessage(e, 'No se pudo exportar'), life: 5000 })
+  } finally {
+    exporting.value = null
+  }
+}
 const form = reactive<CustomerInput>({ name: '', address: '', email: '', phone: '', notes: '' })
 function openEdit() {
   const c = customer.value
