@@ -41,7 +41,7 @@
         <p v-if="statement.currencies.length === 0" class="py-8 text-center text-gray-500">Sin movimientos ni saldo en este periodo.</p>
 
         <!-- Una sección por moneda -->
-        <section v-for="c in statement.currencies" :key="c.currency" class="pt-6 break-inside-avoid-page">
+        <section v-for="c in statement.currencies" :key="c.currency" class="pt-6">
           <div class="flex flex-wrap items-baseline justify-between gap-2 mb-2">
             <h2 class="font-semibold text-gray-900">{{ c.currency === 'USD' ? 'En dólares' : 'En soles' }}</h2>
             <div class="text-gray-600">
@@ -191,3 +191,22 @@ function print() {
 
 onMounted(load)
 </script>
+
+<style>
+/* Márgenes explícitos: sin @page el PDF sale pegado al borde. */
+@page {
+  size: A4;
+  margin: 15mm 14mm;
+}
+@media print {
+  /* Un movimiento no se parte entre páginas, pero la tabla sí puede (antes la
+     sección entera se iba a la hoja 2 y dejaba la primera casi en blanco). */
+  tr {
+    break-inside: avoid;
+  }
+  /* Los totales salen una vez al final, no repetidos en cada hoja. */
+  tfoot {
+    display: table-row-group;
+  }
+}
+</style>
