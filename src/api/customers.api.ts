@@ -55,6 +55,12 @@ export interface CustomerInvoice {
   payment_status: number | null
   tienda_id: number | null
   concept: string | null
+  /** Notas de crédito vigentes que restan del total. */
+  credited: number
+  /** Lo cobrado; null si no aplica (anulado, NC, sin estado). */
+  paid: number | null
+  /** Lo que falta cobrar; null si no se va a cobrar. */
+  balance: number | null
 }
 
 export interface CustomerDetail extends PlatformCustomer {

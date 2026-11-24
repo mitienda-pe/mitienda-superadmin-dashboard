@@ -118,7 +118,8 @@
                 <th class="py-2 text-left">Concepto</th>
                 <th class="py-2 text-left">Tienda</th>
                 <th class="py-2 text-right">Total</th>
-                <th class="py-2 text-left pl-4">Cobro</th>
+                <th class="py-2 text-right pl-4">Cobrado</th>
+                <th class="py-2 text-right pl-4">Por cobrar</th>
               </tr>
             </thead>
             <tbody>
@@ -128,9 +129,19 @@
                 <td class="py-1.5 text-gray-600 max-w-xs truncate" :title="inv.concept ?? ''">{{ inv.concept }}</td>
                 <td class="py-1.5 text-gray-600">{{ storeName(inv.tienda_id) }}</td>
                 <td class="py-1.5 text-right tabular-nums">{{ inv.currency === 'USD' ? 'US$' : 'S/' }} {{ number(inv.total) }}</td>
-                <td class="py-1.5 pl-4 text-xs">
-                  <span v-if="inv.voided" class="text-red-600">Anulado</span>
-                  <span v-else :class="PAYMENT[inv.payment_status ?? -1]?.cls ?? 'text-gray-400'">{{ PAYMENT[inv.payment_status ?? -1]?.label ?? '—' }}</span>
+                <td class="py-1.5 pl-4 text-right tabular-nums whitespace-nowrap">
+                  <span v-if="inv.voided" class="text-xs text-red-600">Anulado</span>
+                  <span v-else-if="inv.paid !== null" :class="inv.paid > 0 ? 'text-green-700' : 'text-gray-400'">{{ cur(inv) }} {{ number(inv.paid) }}</span>
+                  <span v-else class="text-gray-400">—</span>
+                </td>
+                <td class="py-1.5 pl-4 text-right tabular-nums whitespace-nowrap">
+                  <template v-if="!inv.voided && inv.balance !== null">
+                    <span :class="inv.balance > 0 ? 'text-amber-700 font-medium' : 'text-gray-400'">{{ cur(inv) }} {{ number(inv.balance) }}</span>
+                    <div v-if="inv.payment_status === 4" class="text-xs text-gray-500">por confirmar</div>
+                  </template>
+                  <span v-else-if="!inv.voided && NO_BALANCE[inv.payment_status ?? -1]" class="text-xs text-gray-500">{{ NO_BALANCE[inv.payment_status ?? -1] }}</span>
+                  <span v-else class="text-gray-400">—</span>
+                  <div v-if="inv.credited > 0" class="text-xs text-gray-500">NC −{{ cur(inv) }} {{ number(inv.credited) }}</div>
                 </td>
               </tr>
             </tbody>
@@ -188,13 +199,11 @@ import {
   type CustomerDetail, type CustomerInput
 } from '@/api/customers.api'
 
-const PAYMENT: Record<number, { label: string; cls: string }> = {
-  0: { label: 'Pendiente', cls: 'text-amber-700' },
-  1: { label: 'Cobrado', cls: 'text-green-700' },
-  2: { label: 'Incobrable', cls: 'text-red-600' },
-  3: { label: 'Sin cargo', cls: 'text-gray-500' },
-  4: { label: 'Por confirmar', cls: 'text-gray-600' },
-  5: { label: 'Cobro parcial', cls: 'text-amber-700' }
+// Lo que no se va a cobrar: en vez de un saldo, por qué.
+const NO_BALANCE: Record<number, string> = { 2: 'Incobrable', 3: 'Sin cargo' }
+
+function cur(inv: { currency: string }): string {
+  return inv.currency === 'USD' ? 'US$' : 'S/'
 }
 
 const route = useRoute()
